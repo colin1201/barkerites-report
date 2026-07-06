@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barkerites Match Report</title>
+<meta name="description" content="Drop your Garmin/Strava game file, get your hockey match report — heat map, quarter maps, sprints, HR zones. Processed on your device, never uploaded.">
+<style>
+  :root{ --ground:#10161d; --card:#171f28; --ink:#e8edf2; --ink-2:#a7b4c0; --ink-3:#6b7a88;
+    --pitch:#173d5a; --pitch-edge:#122f46; --line:rgba(255,255,255,.42);
+    --accent:#e8842a; --tile-border:#242f3a; --good:#4caf7d; }
+  *{ box-sizing:border-box; }
+  body{ background:var(--ground); color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif; margin:0; padding:24px 14px 48px; }
+  .wrap{ max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+  .eyebrow{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  h1{ font-size:26px; margin:2px 0 0; font-weight:650; }
+  .meta{ color:var(--ink-2); font-size:14px; margin-top:4px; line-height:1.5; }
+  .board{ background:var(--card); border:1px solid var(--tile-border); border-radius:10px; padding:16px; }
+  h2{ font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); margin:0 0 10px; font-weight:600; }
+  .drop{ border:2px dashed var(--tile-border); border-radius:12px; padding:34px 18px; text-align:center;
+    cursor:pointer; transition:border-color .2s, background .2s; }
+  .drop.over{ border-color:var(--accent); background:rgba(232,132,42,.06); }
+  .drop .big{ font-size:17px; font-weight:600; }
+  .drop .small{ font-size:13px; color:var(--ink-3); margin-top:6px; }
+  .privacy{ font-size:12.5px; color:var(--good); margin-top:10px; }
+  input[type=file]{ display:none; }
+  .howto{ font-size:14px; color:var(--ink-2); line-height:1.7; }
+  .howto b{ color:var(--ink); }
+  .err{ background:#3a1f22; border:1px solid #6e3238; color:#f2c7cb; border-radius:8px;
+    padding:12px 14px; font-size:14px; display:none; }
+  #report{ display:none; flex-direction:column; gap:16px; }
+  .controls{ display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-size:13.5px; color:var(--ink-2); }
+  .controls label{ display:flex; gap:8px; align-items:center; }
+  .controls input[type=text]{ background:var(--ground); color:var(--ink); border:1px solid var(--tile-border);
+    border-radius:6px; padding:7px 10px; font-size:14px; width:160px; }
+  .controls input[type=range]{ accent-color:var(--accent); width:150px; }
+  .tiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
+  .tile{ background:var(--card); border:1px solid var(--tile-border); border-radius:10px; padding:12px 14px; }
+  .tile .lbl{ font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .tile .val{ font-size:23px; font-weight:650; margin-top:3px; font-variant-numeric:tabular-nums; }
+  .tile .sub{ font-size:12px; color:var(--ink-2); margin-top:2px; }
+  canvas{ width:100%; height:auto; display:block; border-radius:6px; }
+  .dir{ display:flex; justify-content:space-between; font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-3); margin-top:8px; }
+  .qgrid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  @media (max-width:560px){ .qgrid{ grid-template-columns:1fr; } }
+  .qcap{ font-size:12px; color:var(--ink-2); margin-top:5px; text-align:center; font-variant-numeric:tabular-nums; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; }
+  th{ text-align:left; color:var(--ink-3); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    padding:6px 8px; border-bottom:1px solid var(--tile-border); }
+  td{ padding:7px 8px; border-bottom:1px solid var(--tile-border); }
+  tr:last-child td{ border-bottom:none; }
+  .zbar{ display:flex; height:16px; border-radius:8px; overflow:hidden; gap:2px; margin-top:6px; }
+  .zbar div{ background:var(--accent); min-width:2px; }
+  .zl{ display:flex; gap:14px; font-size:12px; color:var(--ink-2); margin-top:8px; flex-wrap:wrap;
+    font-variant-numeric:tabular-nums; }
+  .foot{ font-size:12px; color:var(--ink-3); line-height:1.55; max-width:70ch; }
+  .again{ background:none; border:1px solid var(--tile-border); color:var(--ink-2); border-radius:8px;
+    padding:9px 16px; font-size:13.5px; cursor:pointer; align-self:flex-start; }
+  .again:hover{ color:var(--ink); border-color:var(--ink-3); }
+</style></head><body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Barkerites Hockey</div>
+    <h1>Match Report</h1>
+    <div class="meta">Drop the game file from your sports watch and get your personal match report — heat map, quarter-by-quarter movement, sprints, and heart-rate zones.</div>
+  </header>
+
+  <div id="uploader">
+    <div class="drop" id="drop">
+      <div class="big">Tap to choose your game file</div>
+      <div class="small">or drag it here · accepts .gpx and .tcx</div>
+      <div class="privacy">🔒 Processed on your device — your file is never uploaded or stored anywhere.</div>
+      <input type="file" id="file" accept=".gpx,.tcx,application/gpx+xml">
+    </div>
+    <div class="err" id="err"></div>
+
+    <div class="board" style="margin-top:16px">
+      <h2>How to get your file (~1 minute)</h2>
+      <div class="howto">
+        <b>Garmin:</b> open <b>connect.garmin.com</b> in your phone's browser (the export lives on the website, not the app) → log in → open the game activity → tap the <b>gear icon → Export to GPX</b>. The file downloads — come back here and drop it in.<br>
+        <b>Strava:</b> open the activity on <b>strava.com</b> → ••• menu → <b>Export GPX</b>.<br>
+        <b>No file?</b> You need to record the game on a GPS sports watch (Garmin, Coros, Suunto, Apple Watch via a GPX export app).
+      </div>
+    </div>
+  </div>
+
+  <div id="report">
+    <div class="controls board">
+      <label>Your name <input type="text" id="pname" placeholder="e.g. Colin" maxlength="20"></label>
+      <label>Halftime at <input type="range" id="halfmin" min="10" max="80" step="1">
+        <span id="halflbl" style="font-variant-numeric:tabular-nums"></span></label>
+      <span style="font-size:12px;color:var(--ink-3)">(auto-detected from your longest break — drag if it looks wrong; it sets where the teams swapped ends)</span>
+    </div>
+
+    <div class="tiles" id="tiles"></div>
+
+    <div class="board">
+      <h2>Movement heat map <span id="thirds" style="float:right;font-weight:500;text-transform:none;letter-spacing:0"></span></h2>
+      <canvas id="pitch" width="1200" height="722"></canvas>
+      <div class="dir"><span>&#9664; Own goal</span><span>Direction of attack &#9654;</span></div>
+    </div>
+
+    <div class="board">
+      <h2>Heat map by quarter <span style="float:right;font-weight:500;text-transform:none;letter-spacing:0">same brightness scale</span></h2>
+      <div class="qgrid">
+        <div><canvas class="qmap" data-q="0" width="600" height="361"></canvas><div class="qcap" id="qc0"></div></div>
+        <div><canvas class="qmap" data-q="1" width="600" height="361"></canvas><div class="qcap" id="qc1"></div></div>
+        <div><canvas class="qmap" data-q="2" width="600" height="361"></canvas><div class="qcap" id="qc2"></div></div>
+        <div><canvas class="qmap" data-q="3" width="600" height="361"></canvas><div class="qcap" id="qc3"></div></div>
+      </div>
+    </div>
+
+    <div class="board">
+      <h2>By quarter (elapsed time — includes bench/break minutes)</h2>
+      <table><thead><tr><th></th><th>Distance</th><th>Avg HR</th><th>Top speed</th></tr></thead><tbody id="qrows"></tbody></table>
+    </div>
+
+    <div class="board">
+      <h2>Heart-rate zones (minutes)</h2>
+      <div class="zbar" id="zbar"></div>
+      <div class="zl" id="zl"></div>
+    </div>
+
+    <p class="foot">Heat map: moving time only, both halves rotated onto one attacking direction using the halftime point above. Built from watch GPS (~3-5s samples) — shapes are honest, exact edges approximate. Wrist heart-rate is a trend, not gospel. Screenshot to share with the team. 🏑</p>
+    <button class="again" id="again">Analyse another file</button>
+  </div>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+let PTS = null;      // [{x(lonm), y(latm), t(sec), hr, spd(m/s smoothed)}]
+let GAMENAME = '';
+
+// ---------- parsing ----------
+function parseFile(text, name){
+  const dom = new DOMParser().parseFromString(text, 'text/xml');
+  if (dom.querySelector('parsererror')) throw new Error('That file could not be read as GPX/TCX. Export again and retry.');
+  let raw = [];
+  const trkpts = dom.getElementsByTagName('trkpt');
+  if (trkpts.length > 0){
+    GAMENAME = (dom.getElementsByTagName('name')[0] || {}).textContent || name;
+    for (const p of trkpts){
+      const time = p.getElementsByTagName('time')[0];
+      if (!time) continue;
+      let hr = null;
+      for (const el of p.getElementsByTagName('*')) if (el.localName === 'hr') { hr = +el.textContent; break; }
+      raw.push({ lat:+p.getAttribute('lat'), lon:+p.getAttribute('lon'),
+                 ts:new Date(time.textContent).getTime()/1000, hr });
+    }
+  } else {
+    const tps = dom.getElementsByTagName('Trackpoint');
+    if (!tps.length) throw new Error('No GPS track found in this file. Make sure you exported the activity as GPX (or TCX).');
+    for (const p of tps){
+      const lat = p.getElementsByTagName('LatitudeDegrees')[0];
+      const lon = p.getElementsByTagName('LongitudeDegrees')[0];
+      const time = p.getElementsByTagName('Time')[0];
+      if (!lat || !lon || !time) continue;
+      const hrEl = p.getElementsByTagName('HeartRateBpm')[0];
+      raw.push({ lat:+lat.textContent, lon:+lon.textContent,
+                 ts:new Date(time.textContent).getTime()/1000,
+                 hr: hrEl ? +hrEl.getElementsByTagName('Value')[0].textContent : null });
+    }
+  }
+  raw = raw.filter(p => isFinite(p.lat) && isFinite(p.lon) && isFinite(p.ts));
+  if (raw.length < 100) throw new Error('Too few GPS points — was GPS on for the whole game?');
+  const t0 = raw[0].ts;
+  const lat0 = raw.reduce((s,p)=>s+p.lat,0)/raw.length;
+  const lon0 = raw.reduce((s,p)=>s+p.lon,0)/raw.length;
+  const mlat = 111320, mlon = 111320*Math.cos(lat0*Math.PI/180);
+  const pts = raw.map(p => ({ x:(p.lon-lon0)*mlon, y:(p.lat-lat0)*mlat, t:p.ts-t0, hr:p.hr, spd:0 }));
+  // derived speed: RAW (jitter-capped) keeps sprint peaks; median-of-3 SMOOTHED for distance/moving-time
+  const rawspd = [0];
+  for (let i=1;i<pts.length;i++){
+    const dt = pts[i].t - pts[i-1].t;
+    const d = Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y);
+    rawspd.push(dt > 0 && d/dt < 12 ? d/dt : 0); // >12 m/s = jitter, zero it
+  }
+  for (let i=0;i<pts.length;i++){
+    const w = [rawspd[Math.max(0,i-1)], rawspd[i], rawspd[Math.min(pts.length-1,i+1)]].sort((a,b)=>a-b);
+    pts[i].spd = w[1];        // smoothed: distance, moving classification, heat
+    pts[i].spdRaw = rawspd[i]; // raw: top speed + sprint detection (smoothing crushes 1-sample peaks)
+  }
+  return pts;
+}
+
+// ---------- analysis ----------
+function pct(vs, q){ const v=[...vs].sort((a,b)=>a-b); const i=(v.length-1)*q, f=Math.floor(i);
+  return v[f] + (v[Math.min(f+1,v.length-1)]-v[f])*(i-f); }
+
+function longestStillMid(pts){
+  let best=[0,0,0], rs=null;
+  for (let k=0;k<pts.length;k++){
+    if (pts[k].spd < 0.5){ if (rs===null) rs=k; }
+    else if (rs!==null){ const dur=pts[k-1].t-pts[rs].t; if (dur>best[0]) best=[dur,rs,k-1]; rs=null; }
+  }
+  return best[0]>0 ? (pts[best[1]].t + pts[best[2]].t)/2 : pts[pts.length-1].t/2;
+}
+
+function analyse(pts, halfT){
+  const total = pts[pts.length-1].t;
+  // distance + quarters
+  const Q = total/4;
+  const quarters = [0,1,2,3].map(()=>({dist:0, hrs:[], top:0}));
+  let distAll = 0;
+  for (let i=1;i<pts.length;i++){
+    const dt = pts[i].t-pts[i-1].t;
+    const seg = pts[i].spd * dt;
+    const q = Math.min(3, Math.floor(pts[i].t/Q));
+    quarters[q].dist += seg; distAll += seg;
+    if (pts[i].hr) quarters[q].hrs.push(pts[i].hr);
+    quarters[q].top = Math.max(quarters[q].top, pts[i].spdRaw*3.6);
+  }
+  // zones
+  const bands = [[0,110,'Z1'],[110,130,'Z2'],[130,150,'Z3'],[150,170,'Z4'],[170,999,'Z5']];
+  const zones = {Z1:0,Z2:0,Z3:0,Z4:0,Z5:0};
+  for (let i=1;i<pts.length;i++){
+    if (!pts[i].hr) continue;
+    const dt = pts[i].t-pts[i-1].t;
+    for (const [lo,hi,nm] of bands) if (pts[i].hr>=lo && pts[i].hr<hi){ zones[nm]+=dt; break; }
+  }
+  // sprints + top speed from RAW speed (smoothing crushes short peaks)
+  let sprints=0, inb=false, top=0;
+  for (const p of pts){
+    top = Math.max(top, p.spdRaw*3.6);
+    const fast = p.spdRaw*3.6 >= 20;
+    if (fast && !inb){ sprints++; inb=true; } else if (!fast) inb=false;
+  }
+  // heat: moving, PCA-rotate, mirror after halfT, dense end left
+  const mov = pts.filter(p=>p.spd>=0.3);
+  const n=mov.length, mx=mov.reduce((s,p)=>s+p.x,0)/n, my=mov.reduce((s,p)=>s+p.y,0)/n;
+  let sxx=0,syy=0,sxy=0;
+  for (const p of mov){ sxx+=(p.x-mx)**2; syy+=(p.y-my)**2; sxy+=(p.x-mx)*(p.y-my); }
+  const th=0.5*Math.atan2(2*sxy/n,(sxx-syy)/n), c=Math.cos(-th), s=Math.sin(-th);
+  let norm = mov.map(p=>{
+    let x=(p.x-mx)*c-(p.y-my)*s, y=(p.x-mx)*s+(p.y-my)*c;
+    if (p.t>halfT){ x=-x; y=-y; }
+    return {x,y,t:p.t};
+  });
+  let xs = norm.map(p=>p.x);
+  const mid = (pct(xs,.02)+pct(xs,.98))/2;
+  if (xs.filter(x=>x<mid).length > n/2) { norm = norm.map(p=>({x:-p.x,y:-p.y,t:p.t})); xs = norm.map(p=>p.x); }
+  const x2 = pct(xs,.995), x1 = x2-91.4;
+  const ys = norm.map(p=>p.y);
+  const ymid=(pct(ys,.02)+pct(ys,.98))/2, y1=ymid-27.5, y2=ymid+27.5;
+  const NX=46, NY=28;
+  const grid = Array.from({length:NY},()=>Array(NX).fill(0));
+  const qgrids = [0,1,2,3].map(()=>Array.from({length:NY},()=>Array(NX).fill(0)));
+  let inbCnt=0, half=0; const thirds=[0,0,0];
+  for (const p of norm){
+    if (p.x<x1||p.x>x2||p.y<y1||p.y>y2) continue;
+    const i=Math.min(NX-1,Math.floor((p.x-x1)/(x2-x1)*NX));
+    const j=Math.min(NY-1,Math.floor((p.y-y1)/(y2-y1)*NY));
+    grid[j][i]++; inbCnt++;
+    qgrids[Math.min(3,Math.floor(p.t/Q))][j][i]++;
+    if (i<NX/2) half++;
+    thirds[Math.min(2,Math.floor(i*3/NX))]++;
+  }
+  const hrsAll = pts.filter(p=>p.hr).map(p=>p.hr);
+  return {
+    total, distAll, top:+top.toFixed(1), sprints,
+    avgHr: hrsAll.length? Math.round(hrsAll.reduce((a,b)=>a+b,0)/hrsAll.length) : null,
+    quarters: quarters.map(q=>({dist:Math.round(q.dist),
+      hr:q.hrs.length?Math.round(q.hrs.reduce((a,b)=>a+b,0)/q.hrs.length):0, top:+q.top.toFixed(1)})),
+    zones: Object.fromEntries(Object.entries(zones).map(([k,v])=>[k,Math.round(v/60)])),
+    grid:{grid,qgrids,nx:NX,ny:NY,total:inbCnt},
+    ownHalf: Math.round(100-half/inbCnt*100),
+    thirds: thirds.map(t=>Math.round(t/inbCnt*100)),
+  };
+}
+
+// ---------- rendering ----------
+function gridMax(g){ let m=0; for(const r of g) for(const v of r) m=Math.max(m,v); return m; }
+function drawMap(cv, grid, NX, NY, mxv){
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height, M=Math.round(W*0.022);
+  const fw=W-2*M, fh=H-2*M;
+  ctx.fillStyle=css('--pitch-edge'); ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=css('--pitch'); ctx.fillRect(M,M,fw,fh);
+  const g=document.createElement('canvas'); g.width=NX; g.height=NY;
+  const gx=g.getContext('2d'); const im=gx.createImageData(NX,NY);
+  for(let j=0;j<NY;j++) for(let i=0;i<NX;i++){
+    const v=grid[j][NX-1-i]/mxv, k=(j*NX+i)*4;
+    im.data[k]=255; im.data[k+1]=255; im.data[k+2]=255;
+    im.data[k+3]=Math.round(255*Math.pow(Math.min(1,v),0.62));
+  }
+  gx.putImageData(im,0,0);
+  const up=document.createElement('canvas'); up.width=fw; up.height=fh;
+  const ux=up.getContext('2d'); ux.imageSmoothingEnabled=true; ux.imageSmoothingQuality='high';
+  ux.drawImage(g,0,0,fw,fh);
+  const pix=ux.getImageData(0,0,fw,fh);
+  for(let p=0;p<pix.data.length;p+=4){
+    const a=pix.data[p+3]/255;
+    pix.data[p]=Math.round(255-23*a); pix.data[p+1]=Math.round(214-100*a); pix.data[p+2]=Math.round(120-90*a);
+    pix.data[p+3]=Math.round(255*Math.min(0.92,a*1.15));
+  }
+  ux.putImageData(pix,0,0);
+  ctx.drawImage(up,M,M);
+  const sx=fw/91.4, sy=fh/55;
+  ctx.strokeStyle=css('--line'); ctx.lineWidth=Math.max(1,Math.round(W/600));
+  ctx.strokeRect(M,M,fw,fh);
+  for (const xm of [45.7,22.9,91.4-22.9]){ ctx.beginPath(); ctx.moveTo(M+xm*sx,M); ctx.lineTo(M+xm*sx,M+fh); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(M,M+fh/2,14.63*sx,-Math.PI/2,Math.PI/2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(M+fw,M+fh/2,14.63*sx,Math.PI/2,3*Math.PI/2); ctx.stroke();
+  ctx.lineWidth=Math.max(3,Math.round(W/240)); const gw=3.66*sy;
+  ctx.beginPath(); ctx.moveTo(M-2,M+fh/2-gw/2); ctx.lineTo(M-2,M+fh/2+gw/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(M+fw+2,M+fh/2-gw/2); ctx.lineTo(M+fw+2,M+fh/2+gw/2); ctx.stroke();
+}
+
+function render(){
+  const halfT = (+$('halfmin').value)*60;
+  const r = analyse(PTS, halfT);
+  $('halflbl').textContent = $('halfmin').value + ' min';
+  const name = $('pname').value.trim();
+  document.title = (name? name+' — ' : '') + 'Barkerites Match Report';
+  $('tiles').innerHTML = [
+    ['Own half', r.ownHalf+'%', 'of moving time'],
+    ['Distance', (r.distAll/1000).toFixed(1)+' km', Math.round(r.total/60)+' min recorded'],
+    ['Top speed', r.top+' km/h', 'fastest burst'],
+    ['Sprints', r.sprints, 'bursts ≥ 20 km/h'],
+    ['Avg HR', r.avgHr ?? '—', r.avgHr? 'bpm' : 'no HR in file'],
+  ].map(([l,v,s]) => `<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div><div class="sub">${s}</div></div>`).join('');
+  $('thirds').textContent = `att ${r.thirds[0]}% · mid ${r.thirds[1]}% · def ${r.thirds[2]}%`;
+  drawMap($('pitch'), r.grid.grid, r.grid.nx, r.grid.ny, gridMax(r.grid.grid));
+  const qmax = Math.max(...r.grid.qgrids.map(gridMax), 1);
+  document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, r.grid.qgrids[+cv.dataset.q], r.grid.nx, r.grid.ny, qmax));
+  for (let q=0;q<4;q++) $('qc'+q).textContent = `Q${q+1} · ${r.quarters[q].dist}m`;
+  $('qrows').innerHTML = r.quarters.map((q,i) =>
+    `<tr><td>Q${i+1}</td><td>${q.dist}m</td><td>${q.hr||'—'}</td><td>${q.top} km/h</td></tr>`).join('');
+  const ztotal = Object.values(r.zones).reduce((a,b)=>a+b,0) || 1;
+  const op = {Z1:.18,Z2:.35,Z3:.55,Z4:.78,Z5:1};
+  $('zbar').innerHTML = Object.entries(r.zones).map(([k,v]) =>
+    `<div style="flex:${Math.max(v,0.01)};opacity:${op[k]}"></div>`).join('');
+  $('zl').innerHTML = Object.entries(r.zones).map(([k,v]) => `<span>${k} ${v}m</span>`).join('');
+}
+
+// ---------- wiring ----------
+function handleFile(f){
+  $('err').style.display='none';
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      PTS = parseFile(reader.result, f.name);
+      const halfGuess = Math.round(longestStillMid(PTS)/60);
+      const dur = Math.round(PTS[PTS.length-1].t/60);
+      const hm = $('halfmin');
+      hm.min = 5; hm.max = Math.max(10, dur-5); hm.value = Math.min(Math.max(halfGuess,5), dur-5);
+      $('uploader').style.display='none';
+      $('report').style.display='flex';
+      render();
+      window.scrollTo({top:0});
+    }catch(e){
+      $('err').textContent = e.message;
+      $('err').style.display='block';
+    }
+  };
+  reader.readAsText(f);
+}
+$('drop').addEventListener('click', ()=>$('file').click());
+$('file').addEventListener('change', e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+$('drop').addEventListener('dragover', e=>{ e.preventDefault(); $('drop').classList.add('over'); });
+$('drop').addEventListener('dragleave', ()=>$('drop').classList.remove('over'));
+$('drop').addEventListener('drop', e=>{ e.preventDefault(); $('drop').classList.remove('over');
+  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+$('halfmin').addEventListener('input', render);
+$('pname').addEventListener('change', render);
+$('again').addEventListener('click', ()=>{ PTS=null; $('file').value='';
+  $('report').style.display='none'; $('uploader').style.display='block'; });
+</script>
+</body></html>
