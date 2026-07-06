@@ -192,17 +192,50 @@ function parseFile(text, name){
 function pct(vs, q){ const v=[...vs].sort((a,b)=>a-b); const i=(v.length-1)*q, f=Math.floor(i);
   return v[f] + (v[Math.min(f+1,v.length-1)]-v[f])*(i-f); }
 
-function longestStillMid(pts, winLo, winHi){
-  // halftime guess: longest still block whose midpoint sits in the middle of the game window
-  let best=[0,0,0], rs=null;
-  for (let k=0;k<pts.length;k++){
-    if (pts[k].spd < 0.5){ if (rs===null) rs=k; }
-    else if (rs!==null){
-      const mid=(pts[k-1].t+pts[rs].t)/2, dur=pts[k-1].t-pts[rs].t;
-      if (mid>=winLo && mid<=winHi && dur>best[0]) best=[dur,rs,k-1];
-      rs=null; }
+function autoHalftime(pts, kickT, ftT){
+  // Auto-detect halftime: for each long still break in the middle of the game window,
+  // try it as the ends-swap point and score how well the mirrored second half overlaps
+  // the first half (true halftime maximises the overlap). Duration breaks ties.
+  const game = pts.filter(p => p.t >= kickT && p.t <= ftT);
+  if (game.length < 200) return (kickT + ftT) / 2;
+  const winLo = kickT + (ftT - kickT) * 0.25, winHi = kickT + (ftT - kickT) * 0.75;
+  const cands = []; let rs = null;
+  for (let k = 0; k < game.length; k++){
+    if (game[k].spd < 0.5){ if (rs === null) rs = k; }
+    else if (rs !== null){
+      const dur = game[k-1].t - game[rs].t, mid = (game[k-1].t + game[rs].t) / 2;
+      if (dur >= 45 && mid >= winLo && mid <= winHi) cands.push({ mid, dur });
+      rs = null; }
   }
-  return best[0]>0 ? (pts[best[1]].t + pts[best[2]].t)/2 : (winLo+winHi)/2;
+  if (!cands.length) return (winLo + winHi) / 2;
+  if (cands.length === 1) return cands[0].mid;
+  // rotate once to pitch axes for scoring
+  const mov = game.filter(p => p.spd >= 0.3);
+  const n = mov.length, mx = mov.reduce((s,p)=>s+p.x,0)/n, my = mov.reduce((s,p)=>s+p.y,0)/n;
+  let sxx=0, syy=0, sxy=0;
+  for (const p of mov){ sxx+=(p.x-mx)**2; syy+=(p.y-my)**2; sxy+=(p.x-mx)*(p.y-my); }
+  const th = 0.5*Math.atan2(2*sxy/n, (sxx-syy)/n), c = Math.cos(-th), s = Math.sin(-th);
+  const rot = mov.map(p => ({ x:(p.x-mx)*c-(p.y-my)*s, y:(p.x-mx)*s+(p.y-my)*c, t:p.t }));
+  const overlap = T => {
+    const h1 = rot.filter(p => p.t <= T);
+    const h2 = rot.filter(p => p.t > T).map(p => ({ x:-p.x, y:-p.y }));
+    if (h1.length < 100 || h2.length < 100) return -1;
+    const NX=16, NY=10, all=[...h1,...h2];
+    const xs=all.map(p=>p.x), ys=all.map(p=>p.y);
+    const x1=Math.min(...xs), x2=Math.max(...xs), y1=Math.min(...ys), y2=Math.max(...ys);
+    const bin = arr => { const gd=Array(NX*NY).fill(0);
+      for (const p of arr){ const i=Math.min(NX-1,Math.floor((p.x-x1)/(x2-x1)*NX));
+        const j=Math.min(NY-1,Math.floor((p.y-y1)/(y2-y1)*NY)); gd[j*NX+i]++; }
+      return gd.map(v => v/arr.length); };
+    const a=bin(h1), b=bin(h2);
+    return a.reduce((sum,v,k) => sum + Math.min(v, b[k]), 0);
+  };
+  let best = cands[0], bestScore = -2;
+  for (const cd of cands){
+    const sc = overlap(cd.mid) + cd.dur/3600; // symmetry first, duration as gentle tiebreak
+    if (sc > bestScore){ bestScore = sc; best = cd; }
+  }
+  return best.mid;
 }
 
 function analyse(allPts, kickT, halfT, ftT){
@@ -360,10 +393,10 @@ function handleFile(f){
     try{
       PTS = parseFile(reader.result, f.name);
       const dur = Math.round(PTS[PTS.length-1].t/60);
-      // defaults: whole recording is the game; halftime guessed from the middle 30-70% of it
+      // defaults: whole recording is the game; halftime auto-detected by mirror-symmetry
       $('kickmin').min = 0; $('kickmin').max = Math.max(1, dur-10); $('kickmin').value = 0;
       $('ftmin').min = 10; $('ftmin').max = dur; $('ftmin').value = dur;
-      const halfGuess = Math.round(longestStillMid(PTS, dur*60*0.3, dur*60*0.7)/60);
+      const halfGuess = Math.round(autoHalftime(PTS, 0, dur*60)/60);
       const hm = $('halfmin');
       hm.min = 2; hm.max = Math.max(10, dur-2); hm.value = Math.min(Math.max(halfGuess,5), dur-5);
       $('uploader').style.display='none';
@@ -383,9 +416,15 @@ $('drop').addEventListener('dragover', e=>{ e.preventDefault(); $('drop').classL
 $('drop').addEventListener('dragleave', ()=>$('drop').classList.remove('over'));
 $('drop').addEventListener('drop', e=>{ e.preventDefault(); $('drop').classList.remove('over');
   if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
-$('kickmin').addEventListener('input', render);
+// dragging kick-off/full-time redefines the game window -> re-detect halftime for it
+const reguess = () => {
+  const k = +$('kickmin').value, f = +$('ftmin').value;
+  if (f > k + 10) $('halfmin').value = Math.round(autoHalftime(PTS, k*60, f*60)/60);
+  render();
+};
+$('kickmin').addEventListener('input', reguess);
+$('ftmin').addEventListener('input', reguess);
 $('halfmin').addEventListener('input', render);
-$('ftmin').addEventListener('input', render);
 $('pname').addEventListener('change', render);
 $('again').addEventListener('click', ()=>{ PTS=null; $('file').value='';
   $('report').style.display='none'; $('uploader').style.display='block'; });
