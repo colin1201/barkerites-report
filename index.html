@@ -90,7 +90,7 @@
       <label>Match started <input type="time" id="kicktime" step="60"></label>
       <label>Halftime <input type="time" id="halftime" step="60"></label>
       <label>Match ended <input type="time" id="fttime" step="60"></label>
-      <span style="font-size:12px;color:var(--ink-3)">Clock times, from your watch's own timestamps. <b>Started recording during warm-up? Set "Match started" to the real push-back time</b> (e.g. 19:35) so the report covers only the game. Halftime is auto-detected (it sets where the teams swapped ends) — adjust it if the map looks smeared across both flanks. <span id="recspan"></span></span>
+      <span style="font-size:12px;color:var(--ink-3)"><b>Just set "Match started" to the real push-back time</b> (e.g. 19:35) — halftime and match end fill in automatically. Only touch the other two if the game ran long or the map looks smeared across both flanks. <span id="recspan"></span></span>
     </div>
 
     <div class="tiles" id="tiles"></div>
@@ -112,7 +112,7 @@
     </div>
 
     <div class="board">
-      <h2>By quarter (elapsed time — includes bench/break minutes)</h2>
+      <h2>By quarter (split around halftime — stoppage minutes included)</h2>
       <table><thead><tr><th></th><th>Distance</th><th>Avg HR</th><th>Top speed</th></tr></thead><tbody id="qrows"></tbody></table>
     </div>
 
@@ -258,14 +258,16 @@ function analyse(allPts, kickT, halfT, ftT){
   if (pts.length < 50) throw new Error('Kick-off/full-time window too narrow — widen the sliders.');
   halfT = halfT - kickT;
   const total = pts[pts.length-1].t;
-  // distance + quarters
-  const Q = total/4;
+  // quarters anchored around the detected halftime (not blind elapsed/4):
+  // H1 = [0, halfT] split in two, H2 = [halfT, total] split in two
+  const qb = [halfT/2, halfT, halfT + (total-halfT)/2];
+  const qIdx = t => t < qb[0] ? 0 : t < qb[1] ? 1 : t < qb[2] ? 2 : 3;
   const quarters = [0,1,2,3].map(()=>({dist:0, hrs:[], top:0}));
   let distAll = 0;
   for (let i=1;i<pts.length;i++){
     const dt = pts[i].t-pts[i-1].t;
     const seg = pts[i].spd * dt;
-    const q = Math.min(3, Math.floor(pts[i].t/Q));
+    const q = qIdx(pts[i].t);
     quarters[q].dist += seg; distAll += seg;
     if (pts[i].hr) quarters[q].hrs.push(pts[i].hr);
     quarters[q].top = Math.max(quarters[q].top, pts[i].spdRaw*3.6);
@@ -311,7 +313,7 @@ function analyse(allPts, kickT, halfT, ftT){
     const i=Math.min(NX-1,Math.floor((p.x-x1)/(x2-x1)*NX));
     const j=Math.min(NY-1,Math.floor((p.y-y1)/(y2-y1)*NY));
     grid[j][i]++; inbCnt++;
-    qgrids[Math.min(3,Math.floor(p.t/Q))][j][i]++;
+    qgrids[qIdx(p.t)][j][i]++;
     if (i<NX/2) half++;
     thirds[Math.min(2,Math.floor(i*3/NX))]++;
   }
@@ -432,15 +434,23 @@ $('drop').addEventListener('dragover', e=>{ e.preventDefault(); $('drop').classL
 $('drop').addEventListener('dragleave', ()=>$('drop').classList.remove('over'));
 $('drop').addEventListener('drop', e=>{ e.preventDefault(); $('drop').classList.remove('over');
   if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
-// changing kick-off/full-time redefines the game window -> re-detect halftime for it
-const reguess = () => {
+// One field drives everything: set match start -> full-time + halftime auto-suggest,
+// both stay editable. Nominal game = 4x15-min quarters + 2+5+2 breaks = 69 min, but real
+// games run ~80-85 with stoppages — so full-time suggestion = recording end (players stop
+// the watch at the final whistle), capped at start + 100 min in case of a long cooldown.
+const MAX_GAME = 100*60;
+const redetectHalf = () => {
   const k = clockToSec($('kicktime').value) ?? 0;
   const f = clockToSec($('fttime').value) ?? PTS[PTS.length-1].t;
   if (f > k + 600) $('halftime').value = secToClock(autoHalftime(PTS, k, f));
-  render();
 };
-$('kicktime').addEventListener('change', reguess);
-$('fttime').addEventListener('change', reguess);
+$('kicktime').addEventListener('change', () => {
+  const k = clockToSec($('kicktime').value) ?? 0;
+  $('fttime').value = secToClock(Math.min(PTS[PTS.length-1].t, k + MAX_GAME));
+  redetectHalf();
+  render();
+});
+$('fttime').addEventListener('change', () => { redetectHalf(); render(); });
 $('halftime').addEventListener('change', render);
 $('pname').addEventListener('change', render);
 $('again').addEventListener('click', ()=>{ PTS=null; $('file').value='';
