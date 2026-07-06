@@ -87,13 +87,10 @@
   <div id="report">
     <div class="controls board">
       <label>Your name <input type="text" id="pname" placeholder="e.g. Colin" maxlength="20"></label>
-      <label>Kick-off <input type="range" id="kickmin" min="0" max="60" step="1">
-        <span id="kicklbl" style="font-variant-numeric:tabular-nums"></span></label>
-      <label>Halftime <input type="range" id="halfmin" min="10" max="80" step="1">
-        <span id="halflbl" style="font-variant-numeric:tabular-nums"></span></label>
-      <label>Full-time <input type="range" id="ftmin" min="10" max="120" step="1">
-        <span id="ftlbl" style="font-variant-numeric:tabular-nums"></span></label>
-      <span style="font-size:12px;color:var(--ink-3)">Minutes into your recording. <b>Started recording during warm-up? Drag kick-off forward</b> so quarters and the heat map cover only the game. Halftime sets where the teams swapped ends — auto-guessed, drag if the map looks mirrored/smeared.</span>
+      <label>Match started <input type="time" id="kicktime" step="60"></label>
+      <label>Halftime <input type="time" id="halftime" step="60"></label>
+      <label>Match ended <input type="time" id="fttime" step="60"></label>
+      <span style="font-size:12px;color:var(--ink-3)">Clock times, from your watch's own timestamps. <b>Started recording during warm-up? Set "Match started" to the real push-back time</b> (e.g. 19:35) so the report covers only the game. Halftime is auto-detected (it sets where the teams swapped ends) — adjust it if the map looks smeared across both flanks. <span id="recspan"></span></span>
     </div>
 
     <div class="tiles" id="tiles"></div>
@@ -135,6 +132,22 @@ const $ = id => document.getElementById(id);
 const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
 let PTS = null;      // [{x(lonm), y(latm), t(sec), hr, spd(m/s smoothed)}]
 let GAMENAME = '';
+let T0 = 0;          // epoch seconds of the first GPS point (anchors clock-time inputs)
+
+// clock helpers: inputs are local wall-clock, data is seconds-from-recording-start
+function secToClock(sec){
+  const d = new Date((T0 + sec) * 1000);
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function clockToSec(hhmm){
+  if (!hhmm) return null;
+  const [h, m] = hhmm.split(':').map(Number);
+  const start = new Date(T0 * 1000);
+  const d = new Date(start); d.setHours(h, m, 0, 0);
+  let sec = d.getTime()/1000 - T0;
+  if (sec < -12*3600) sec += 24*3600;      // recording crossed midnight
+  return sec;
+}
 
 // ---------- parsing ----------
 function parseFile(text, name){
@@ -169,6 +182,7 @@ function parseFile(text, name){
   raw = raw.filter(p => isFinite(p.lat) && isFinite(p.lon) && isFinite(p.ts));
   if (raw.length < 100) throw new Error('Too few GPS points — was GPS on for the whole game?');
   const t0 = raw[0].ts;
+  T0 = t0;
   const lat0 = raw.reduce((s,p)=>s+p.lat,0)/raw.length;
   const lon0 = raw.reduce((s,p)=>s+p.lon,0)/raw.length;
   const mlat = 111320, mlon = 111320*Math.cos(lat0*Math.PI/180);
@@ -353,15 +367,18 @@ function drawMap(cv, grid, NX, NY, mxv){
 }
 
 function render(){
-  // keep sliders ordered: kick < half < ft
-  let kick = +$('kickmin').value, half = +$('halfmin').value, ft = +$('ftmin').value;
-  if (ft <= kick+4) { ft = kick+5; $('ftmin').value = ft; }
-  if (half <= kick+1) { half = kick+2; $('halfmin').value = half; }
-  if (half >= ft-1) { half = ft-2; $('halfmin').value = half; }
-  const r = analyse(PTS, kick*60, half*60, ft*60);
-  $('kicklbl').textContent = kick + ' min';
-  $('halflbl').textContent = half + ' min';
-  $('ftlbl').textContent = ft + ' min';
+  const dur = PTS[PTS.length-1].t;
+  // read clock inputs -> seconds; clamp to recording + keep ordered kick < half < ft
+  let kick = clockToSec($('kicktime').value) ?? 0;
+  let ft   = clockToSec($('fttime').value) ?? dur;
+  let half = clockToSec($('halftime').value) ?? (kick+ft)/2;
+  kick = Math.min(Math.max(kick, 0), dur - 300);
+  ft   = Math.min(Math.max(ft, kick + 300), dur);
+  half = Math.min(Math.max(half, kick + 120), ft - 120);
+  $('kicktime').value = secToClock(kick);
+  $('fttime').value   = secToClock(ft);
+  $('halftime').value = secToClock(half);
+  const r = analyse(PTS, kick, half, ft);
   const name = $('pname').value.trim();
   document.title = (name? name+' — ' : '') + 'Barkerites Match Report';
   $('tiles').innerHTML = [
@@ -392,13 +409,12 @@ function handleFile(f){
   reader.onload = () => {
     try{
       PTS = parseFile(reader.result, f.name);
-      const dur = Math.round(PTS[PTS.length-1].t/60);
+      const dur = PTS[PTS.length-1].t;
       // defaults: whole recording is the game; halftime auto-detected by mirror-symmetry
-      $('kickmin').min = 0; $('kickmin').max = Math.max(1, dur-10); $('kickmin').value = 0;
-      $('ftmin').min = 10; $('ftmin').max = dur; $('ftmin').value = dur;
-      const halfGuess = Math.round(autoHalftime(PTS, 0, dur*60)/60);
-      const hm = $('halfmin');
-      hm.min = 2; hm.max = Math.max(10, dur-2); hm.value = Math.min(Math.max(halfGuess,5), dur-5);
+      $('kicktime').value = secToClock(0);
+      $('fttime').value = secToClock(dur);
+      $('halftime').value = secToClock(autoHalftime(PTS, 0, dur));
+      $('recspan').textContent = 'Your recording ran ' + secToClock(0) + '–' + secToClock(dur) + '.';
       $('uploader').style.display='none';
       $('report').style.display='flex';
       render();
@@ -416,15 +432,16 @@ $('drop').addEventListener('dragover', e=>{ e.preventDefault(); $('drop').classL
 $('drop').addEventListener('dragleave', ()=>$('drop').classList.remove('over'));
 $('drop').addEventListener('drop', e=>{ e.preventDefault(); $('drop').classList.remove('over');
   if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
-// dragging kick-off/full-time redefines the game window -> re-detect halftime for it
+// changing kick-off/full-time redefines the game window -> re-detect halftime for it
 const reguess = () => {
-  const k = +$('kickmin').value, f = +$('ftmin').value;
-  if (f > k + 10) $('halfmin').value = Math.round(autoHalftime(PTS, k*60, f*60)/60);
+  const k = clockToSec($('kicktime').value) ?? 0;
+  const f = clockToSec($('fttime').value) ?? PTS[PTS.length-1].t;
+  if (f > k + 600) $('halftime').value = secToClock(autoHalftime(PTS, k, f));
   render();
 };
-$('kickmin').addEventListener('input', reguess);
-$('ftmin').addEventListener('input', reguess);
-$('halfmin').addEventListener('input', render);
+$('kicktime').addEventListener('change', reguess);
+$('fttime').addEventListener('change', reguess);
+$('halftime').addEventListener('change', render);
 $('pname').addEventListener('change', render);
 $('again').addEventListener('click', ()=>{ PTS=null; $('file').value='';
   $('report').style.display='none'; $('uploader').style.display='block'; });
