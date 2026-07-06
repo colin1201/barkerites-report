@@ -17,7 +17,7 @@ Self-serve match report tool for Colin's hockey teammates. They export their gam
 - Parse GPX (`trkpt` lat/lon/time + Garmin `hr` extension) or TCX (`Trackpoint`).
 - Derived speed from coords: **raw jitter-capped (<12 m/s) for top speed + sprint bursts** (median smoothing crushes 1-sample sprint peaks at 3-5s GPS sampling — found in testing); **median-of-3 smoothed for distance, moving-time and heat classification**.
 - Heat map: moving points (≥0.3 m/s) → local-meters projection → PCA rotation → mirror points after the halftime mark (ends swap) → dense end anchored left on a 91.4×55m pitch frame → 46×28 grid + per-quarter grids.
-- Halftime: auto-guessed as midpoint of the longest <0.5 m/s block; user-adjustable slider re-runs everything.
+- **Kick-off / Halftime / Full-time sliders** (added after the first real teammate file, 6 Jul): players often record warm-up + cooldown — the right-back's file had 26 min of warm-up, which broke the quarters AND made the auto-halftime pick a Q4 break, mirroring the wrong points (he appeared on both flanks). Analysis runs only on the [kick-off, full-time] window; halftime auto-guess = longest still block within the middle 30-70% of the window, slider-overridable. Every slider re-runs everything live.
 - Quarters = elapsed time ÷ 4 (includes bench/breaks). HR zones = fixed bands (Z1<110 … Z5≥170).
 
 ## Testing (before any handoff/redeploy)
