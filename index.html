@@ -87,9 +87,13 @@
   <div id="report">
     <div class="controls board">
       <label>Your name <input type="text" id="pname" placeholder="e.g. Colin" maxlength="20"></label>
-      <label>Halftime at <input type="range" id="halfmin" min="10" max="80" step="1">
+      <label>Kick-off <input type="range" id="kickmin" min="0" max="60" step="1">
+        <span id="kicklbl" style="font-variant-numeric:tabular-nums"></span></label>
+      <label>Halftime <input type="range" id="halfmin" min="10" max="80" step="1">
         <span id="halflbl" style="font-variant-numeric:tabular-nums"></span></label>
-      <span style="font-size:12px;color:var(--ink-3)">(auto-detected from your longest break — drag if it looks wrong; it sets where the teams swapped ends)</span>
+      <label>Full-time <input type="range" id="ftmin" min="10" max="120" step="1">
+        <span id="ftlbl" style="font-variant-numeric:tabular-nums"></span></label>
+      <span style="font-size:12px;color:var(--ink-3)">Minutes into your recording. <b>Started recording during warm-up? Drag kick-off forward</b> so quarters and the heat map cover only the game. Halftime sets where the teams swapped ends — auto-guessed, drag if the map looks mirrored/smeared.</span>
     </div>
 
     <div class="tiles" id="tiles"></div>
@@ -188,16 +192,24 @@ function parseFile(text, name){
 function pct(vs, q){ const v=[...vs].sort((a,b)=>a-b); const i=(v.length-1)*q, f=Math.floor(i);
   return v[f] + (v[Math.min(f+1,v.length-1)]-v[f])*(i-f); }
 
-function longestStillMid(pts){
+function longestStillMid(pts, winLo, winHi){
+  // halftime guess: longest still block whose midpoint sits in the middle of the game window
   let best=[0,0,0], rs=null;
   for (let k=0;k<pts.length;k++){
     if (pts[k].spd < 0.5){ if (rs===null) rs=k; }
-    else if (rs!==null){ const dur=pts[k-1].t-pts[rs].t; if (dur>best[0]) best=[dur,rs,k-1]; rs=null; }
+    else if (rs!==null){
+      const mid=(pts[k-1].t+pts[rs].t)/2, dur=pts[k-1].t-pts[rs].t;
+      if (mid>=winLo && mid<=winHi && dur>best[0]) best=[dur,rs,k-1];
+      rs=null; }
   }
-  return best[0]>0 ? (pts[best[1]].t + pts[best[2]].t)/2 : pts[pts.length-1].t/2;
+  return best[0]>0 ? (pts[best[1]].t + pts[best[2]].t)/2 : (winLo+winHi)/2;
 }
 
-function analyse(pts, halfT){
+function analyse(allPts, kickT, halfT, ftT){
+  const pts = allPts.filter(p => p.t >= kickT && p.t <= ftT)
+                    .map(p => ({...p, t: p.t - kickT}));
+  if (pts.length < 50) throw new Error('Kick-off/full-time window too narrow — widen the sliders.');
+  halfT = halfT - kickT;
   const total = pts[pts.length-1].t;
   // distance + quarters
   const Q = total/4;
@@ -308,14 +320,20 @@ function drawMap(cv, grid, NX, NY, mxv){
 }
 
 function render(){
-  const halfT = (+$('halfmin').value)*60;
-  const r = analyse(PTS, halfT);
-  $('halflbl').textContent = $('halfmin').value + ' min';
+  // keep sliders ordered: kick < half < ft
+  let kick = +$('kickmin').value, half = +$('halfmin').value, ft = +$('ftmin').value;
+  if (ft <= kick+4) { ft = kick+5; $('ftmin').value = ft; }
+  if (half <= kick+1) { half = kick+2; $('halfmin').value = half; }
+  if (half >= ft-1) { half = ft-2; $('halfmin').value = half; }
+  const r = analyse(PTS, kick*60, half*60, ft*60);
+  $('kicklbl').textContent = kick + ' min';
+  $('halflbl').textContent = half + ' min';
+  $('ftlbl').textContent = ft + ' min';
   const name = $('pname').value.trim();
   document.title = (name? name+' — ' : '') + 'Barkerites Match Report';
   $('tiles').innerHTML = [
     ['Own half', r.ownHalf+'%', 'of moving time'],
-    ['Distance', (r.distAll/1000).toFixed(1)+' km', Math.round(r.total/60)+' min recorded'],
+    ['Distance', (r.distAll/1000).toFixed(1)+' km', Math.round(r.total/60)+' min (kick-off to full-time)'],
     ['Top speed', r.top+' km/h', 'fastest burst'],
     ['Sprints', r.sprints, 'bursts ≥ 20 km/h'],
     ['Avg HR', r.avgHr ?? '—', r.avgHr? 'bpm' : 'no HR in file'],
@@ -341,10 +359,13 @@ function handleFile(f){
   reader.onload = () => {
     try{
       PTS = parseFile(reader.result, f.name);
-      const halfGuess = Math.round(longestStillMid(PTS)/60);
       const dur = Math.round(PTS[PTS.length-1].t/60);
+      // defaults: whole recording is the game; halftime guessed from the middle 30-70% of it
+      $('kickmin').min = 0; $('kickmin').max = Math.max(1, dur-10); $('kickmin').value = 0;
+      $('ftmin').min = 10; $('ftmin').max = dur; $('ftmin').value = dur;
+      const halfGuess = Math.round(longestStillMid(PTS, dur*60*0.3, dur*60*0.7)/60);
       const hm = $('halfmin');
-      hm.min = 5; hm.max = Math.max(10, dur-5); hm.value = Math.min(Math.max(halfGuess,5), dur-5);
+      hm.min = 2; hm.max = Math.max(10, dur-2); hm.value = Math.min(Math.max(halfGuess,5), dur-5);
       $('uploader').style.display='none';
       $('report').style.display='flex';
       render();
@@ -362,7 +383,9 @@ $('drop').addEventListener('dragover', e=>{ e.preventDefault(); $('drop').classL
 $('drop').addEventListener('dragleave', ()=>$('drop').classList.remove('over'));
 $('drop').addEventListener('drop', e=>{ e.preventDefault(); $('drop').classList.remove('over');
   if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+$('kickmin').addEventListener('input', render);
 $('halfmin').addEventListener('input', render);
+$('ftmin').addEventListener('input', render);
 $('pname').addEventListener('change', render);
 $('again').addEventListener('click', ()=>{ PTS=null; $('file').value='';
   $('report').style.display='none'; $('uploader').style.display='block'; });
