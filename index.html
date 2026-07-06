@@ -57,6 +57,8 @@
   .again{ background:none; border:1px solid var(--tile-border); color:var(--ink-2); border-radius:8px;
     padding:9px 16px; font-size:13.5px; cursor:pointer; align-self:flex-start; }
   .again:hover{ color:var(--ink); border-color:var(--ink-3); }
+  @keyframes autoflash { 0%{ box-shadow:0 0 0 3px rgba(232,132,42,.75); } 100%{ box-shadow:0 0 0 3px rgba(232,132,42,0); } }
+  .controls input.flash{ animation: autoflash 1.4s ease-out; }
 </style></head><body>
 <div class="wrap">
   <header>
@@ -262,22 +264,25 @@ function analyse(allPts, kickT, halfT, ftT){
   // H1 = [0, halfT] split in two, H2 = [halfT, total] split in two
   const qb = [halfT/2, halfT, halfT + (total-halfT)/2];
   const qIdx = t => t < qb[0] ? 0 : t < qb[1] ? 1 : t < qb[2] ? 2 : 3;
-  const quarters = [0,1,2,3].map(()=>({dist:0, hrs:[], top:0}));
+  const quarters = [0,1,2,3].map(()=>({dist:0, hrSum:0, hrT:0, top:0}));
   let distAll = 0;
   for (let i=1;i<pts.length;i++){
     const dt = pts[i].t-pts[i-1].t;
     const seg = pts[i].spd * dt;
     const q = qIdx(pts[i].t);
     quarters[q].dist += seg; distAll += seg;
-    if (pts[i].hr) quarters[q].hrs.push(pts[i].hr);
+    if (pts[i].hr) { const w=Math.min(dt,15); quarters[q].hrSum += pts[i].hr*w; quarters[q].hrT += w; }
     quarters[q].top = Math.max(quarters[q].top, pts[i].spdRaw*3.6);
   }
-  // zones
+  // zones + time-weighted avg HR (smart recording samples more when working hard —
+  // a plain sample-mean reads ~3-5 bpm hot; weight each sample by its time slice)
   const bands = [[0,110,'Z1'],[110,130,'Z2'],[130,150,'Z3'],[150,170,'Z4'],[170,999,'Z5']];
   const zones = {Z1:0,Z2:0,Z3:0,Z4:0,Z5:0};
+  let hrWSum=0, hrWT=0;
   for (let i=1;i<pts.length;i++){
     if (!pts[i].hr) continue;
-    const dt = pts[i].t-pts[i-1].t;
+    const dt = Math.min(pts[i].t-pts[i-1].t, 15);
+    hrWSum += pts[i].hr*dt; hrWT += dt;
     for (const [lo,hi,nm] of bands) if (pts[i].hr>=lo && pts[i].hr<hi){ zones[nm]+=dt; break; }
   }
   // sprints + top speed from RAW speed (smoothing crushes short peaks)
@@ -317,12 +322,12 @@ function analyse(allPts, kickT, halfT, ftT){
     if (i<NX/2) half++;
     thirds[Math.min(2,Math.floor(i*3/NX))]++;
   }
-  const hrsAll = pts.filter(p=>p.hr).map(p=>p.hr);
+
   return {
     total, distAll, top:+top.toFixed(1), sprints,
-    avgHr: hrsAll.length? Math.round(hrsAll.reduce((a,b)=>a+b,0)/hrsAll.length) : null,
+    avgHr: hrWT>0 ? Math.round(hrWSum/hrWT) : null,
     quarters: quarters.map(q=>({dist:Math.round(q.dist),
-      hr:q.hrs.length?Math.round(q.hrs.reduce((a,b)=>a+b,0)/q.hrs.length):0, top:+q.top.toFixed(1)})),
+      hr:q.hrT>0?Math.round(q.hrSum/q.hrT):0, top:+q.top.toFixed(1)})),
     zones: Object.fromEntries(Object.entries(zones).map(([k,v])=>[k,Math.round(v/60)])),
     grid:{grid,qgrids,nx:NX,ny:NY,total:inbCnt},
     ownHalf: Math.round(100-half/inbCnt*100),
@@ -444,10 +449,13 @@ const redetectHalf = () => {
   const f = clockToSec($('fttime').value) ?? PTS[PTS.length-1].t;
   if (f > k + 600) $('halftime').value = secToClock(autoHalftime(PTS, k, f));
 };
+const flash = id => { const el = $(id); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); };
 $('kicktime').addEventListener('change', () => {
   const k = clockToSec($('kicktime').value) ?? 0;
   $('fttime').value = secToClock(Math.min(PTS[PTS.length-1].t, k + MAX_GAME));
   redetectHalf();
+  flash('halftime'); flash('fttime');
+  $('recspan').textContent = 'Halftime + match end auto-set for a ' + $('kicktime').value + ' start — adjust them if needed. Your recording ran ' + secToClock(0) + '–' + secToClock(PTS[PTS.length-1].t) + '.';
   render();
 });
 $('fttime').addEventListener('change', () => { redetectHalf(); render(); });
