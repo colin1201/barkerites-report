@@ -115,7 +115,7 @@
 
     <div class="board">
       <h2>By quarter (split around halftime — stoppage minutes included)</h2>
-      <table><thead><tr><th></th><th>Distance</th><th>Avg HR</th><th>Top speed</th></tr></thead><tbody id="qrows"></tbody></table>
+      <table><thead><tr><th></th><th>Distance</th><th>Avg HR</th><th>Top speed</th><th>Sprints</th></tr></thead><tbody id="qrows"></tbody></table>
     </div>
 
     <div class="board">
@@ -264,7 +264,7 @@ function analyse(allPts, kickT, halfT, ftT){
   // H1 = [0, halfT] split in two, H2 = [halfT, total] split in two
   const qb = [halfT/2, halfT, halfT + (total-halfT)/2];
   const qIdx = t => t < qb[0] ? 0 : t < qb[1] ? 1 : t < qb[2] ? 2 : 3;
-  const quarters = [0,1,2,3].map(()=>({dist:0, hrSum:0, hrT:0, top:0}));
+  const quarters = [0,1,2,3].map(()=>({dist:0, hrSum:0, hrT:0, top:0, sprints:0}));
   let distAll = 0;
   for (let i=1;i<pts.length;i++){
     const dt = pts[i].t-pts[i-1].t;
@@ -290,7 +290,7 @@ function analyse(allPts, kickT, halfT, ftT){
   for (const p of pts){
     top = Math.max(top, p.spdRaw*3.6);
     const fast = p.spdRaw*3.6 >= 20;
-    if (fast && !inb){ sprints++; inb=true; } else if (!fast) inb=false;
+    if (fast && !inb){ sprints++; quarters[qIdx(p.t)].sprints++; inb=true; } else if (!fast) inb=false;
   }
   // heat: moving, PCA-rotate, mirror after halfT, dense end left
   const mov = pts.filter(p=>p.spd>=0.3);
@@ -327,7 +327,7 @@ function analyse(allPts, kickT, halfT, ftT){
     total, distAll, top:+top.toFixed(1), sprints,
     avgHr: hrWT>0 ? Math.round(hrWSum/hrWT) : null,
     quarters: quarters.map(q=>({dist:Math.round(q.dist),
-      hr:q.hrT>0?Math.round(q.hrSum/q.hrT):0, top:+q.top.toFixed(1)})),
+      hr:q.hrT>0?Math.round(q.hrSum/q.hrT):0, top:+q.top.toFixed(1), sprints:q.sprints})),
     zones: Object.fromEntries(Object.entries(zones).map(([k,v])=>[k,Math.round(v/60)])),
     grid:{grid,qgrids,nx:NX,ny:NY,total:inbCnt},
     ownHalf: Math.round(100-half/inbCnt*100),
@@ -401,7 +401,7 @@ function render(){
   document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, r.grid.qgrids[+cv.dataset.q], r.grid.nx, r.grid.ny, qmax));
   for (let q=0;q<4;q++) $('qc'+q).textContent = `Q${q+1} · ${r.quarters[q].dist}m`;
   $('qrows').innerHTML = r.quarters.map((q,i) =>
-    `<tr><td>Q${i+1}</td><td>${q.dist}m</td><td>${q.hr||'—'}</td><td>${q.top} km/h</td></tr>`).join('');
+    `<tr><td>Q${i+1}</td><td>${q.dist}m</td><td>${q.hr||'—'}</td><td>${q.top} km/h</td><td>${q.sprints}</td></tr>`).join('');
   const ztotal = Object.values(r.zones).reduce((a,b)=>a+b,0) || 1;
   const op = {Z1:.18,Z2:.35,Z3:.55,Z4:.78,Z5:1};
   $('zbar').innerHTML = Object.entries(r.zones).map(([k,v]) =>
