@@ -318,11 +318,15 @@ function analyse(allPts, kickT, halfT, ftT){
   let sxx=0,syy=0,sxy=0;
   for (const p of mov){ sxx+=(p.x-mx)**2; syy+=(p.y-my)**2; sxy+=(p.x-mx)*(p.y-my); }
   const th=0.5*Math.atan2(2*sxy/n,(sxx-syy)/n), c=Math.cos(-th), s=Math.sin(-th);
-  let norm = mov.map(p=>{
-    let x=(p.x-mx)*c-(p.y-my)*s, y=(p.x-mx)*s+(p.y-my)*c;
-    if (p.t>halfT){ x=-x; y=-y; }
-    return {x,y,t:p.t};
-  });
+  // Ends swap at halftime, so the union of both halves spans the full pitch:
+  // mirror H2 around the union's midpoint per axis, NOT the data centroid —
+  // when play is lopsided the centroid sits off pitch-centre and the flipped
+  // half lands offset, smearing deep clusters into fake midfield presence
+  // (found on Colin's game 2, 12 Jul 2026).
+  const prj = mov.map(p=>({x:(p.x-mx)*c-(p.y-my)*s, y:(p.x-mx)*s+(p.y-my)*c, t:p.t}));
+  const pxs = prj.map(p=>p.x), pys = prj.map(p=>p.y);
+  const cxm = (pct(pxs,.005)+pct(pxs,.995))/2, cym = (pct(pys,.02)+pct(pys,.98))/2;
+  let norm = prj.map(p=> p.t>halfT ? {x:2*cxm-p.x, y:2*cym-p.y, t:p.t} : p);
   let xs = norm.map(p=>p.x);
   const mid = (pct(xs,.02)+pct(xs,.98))/2;
   if (xs.filter(x=>x<mid).length > n/2) { norm = norm.map(p=>({x:-p.x,y:-p.y,t:p.t})); xs = norm.map(p=>p.x); }
