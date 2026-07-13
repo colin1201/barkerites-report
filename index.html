@@ -182,12 +182,16 @@ function parseFile(text, name){
       const time = p.getElementsByTagName('Time')[0];
       if (!lat || !lon || !time) continue;
       const hrEl = p.getElementsByTagName('HeartRateBpm')[0];
+      const hrVal = hrEl && hrEl.getElementsByTagName('Value')[0];
       raw.push({ lat:+lat.textContent, lon:+lon.textContent,
                  ts:new Date(time.textContent).getTime()/1000,
-                 hr: hrEl ? +hrEl.getElementsByTagName('Value')[0].textContent : null });
+                 hr: hrVal ? +hrVal.textContent : null });
     }
   }
   raw = raw.filter(p => isFinite(p.lat) && isFinite(p.lon) && isFinite(p.ts));
+  // multi-trkseg / merged exports can be out of chronological order — unsorted
+  // points would create negative time segments (negative distance, bad windows)
+  raw.sort((a,b) => a.ts - b.ts);
   if (raw.length < 100) throw new Error('Too few GPS points — was GPS on for the whole game?');
   const t0 = raw[0].ts;
   T0 = t0;
@@ -238,16 +242,24 @@ function autoHalftime(pts, kickT, ftT){
   for (const p of mov){ sxx+=(p.x-mx)**2; syy+=(p.y-my)**2; sxy+=(p.x-mx)*(p.y-my); }
   const th = 0.5*Math.atan2(2*sxy/n, (sxx-syy)/n), c = Math.cos(-th), s = Math.sin(-th);
   const rot = mov.map(p => ({ x:(p.x-mx)*c-(p.y-my)*s, y:(p.x-mx)*s+(p.y-my)*c, t:p.t }));
+  // Score-flip centre = trimmed union midpoint, NOT the data centroid — on a
+  // lopsided game the centroid sits off pitch-centre and the flipped half lands
+  // offset, degrading the TRUE halftime's overlap score (same bug class as the
+  // display mirror, fixed 13 Jul 2026). Candidate-independent, computed once.
+  const srt = a => [...a].sort((u,v)=>u-v);
+  const q = (v,f) => v[Math.min(v.length-1, Math.round(f*(v.length-1)))];
+  const rxs = srt(rot.map(p=>p.x)), rys = srt(rot.map(p=>p.y));
+  const fcx = (q(rxs,.005)+q(rxs,.995))/2, fcy = (q(rys,.02)+q(rys,.98))/2;
+  // trimmed bin extents (one GPS outlier must not stretch the histogram)
+  const x1=q(rxs,.005), x2=q(rxs,.995), y1=q(rys,.02), y2=q(rys,.98);
   const overlap = T => {
     const h1 = rot.filter(p => p.t <= T);
-    const h2 = rot.filter(p => p.t > T).map(p => ({ x:-p.x, y:-p.y }));
+    const h2 = rot.filter(p => p.t > T).map(p => ({ x:2*fcx-p.x, y:2*fcy-p.y }));
     if (h1.length < 100 || h2.length < 100) return -1;
-    const NX=16, NY=10, all=[...h1,...h2];
-    const xs=all.map(p=>p.x), ys=all.map(p=>p.y);
-    const x1=Math.min(...xs), x2=Math.max(...xs), y1=Math.min(...ys), y2=Math.max(...ys);
+    const NX=16, NY=10;
     const bin = arr => { const gd=Array(NX*NY).fill(0);
-      for (const p of arr){ const i=Math.min(NX-1,Math.floor((p.x-x1)/(x2-x1)*NX));
-        const j=Math.min(NY-1,Math.floor((p.y-y1)/(y2-y1)*NY)); gd[j*NX+i]++; }
+      for (const p of arr){ const i=Math.max(0,Math.min(NX-1,Math.floor((p.x-x1)/(x2-x1)*NX)));
+        const j=Math.max(0,Math.min(NY-1,Math.floor((p.y-y1)/(y2-y1)*NY))); gd[j*NX+i]++; }
       return gd.map(v => v/arr.length); };
     const a=bin(h1), b=bin(h2);
     return a.reduce((sum,v,k) => sum + Math.min(v, b[k]), 0);
@@ -314,6 +326,7 @@ function analyse(allPts, kickT, halfT, ftT){
 
   // heat: moving, PCA-rotate, mirror after halfT, dense end left
   const mov = pts.filter(p=>p.spd>=0.3);
+  if (!mov.length) throw new Error('No movement found in the selected window — check the kick-off and full-time times.');
   const n=mov.length, mx=mov.reduce((s,p)=>s+p.x,0)/n, my=mov.reduce((s,p)=>s+p.y,0)/n;
   let sxx=0,syy=0,sxy=0;
   for (const p of mov){ sxx+=(p.x-mx)**2; syy+=(p.y-my)**2; sxy+=(p.x-mx)*(p.y-my); }
