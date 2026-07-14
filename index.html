@@ -321,6 +321,32 @@ function analyse(allPts, kickT, halfT, ftT, exclIn, anchorIn){
   const excl = mergeWindows(exclIn || []);
   const inExcl = t => excl.some(w => w[0] <= t && t <= w[1]);
 
+  // "parked" spells: position-stationary ≥2 min inside an ~11m circle. A
+  // player standing in ONE SPOT that long isn't playing — KS GW2: left the
+  // bench at 19:01, stood at the deep-left corner 19:03-19:06 waiting to come
+  // on, and the engine painted a fake "left back stint" (Colin caught it —
+  // "he did not play left back at all"). Real quiet positioning DRIFTS with
+  // play (Colin's last-man walking covers 40m+ over the same minutes), so it
+  // survives this rule. Parked time is excluded from heat + stats + on-pitch.
+  const parked = (() => {
+    const ps = pts.filter(p => !inExcl(p.t));
+    const out = [];
+    let i = 0;
+    while (i < ps.length){
+      let cx = ps[i].x, cy = ps[i].y, m = 1, j = i + 1;
+      while (j < ps.length){
+        const nx = (cx*m + ps[j].x)/(m+1), ny = (cy*m + ps[j].y)/(m+1);
+        if (Math.hypot(ps[j].x - nx, ps[j].y - ny) > 11) break;
+        cx = nx; cy = ny; m++; j++;
+      }
+      if (j > i && ps[j-1].t - ps[i].t >= 120){ out.push([ps[i].t, ps[j-1].t]); i = j; }
+      else i++;
+    }
+    return out;
+  })();
+  const inParked = t => parked.some(w => w[0] <= t && t <= w[1]);
+  const inDead = t => inExcl(t) || inParked(t);
+
   // quarter bounds: halftime window splits the halves; within each half the
   // excluded window nearest the half's midpoint anchors the quarter break
   // (nearest-midpoint = deterministic with several windows in one half —
@@ -360,7 +386,7 @@ function analyse(allPts, kickT, halfT, ftT, exclIn, anchorIn){
   const b2 = pickB(excl.filter(w => w[0] >= ht[1]), ht[1], total);
   const qb = [[0, b1[0]], [b1[1], ht[0]], [ht[1], b2[0]], [b2[1], total]];
   const qIdx = t => {
-    if (inExcl(t)) return -1;
+    if (inDead(t)) return -1;
     for (let i = 0; i < 4; i++) if (t >= qb[i][0] && (t < qb[i][1] || (i === 3 && t <= total))) return i;
     return -1;
   };
@@ -414,9 +440,10 @@ function analyse(allPts, kickT, halfT, ftT, exclIn, anchorIn){
     const fast = ok && pts[i].spdRaw*3.6 >= 20;
     if (fast && !inb){ sprints++; quarters[q].sprints++; inb=true; } else if (!fast) inb=false;
   }
-  // on-pitch time: quarter span minus excluded windows minus remaining true
-  // stills >= 60s minus recording holes — a benched quarter shouldn't read as a fade
-  const stillW = mergeWindows(excl.concat(slowRuns(pts, 0.5, 60)).concat(sampleGaps(pts)));
+  // on-pitch time: quarter span minus excluded windows minus parked spells
+  // minus remaining true stills >= 60s minus recording holes — a benched
+  // quarter shouldn't read as a fade
+  const stillW = mergeWindows(excl.concat(parked).concat(slowRuns(pts, 0.5, 60)).concat(sampleGaps(pts)));
   const onPitch = qb.map(([a,b]) =>
     Math.max(0, (b-a) - stillW.reduce((s,[w0,w1]) => s + Math.max(0, Math.min(b,w1) - Math.max(a,w0)), 0)) / 60);
 
@@ -431,7 +458,7 @@ function analyse(allPts, kickT, halfT, ftT, exclIn, anchorIn){
   // geometric fix: it sits ON the halfway line at the sideline, so
   // (bench − cloud centre) IS the lateral axis, no shape-guessing. PCA stays
   // as the fallback when no bench anchor exists.
-  const mov = pts.filter(p=>p.spd>=0.3 && !inExcl(p.t));
+  const mov = pts.filter(p=>p.spd>=0.3 && !inDead(p.t));
   if (!mov.length) throw new Error('No movement found in the selected window — check the kick-off and full-time times.');
   const n=mov.length, mx=mov.reduce((s,p)=>s+p.x,0)/n, my=mov.reduce((s,p)=>s+p.y,0)/n;
   let th = null;
@@ -482,6 +509,7 @@ function analyse(allPts, kickT, halfT, ftT, exclIn, anchorIn){
   }
 
   return {
+    parked,
     total, distAll, top:+top.toFixed(1), sprints,
     avgHr: hrWT>0 ? Math.round(hrWSum/hrWT) : null,
     quarters: quarters.map((q,i)=>({dist:Math.round(q.dist),
@@ -550,19 +578,23 @@ function render(){
   const anchor = benchAnchor(PTS, WINDOWS, half);
   const exclW = WINDOWS.filter((w,i) => bench[i] && Math.min(w[1],ft) - Math.max(w[0],kick) > 30);
   const excl = exclW.map(w => [Math.max(w[0],kick) - kick, Math.min(w[1],ft) - kick]);
-  // for the note, bridge sub-90s gaps so one off-block reads as one range
+  const r = analyse(PTS, kick, half, ft, excl, anchor);
+  // note: bench/halftime windows + parked spells (standing in one spot 2 min+),
+  // bridged over sub-90s gaps so one off-block reads as one range
+  const noteW = exclW.map(w => [Math.max(w[0],kick), Math.min(w[1],ft)])
+    .concat(r.parked.map(w => [w[0]+kick, w[1]+kick]))
+    .sort((a,b) => a[0]-b[0]);
   const shown = [];
-  for (const w of exclW.map(w => [Math.max(w[0],kick), Math.min(w[1],ft)])){
-    if (shown.length && w[0] - shown[shown.length-1][1] <= 90) shown[shown.length-1][1] = w[1];
+  for (const w of noteW){
+    if (shown.length && w[0] - shown[shown.length-1][1] <= 90) shown[shown.length-1][1] = Math.max(w[1], shown[shown.length-1][1]);
     else shown.push([w[0], w[1]]);
   }
   $('benchnote').style.display = shown.length ? '' : 'none';
   $('benchnote').textContent = shown.length
-    ? 'Off-pitch time excluded automatically (worked out from where you spent halftime): '
+    ? 'Not counted as play (worked out automatically): '
       + shown.map(w => secToClock(w[0]) + '–' + secToClock(w[1])).join(', ')
-      + '. Halftime, bench spells and card sit-outs don’t count as play.'
+      + '. Covers halftime, bench spells, card sit-outs, and standing in one spot 2 min+ while out of the game.'
     : '';
-  const r = analyse(PTS, kick, half, ft, excl, anchor);
   const name = $('pname').value.trim();
   document.title = (name? name+' — ' : '') + 'Barkerites Match Report';
   $('tiles').innerHTML = [

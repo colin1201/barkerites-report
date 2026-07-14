@@ -35,7 +35,10 @@ for (let t = 0; t <= 90*60; t += 3){
   if (sprintT.some(s => t >= s && t < s+9)) v = 6.5;
   const glitchHere = (t === 25*60);
   const raw = glitchHere ? 11.9 : v;
-  pts.push({ x: Math.sin(t/40)*20, y: Math.cos(t/53)*15, t, hr: 140 + (v>2?15:-20), spd: v, spdRaw: raw });
+  // positions must MOVE at play speed (peak ~2.5 m/s) — the parked rule is
+  // position-based, and a path that crawls in a small circle correctly reads
+  // as standing around no matter what speed the samples claim
+  pts.push({ x: Math.sin(t/12)*30, y: Math.cos(t/15)*20, t, hr: 140 + (v>2?15:-20), spd: v, spdRaw: raw });
 }
 
 let fail = 0;
