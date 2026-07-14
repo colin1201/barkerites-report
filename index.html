@@ -63,6 +63,11 @@
   .again:hover{ color:var(--ink); border-color:var(--ink-3); }
   @keyframes autoflash { 0%{ box-shadow:0 0 0 3px rgba(232,132,42,.75); } 100%{ box-shadow:0 0 0 3px rgba(232,132,42,0); } }
   .controls input.flash{ animation: autoflash 1.4s ease-out; }
+  .bkchips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .bk{ display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-2);
+    border:1px solid var(--tile-border); border-radius:8px; padding:6px 11px; cursor:pointer;
+    font-variant-numeric:tabular-nums; user-select:none; }
+  .bk input{ accent-color:#e8842a; cursor:pointer; }
 </style></head><body>
 <div class="wrap">
   <header>
@@ -99,6 +104,12 @@
       <span style="font-size:12px;color:var(--ink-3)"><b>Just set "Match started" to the real push-back time</b> (e.g. 19:35) — halftime and match end fill in automatically. Only touch the other two if the game ran long or the map looks smeared across both flanks. <span id="recspan"></span></span>
     </div>
 
+    <div class="board" id="bkboard" style="display:none">
+      <h2>Breaks &amp; bench (auto-detected)</h2>
+      <div class="bkchips" id="bkchips"></div>
+      <div class="qnote">Stretches where you moved at walking pace or slower. Halftime and full sit-downs are pre-ticked; <b>tick any window where you were actually off the pitch</b> — subbed to the bench, a card sit-out, a long break. Leave a window unticked if you were playing (quiet positioning counts as play). Ticked windows are left out of the heat maps and stats.</div>
+    </div>
+
     <div class="tiles" id="tiles"></div>
 
     <div class="board">
@@ -121,7 +132,7 @@
       <h2>By quarter (split around halftime)</h2>
       <div class="tscroll"><table><thead><tr><th></th><th>On pitch</th><th>Distance</th><th>Fast run</th><th>Sprints</th><th>Top speed</th><th>Avg HR</th></tr></thead><tbody id="qrows"></tbody></table></div>
       <div class="qnote fade" id="fade"></div>
-      <div class="qnote">On pitch = minutes excluding breaks and bench time (standing still 60s+). Fast run = metres covered above 15 km/h — the number to watch for late-game fade. Sprints = bursts &ge; 20 km/h.</div>
+      <div class="qnote">On pitch = minutes excluding the ticked break/bench windows, standing-still blocks 60s+, and recording gaps. Fast run = metres covered above 15 km/h — the number to watch for late-game fade. Sprints = bursts &ge; 20 km/h (GPS glitches filtered).</div>
     </div>
 
     <div class="board">
@@ -141,6 +152,8 @@ const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).
 let PTS = null;      // [{x(lonm), y(latm), t(sec), hr, spd(m/s smoothed)}]
 let GAMENAME = '';
 let T0 = 0;          // epoch seconds of the first GPS point (anchors clock-time inputs)
+let WINDOWS = [];    // auto-detected break/bench windows [[t1,t2],...] on the full recording
+let UNCHECKED = new Set(); // window indices the user un-ticked (= treat as real play)
 
 // clock helpers: inputs are local wall-clock, data is seconds-from-recording-start
 function secToClock(sec){
@@ -218,6 +231,35 @@ function parseFile(text, name){
 function pct(vs, q){ const v=[...vs].sort((a,b)=>a-b); const i=(v.length-1)*q, f=Math.floor(i);
   return v[f] + (v[Math.min(f+1,v.length-1)]-v[f])*(i-f); }
 
+// sustained below-speed runs. At 0.5 m/s / 60s = true stills; at 1.7 m/s / 45s =
+// walking-pace-or-below, which is how breaks/bench/halftime actually show up —
+// players keep WALKING through breaks, so still-only detection misses them
+// (ported from game_report.py low_activity_windows, 14 Jul 2026)
+function slowRuns(pts, spdMs, minDur){
+  const out = []; let rs = null;
+  for (const p of pts){
+    if (p.spd < spdMs){ if (rs === null) rs = p.t; }
+    else { if (rs !== null && p.t - rs >= minDur) out.push([rs, p.t]); rs = null; }
+  }
+  if (rs !== null && pts[pts.length-1].t - rs >= minDur) out.push([rs, pts[pts.length-1].t]);
+  return out;
+}
+// recording holes (auto-pause / GPS loss): the watch auto-pauses when STATIONARY,
+// so a hole IS still time — it must count against on-pitch minutes
+function sampleGaps(pts, minDur=60){
+  const out = [];
+  for (let i=1;i<pts.length;i++) if (pts[i].t - pts[i-1].t >= minDur) out.push([pts[i-1].t, pts[i].t]);
+  return out;
+}
+function mergeWindows(ws){
+  const s = [...ws].sort((a,b)=>a[0]-b[0]); const out = [];
+  for (const w of s){
+    if (out.length && w[0] <= out[out.length-1][1]) out[out.length-1][1] = Math.max(out[out.length-1][1], w[1]);
+    else out.push([w[0], w[1]]);
+  }
+  return out;
+}
+
 function autoHalftime(pts, kickT, ftT){
   // Auto-detect halftime: for each long still break in the middle of the game window,
   // try it as the ends-swap point and score how well the mirrored second half overlaps
@@ -225,9 +267,11 @@ function autoHalftime(pts, kickT, ftT){
   const game = pts.filter(p => p.t >= kickT && p.t <= ftT);
   if (game.length < 200) return (kickT + ftT) / 2;
   const winLo = kickT + (ftT - kickT) * 0.25, winHi = kickT + (ftT - kickT) * 0.75;
+  // candidates = walking-pace-or-below runs (players walk through halftime, they
+  // don't stand still — still-only detection missed walk-through halftimes)
   const cands = []; let rs = null;
   for (let k = 0; k < game.length; k++){
-    if (game[k].spd < 0.5){ if (rs === null) rs = k; }
+    if (game[k].spd < 1.7){ if (rs === null) rs = k; }
     else if (rs !== null){
       const dur = game[k-1].t - game[rs].t, mid = (game[k-1].t + game[rs].t) / 2;
       if (dur >= 45 && mid >= winLo && mid <= winHi) cands.push({ mid, dur });
@@ -272,60 +316,103 @@ function autoHalftime(pts, kickT, ftT){
   return best.mid;
 }
 
-function analyse(allPts, kickT, halfT, ftT){
+function analyse(allPts, kickT, halfT, ftT, exclIn){
   const pts = allPts.filter(p => p.t >= kickT && p.t <= ftT)
                     .map(p => ({...p, t: p.t - kickT}));
   if (pts.length < 50) throw new Error('Kick-off/full-time window too narrow — widen the sliders.');
   halfT = halfT - kickT;
   const total = pts[pts.length-1].t;
-  // quarters anchored around the detected halftime (not blind elapsed/4):
-  // H1 = [0, halfT] split in two, H2 = [halfT, total] split in two
-  const qb = [halfT/2, halfT, halfT + (total-halfT)/2];
-  const qIdx = t => t < qb[0] ? 0 : t < qb[1] ? 1 : t < qb[2] ? 2 : 3;
-  const quarters = [0,1,2,3].map(()=>({dist:0, hrSum:0, hrT:0, top:0, sprints:0, hsr:0, still:0}));
+
+  // excluded windows = the ticked break/bench chips, fully removed from maps +
+  // stats — un-excluded break/bench WALKING paints fake sideline/midfield heat
+  // (bit three times on Colin's games; ported from game_report.py, 14 Jul 2026)
+  const excl = mergeWindows(exclIn || []);
+  const inExcl = t => excl.some(w => w[0] <= t && t <= w[1]);
+
+  // quarter bounds: halftime window splits the halves; within each half the
+  // excluded window nearest the half's midpoint anchors the quarter break
+  // (nearest-midpoint = deterministic with several windows in one half —
+  // order-dependence bug class from the 13 Jul adversarial review).
+  // Fallback when no window: split the half at its midpoint.
+  const ht = excl.find(w => w[0] <= halfT && halfT <= w[1]) || [halfT, halfT];
+  // a window anchors the quarter break only if it sits NEAR the half's midpoint
+  // (within 25% of the half) — else a long bench spell early/late in the half
+  // steals the boundary and squeezes a quarter to nothing (KS GW1: a 12-min
+  // bench right after halftime became the "Q3/Q4 boundary"). py parity note:
+  // game_report.py only ever anchors on --breaks windows, never bench — the
+  // proximity gate is the self-serve stand-in for that human distinction.
+  const pickB = (cands, lo, hi) => {
+    const mid = (lo+hi)/2, tol = (hi-lo)*0.25;
+    const near = cands.filter(w => Math.abs((w[0]+w[1])/2 - mid) <= tol);
+    if (!near.length) return [mid, mid];
+    return near.reduce((b,w) => Math.abs((w[0]+w[1])/2 - mid) < Math.abs((b[0]+b[1])/2 - mid) ? w : b);
+  };
+  const b1 = pickB(excl.filter(w => w[1] <= ht[0]), 0, ht[0]);
+  const b2 = pickB(excl.filter(w => w[0] >= ht[1]), ht[1], total);
+  const qb = [[0, b1[0]], [b1[1], ht[0]], [ht[1], b2[0]], [b2[1], total]];
+  const qIdx = t => {
+    if (inExcl(t)) return -1;
+    for (let i = 0; i < 4; i++) if (t >= qb[i][0] && (t < qb[i][1] || (i === 3 && t <= total))) return i;
+    return -1;
+  };
+
+  // physics glitch gate for top speed + sprints: GPS teleports show as absurd
+  // speed, or implausible acceleration on BOTH shoulders at once (a real 2-4s
+  // burst has one slow shoulder). Neighbour-threshold filters ate real
+  // micro-bursts — this is the physics version from game_report.py.
+  const MAX_KMH = 34, MAX_ACC = 3.5;
+  const glitch = i => {
+    if (pts[i].spdRaw*3.6 > MAX_KMH) return true;
+    let up = 0, dn = 0;
+    if (i > 0 && pts[i].t > pts[i-1].t) up = (pts[i].spdRaw - pts[i-1].spdRaw) / (pts[i].t - pts[i-1].t);
+    if (i+1 < pts.length && pts[i+1].t > pts[i].t) dn = (pts[i].spdRaw - pts[i+1].spdRaw) / (pts[i+1].t - pts[i].t);
+    return up > MAX_ACC && dn > MAX_ACC;
+  };
+
+  const quarters = [0,1,2,3].map(()=>({dist:0, hrSum:0, hrT:0, top:0, sprints:0, hsr:0}));
   let distAll = 0;
   for (let i=1;i<pts.length;i++){
+    const q = qIdx(pts[i-1].t);
+    if (q < 0 || qIdx(pts[i].t) !== q) continue; // segment crosses an excluded window / boundary
     const dt = pts[i].t-pts[i-1].t;
     const seg = pts[i].spd * dt;
-    const q = qIdx(pts[i].t);
     quarters[q].dist += seg; distAll += seg;
     if (pts[i].spd*3.6 >= 15) quarters[q].hsr += seg;
     if (pts[i].hr) { const w=Math.min(dt,15); quarters[q].hrSum += pts[i].hr*w; quarters[q].hrT += w; }
-    quarters[q].top = Math.max(quarters[q].top, pts[i].spdRaw*3.6);
   }
   // zones + time-weighted avg HR (smart recording samples more when working hard —
-  // a plain sample-mean reads ~3-5 bpm hot; weight each sample by its time slice)
+  // a plain sample-mean reads ~3-5 bpm hot; weight each sample by its time slice).
+  // Bench/break HR excluded — resting on the bench isn't game load.
   const bands = [[0,110,'Z1'],[110,130,'Z2'],[130,150,'Z3'],[150,170,'Z4'],[170,999,'Z5']];
   const zones = {Z1:0,Z2:0,Z3:0,Z4:0,Z5:0};
   let hrWSum=0, hrWT=0;
   for (let i=1;i<pts.length;i++){
-    if (!pts[i].hr) continue;
+    if (!pts[i].hr || qIdx(pts[i].t) < 0) continue;
     const dt = Math.min(pts[i].t-pts[i-1].t, 15);
     hrWSum += pts[i].hr*dt; hrWT += dt;
     for (const [lo,hi,nm] of bands) if (pts[i].hr>=lo && pts[i].hr<hi){ zones[nm]+=dt; break; }
   }
-  // sprints + top speed from RAW speed (smoothing crushes short peaks)
+  // sprints + top speed from RAW speed (smoothing crushes short peaks),
+  // glitch-gated; an excluded window ends a burst and never sets the game top
   let sprints=0, inb=false, top=0;
-  for (const p of pts){
-    top = Math.max(top, p.spdRaw*3.6);
-    const fast = p.spdRaw*3.6 >= 20;
-    if (fast && !inb){ sprints++; quarters[qIdx(p.t)].sprints++; inb=true; } else if (!fast) inb=false;
+  for (let i=0;i<pts.length;i++){
+    const q = qIdx(pts[i].t);
+    const ok = q >= 0 && !glitch(i);
+    if (ok){
+      top = Math.max(top, pts[i].spdRaw*3.6);
+      quarters[q].top = Math.max(quarters[q].top, pts[i].spdRaw*3.6);
+    }
+    const fast = ok && pts[i].spdRaw*3.6 >= 20;
+    if (fast && !inb){ sprints++; quarters[q].sprints++; inb=true; } else if (!fast) inb=false;
   }
-  // bench/break time: still blocks >= 60s (quarter breaks, halftime, sub bench)
-  // don't count as on-pitch time — a benched quarter shouldn't read as a fade
-  const qBounds = [0, qb[0], qb[1], qb[2], total];
-  const addStill = (t1,t2) => { for (let q=0;q<4;q++){
-    const lo=Math.max(t1,qBounds[q]), hi=Math.min(t2,qBounds[q+1]);
-    if (hi>lo) quarters[q].still += hi-lo; } };
-  let rs = null;
-  for (const p of pts){
-    if (p.spd < 0.5){ if (rs===null) rs = p.t; }
-    else { if (rs!==null && p.t-rs >= 60) addStill(rs, p.t); rs = null; }
-  }
-  if (rs!==null && total-rs >= 60) addStill(rs, total);
+  // on-pitch time: quarter span minus excluded windows minus remaining true
+  // stills >= 60s minus recording holes — a benched quarter shouldn't read as a fade
+  const stillW = mergeWindows(excl.concat(slowRuns(pts, 0.5, 60)).concat(sampleGaps(pts)));
+  const onPitch = qb.map(([a,b]) =>
+    Math.max(0, (b-a) - stillW.reduce((s,[w0,w1]) => s + Math.max(0, Math.min(b,w1) - Math.max(a,w0)), 0)) / 60);
 
-  // heat: moving, PCA-rotate, mirror after halfT, dense end left
-  const mov = pts.filter(p=>p.spd>=0.3);
+  // heat: moving + not excluded, PCA-rotate, mirror after halfT, dense end left
+  const mov = pts.filter(p=>p.spd>=0.3 && !inExcl(p.t));
   if (!mov.length) throw new Error('No movement found in the selected window — check the kick-off and full-time times.');
   const n=mov.length, mx=mov.reduce((s,p)=>s+p.x,0)/n, my=mov.reduce((s,p)=>s+p.y,0)/n;
   let sxx=0,syy=0,sxy=0;
@@ -355,7 +442,8 @@ function analyse(allPts, kickT, halfT, ftT){
     const i=Math.min(NX-1,Math.floor((p.x-x1)/(x2-x1)*NX));
     const j=Math.min(NY-1,Math.floor((p.y-y1)/(y2-y1)*NY));
     grid[j][i]++; inbCnt++;
-    qgrids[qIdx(p.t)][j][i]++;
+    const pq = qIdx(p.t);
+    if (pq >= 0) qgrids[pq][j][i]++;
     if (i<NX/2) half++;
     thirds[Math.min(2,Math.floor(i*3/NX))]++;
   }
@@ -365,7 +453,7 @@ function analyse(allPts, kickT, halfT, ftT){
     avgHr: hrWT>0 ? Math.round(hrWSum/hrWT) : null,
     quarters: quarters.map((q,i)=>({dist:Math.round(q.dist),
       hr:q.hrT>0?Math.round(q.hrSum/q.hrT):0, top:+q.top.toFixed(1), sprints:q.sprints,
-      hsr:Math.round(q.hsr), onPitch:Math.max(0, qBounds[i+1]-qBounds[i]-q.still)/60})),
+      hsr:Math.round(q.hsr), onPitch:onPitch[i]})),
     zones: Object.fromEntries(Object.entries(zones).map(([k,v])=>[k,Math.round(v/60)])),
     grid:{grid,qgrids,nx:NX,ny:NY,total:inbCnt},
     ownHalf: Math.round(100-half/inbCnt*100),
@@ -423,7 +511,13 @@ function render(){
   $('kicktime').value = secToClock(kick);
   $('fttime').value   = secToClock(ft);
   $('halftime').value = secToClock(half);
-  const r = analyse(PTS, kick, half, ft);
+  renderBreaks(kick, ft, half);
+  // ticked windows, clipped to the game window, rebased to kick-off seconds
+  const excl = WINDOWS
+    .map((w,i) => ({w,i}))
+    .filter(o => !UNCHECKED.has(o.i) && Math.min(o.w[1],ft) - Math.max(o.w[0],kick) >= 90)
+    .map(o => [Math.max(o.w[0],kick) - kick, Math.min(o.w[1],ft) - kick]);
+  const r = analyse(PTS, kick, half, ft, excl);
   const name = $('pname').value.trim();
   document.title = (name? name+' — ' : '') + 'Barkerites Match Report';
   $('tiles').innerHTML = [
@@ -458,6 +552,26 @@ function render(){
 }
 
 // ---------- wiring ----------
+// break/bench chips: each auto-detected window is a checkbox — ticked = excluded
+// from maps + stats. This is the self-serve version of the scan-then-reconcile
+// step in game_report.py (there Colin confirms the windows in chat).
+function renderBreaks(kick, ft, half){
+  const vis = WINDOWS.map((w,i) => ({w,i}))
+    .filter(o => Math.min(o.w[1],ft) - Math.max(o.w[0],kick) >= 90);
+  $('bkboard').style.display = vis.length ? '' : 'none';
+  $('bkchips').innerHTML = vis.map(o => {
+    const a = Math.max(o.w[0],kick), b = Math.min(o.w[1],ft);
+    const mins = Math.max(1, Math.round((b-a)/60));
+    const tag = (o.w[0] <= half && half <= o.w[1]) ? ' · halftime' : '';
+    return `<label class="bk"><input type="checkbox" data-i="${o.i}" ${UNCHECKED.has(o.i)?'':'checked'}> ${secToClock(a)}–${secToClock(b)} · ${mins} min${tag}</label>`;
+  }).join('');
+  $('bkchips').querySelectorAll('input').forEach(cb => cb.addEventListener('change', () => {
+    const i = +cb.dataset.i;
+    if (cb.checked) UNCHECKED.delete(i); else UNCHECKED.add(i);
+    render();
+  }));
+}
+
 function handleFile(f){
   $('err').style.display='none';
   const reader = new FileReader();
@@ -465,6 +579,19 @@ function handleFile(f){
     try{
       PTS = parseFile(reader.result, f.name);
       const dur = PTS[PTS.length-1].t;
+      WINDOWS = mergeWindows(slowRuns(PTS, 1.7, 45).concat(sampleGaps(PTS)));
+      // Default ticks: halftime + true sits only (near-still). Walking-pace
+      // windows stay UNTICKED — a quiet defender ranges at walking pace with
+      // the ball elsewhere, and that's real play (KS's GW1 file: HR 155-167
+      // during "walking" spells = playing; HR ~135-140 in a tight circle =
+      // benched). The player ticks their own bench/card windows.
+      const autoHalf = autoHalftime(PTS, 0, dur);
+      UNCHECKED = new Set(WINDOWS.map((w,i) => {
+        const inW = PTS.filter(p => p.t >= w[0] && p.t <= w[1]);
+        const avgSpd = inW.length ? inW.reduce((s,p)=>s+p.spd,0)/inW.length : 0;
+        const isHalf = w[0] <= autoHalf && autoHalf <= w[1];
+        return (avgSpd < 0.5 || isHalf) ? -1 : i;
+      }).filter(i => i >= 0));
       // defaults: whole recording is the game; halftime auto-detected by mirror-symmetry
       $('kicktime').value = secToClock(0);
       $('fttime').value = secToClock(dur);
