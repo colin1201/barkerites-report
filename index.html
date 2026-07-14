@@ -549,9 +549,12 @@ function render(){
   drawMap($('pitch'), r.grid.grid, r.grid.nx, r.grid.ny, gridMax(r.grid.grid));
   const qmax = Math.max(...r.grid.qgrids.map(gridMax), 1);
   document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, r.grid.qgrids[+cv.dataset.q], r.grid.nx, r.grid.ny, qmax));
-  for (let q=0;q<4;q++) $('qc'+q).textContent = `Q${q+1} · ${r.quarters[q].dist}m`;
+  for (let q=0;q<4;q++) $('qc'+q).textContent =
+    r.quarters[q].onPitch < 0.5 ? `Q${q+1} · off pitch` : `Q${q+1} · ${r.quarters[q].dist}m`;
   $('qrows').innerHTML = r.quarters.map((q,i) =>
-    `<tr><td>Q${i+1}</td><td>${Math.round(q.onPitch)} min</td><td>${q.dist}m</td><td>${q.hsr}m</td><td>${q.sprints}</td><td>${q.top} km/h</td><td>${q.hr||'—'}</td></tr>`).join('');
+    q.onPitch < 0.5
+      ? `<tr><td>Q${i+1}</td><td colspan="6" style="color:var(--ink-3)">off the pitch this quarter (bench / subbed off)</td></tr>`
+      : `<tr><td>Q${i+1}</td><td>${Math.round(q.onPitch)} min</td><td>${q.dist}m</td><td>${q.hsr}m</td><td>${q.sprints}</td><td>${q.top} km/h</td><td>${q.hr||'—'}</td></tr>`).join('');
   // late-game fade: Q4 vs Q1, normalized per on-pitch minute so bench/breaks don't fake a fade
   const q1 = r.quarters[0], q4 = r.quarters[3];
   const pctf = v => { const p = Math.abs(Math.round(v*100)); return p===0 ? 'level' : (v>0?'+':'−') + p + '%'; };
@@ -640,11 +643,43 @@ function handleFile(f){
       PTS = parseFile(reader.result, f.name);
       const dur = PTS[PTS.length-1].t;
       WINDOWS = mergeWindows(slowRuns(PTS, 1.7, 45).concat(sampleGaps(PTS)));
-      // defaults: whole recording is the game; halftime auto-detected by mirror-symmetry
-      $('kicktime').value = secToClock(0);
+      // auto-trim warm-up: recordings often start well before push-back (KS
+      // pressed start 31 min early — the warm-up jog analysed as "Q1" put
+      // 1996m of laps on the map and skewed the ends-swap mirror). A chain of
+      // low-activity windows beginning right at the recording start (gaps
+      // <=90s, total >=5 min) = pre-game warm-up/idling; kick-off = chain end.
+      // Real play never idles that continuously from the first minute.
+      // The chain must also LOOK like warm-up: window avg HR well below the
+      // player's active median (KS GW1 warm-up ran HR 126-137 vs active 156;
+      // his quiet-but-playing windows run 150+ — without the HR check his
+      // stop-start early game chained the "warm-up" all the way to 20:29).
+      // No HR in file: gap-chain alone, backstopped by a 45-min cap.
+      let kick0 = 0;
+      if (WINDOWS.length && WINDOWS[0][0] <= 120){
+        const act = PTS.filter(p => p.spd >= 1.7 && p.hr).map(p => p.hr).sort((a,b)=>a-b);
+        const actMed = act.length >= 50 ? act[Math.floor(act.length/2)] : null;
+        const warmHr = w => {
+          if (actMed === null) return true;
+          const hrs = PTS.filter(p => p.t >= w[0] && p.t <= w[1] && p.hr).map(p => p.hr);
+          return !hrs.length || hrs.reduce((s,v)=>s+v,0)/hrs.length < actMed - 10;
+        };
+        let end = 0;
+        if (warmHr(WINDOWS[0])){
+          end = WINDOWS[0][1];
+          for (let i = 1; i < WINDOWS.length; i++){
+            if (WINDOWS[i][0] - end > 90 || end > 45*60 || !warmHr(WINDOWS[i])) break;
+            end = WINDOWS[i][1];
+          }
+        }
+        if (end - WINDOWS[0][0] >= 300 && end < dur - 600) kick0 = end;
+      }
+      $('kicktime').value = secToClock(kick0);
       $('fttime').value = secToClock(dur);
-      $('halftime').value = secToClock(autoHalftime(PTS, 0, dur));
-      $('recspan').textContent = 'Your recording ran ' + secToClock(0) + '–' + secToClock(dur) + '.';
+      $('halftime').value = secToClock(autoHalftime(PTS, kick0, dur));
+      $('recspan').textContent = (kick0 > 0
+        ? 'Your recording starts with what looks like warm-up, so match start was set to ' + secToClock(kick0) + ' — correct it if that’s off. '
+        : '') + 'Your recording ran ' + secToClock(0) + '–' + secToClock(dur) + '.';
+      if (kick0 > 0){ flash('kicktime'); flash('halftime'); }
       $('uploader').style.display='none';
       $('report').style.display='flex';
       render();
