@@ -19,7 +19,7 @@ const ctx = {
   console,
 };
 vm.createContext(ctx);
-vm.runInContext(src + '\n; this.__ = {analyse, slowRuns, sampleGaps, mergeWindows, autoHalftime};', ctx);
+vm.runInContext(src + '\n; this.__ = {analyse, slowRuns, sampleGaps, mergeWindows, autoHalftime, benchDefaults};', ctx);
 const { analyse, slowRuns, sampleGaps, mergeWindows } = ctx.__;
 
 // --- synthetic game: 3s samples, 90 min ---
@@ -89,5 +89,26 @@ ok('teleport (double-shoulder accel) rejected', r3.sprints === 4, 'got '+r3.spri
 // 4. no exclusions passed (user unticked everything) -> engine still runs, walking counts
 const r4 = analyse(pts, 0, halfT, 90*60, []);
 ok('no-exclusion path runs', r4.quarters.length === 4 && r4.distAll > r.distAll);
+
+// 5. benchDefaults: bench anchor from the halftime sit; windows AT the bench
+// spot -> ticked, walking-pace windows elsewhere on the pitch -> play.
+// bench at (0,60); play meanders around (0,0); one walk window at (0,60)
+// (a sub spell), one walk window out at (35,0) (quiet defending).
+const BX = 0, BY = 60;
+const pts5 = [];
+for (let t = 0; t <= 90*60; t += 3){
+  let v = 2.5, x = Math.sin(t/40)*20, y = Math.cos(t/53)*15;
+  const atBench = (t >= 35*60 && t < 40*60) || (t >= 55*60 && t < 62*60); // halftime + sub spell
+  const quietFar = (t >= 70*60 && t < 74*60);                             // quiet defending, far away
+  if (atBench){ v = 0.9; x = BX + Math.sin(t)*3; y = BY + Math.cos(t)*3; }
+  if (quietFar){ v = 0.9; x = 35 + Math.sin(t)*4; y = Math.cos(t)*4; }
+  pts5.push({ x, y, t, hr: atBench ? 120 : 150, spd: v, spdRaw: v });
+}
+const W5 = ctx.__.mergeWindows(ctx.__.slowRuns(pts5, 1.7, 45));
+const defs = ctx.__.benchDefaults(pts5, W5, 37.5*60);
+const labelled = W5.map((w,i) => [Math.round(w[0]/60)+'-'+Math.round(w[1]/60), defs[i]]);
+ok('halftime window auto-ticked', labelled.some(([l,b]) => l==='35-40' && b), JSON.stringify(labelled));
+ok('sub spell at bench spot auto-ticked', labelled.some(([l,b]) => l==='55-62' && b));
+ok('quiet defending far from bench NOT ticked', labelled.some(([l,b]) => l==='70-74' && !b));
 
 process.exit(fail ? 1 : 0);
