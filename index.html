@@ -306,7 +306,9 @@ function autoHalftime(pts, kickT, ftT){
   return best.mid;
 }
 
-function analyse(allPts, kickT, halfT, ftT, exclIn){
+function analyse(allPts, kickT, halfT, ftT, exclIn, anchorIn){
+  // anchorIn: bench position in RAW recording coords (pre kick-rebase) or null
+  const anchor = anchorIn || null;
   const pts = allPts.filter(p => p.t >= kickT && p.t <= ftT)
                     .map(p => ({...p, t: p.t - kickT}));
   if (pts.length < 50) throw new Error('Kick-off/full-time window too narrow — widen the sliders.');
@@ -418,13 +420,37 @@ function analyse(allPts, kickT, halfT, ftT, exclIn){
   const onPitch = qb.map(([a,b]) =>
     Math.max(0, (b-a) - stillW.reduce((s,[w0,w1]) => s + Math.max(0, Math.min(b,w1) - Math.max(a,w0)), 0)) / 60);
 
-  // heat: moving + not excluded, PCA-rotate, mirror after halfT, dense end left
+  // heat: moving + not excluded, rotate to pitch axes, mirror after halfT,
+  // dense end left.
+  // Rotation: PCA of the point cloud finds the pitch's long axis for players
+  // whose mass runs along the length (Colin, last man) — but a FLANK player's
+  // two halves sit in diagonally opposite corners (ends swap + same flank),
+  // and PCA locks onto that DIAGONAL, tilting the whole frame ~20° and
+  // smearing his flank across the middle (KS GW1+GW2, right back rendered
+  // with "left back" heat — caught by Colin, 14 Jul 2026). The bench is the
+  // geometric fix: it sits ON the halfway line at the sideline, so
+  // (bench − cloud centre) IS the lateral axis, no shape-guessing. PCA stays
+  // as the fallback when no bench anchor exists.
   const mov = pts.filter(p=>p.spd>=0.3 && !inExcl(p.t));
   if (!mov.length) throw new Error('No movement found in the selected window — check the kick-off and full-time times.');
   const n=mov.length, mx=mov.reduce((s,p)=>s+p.x,0)/n, my=mov.reduce((s,p)=>s+p.y,0)/n;
-  let sxx=0,syy=0,sxy=0;
-  for (const p of mov){ sxx+=(p.x-mx)**2; syy+=(p.y-my)**2; sxy+=(p.x-mx)*(p.y-my); }
-  const th=0.5*Math.atan2(2*sxy/n,(sxx-syy)/n), c=Math.cos(-th), s=Math.sin(-th);
+  let th = null;
+  if (anchor){
+    const axs = mov.map(p=>p.x), ays = mov.map(p=>p.y);
+    const c0x = (pct(axs,.01)+pct(axs,.99))/2, c0y = (pct(ays,.01)+pct(ays,.99))/2;
+    const d = Math.hypot(anchor[0]-c0x, anchor[1]-c0y);
+    // trust the bench direction only at a plausible sideline distance from
+    // the cloud centre (half pitch width 27.5m + bench offset; verified 29-30m
+    // on all three real files) — a misdetected mid-pitch "bench" must not
+    // rotate the whole map
+    if (d >= 22 && d <= 42) th = Math.atan2(anchor[1]-c0y, anchor[0]-c0x) - Math.PI/2;
+  }
+  if (th === null){
+    let sxx=0,syy=0,sxy=0;
+    for (const p of mov){ sxx+=(p.x-mx)**2; syy+=(p.y-my)**2; sxy+=(p.x-mx)*(p.y-my); }
+    th = 0.5*Math.atan2(2*sxy/n,(sxx-syy)/n);
+  }
+  const c=Math.cos(-th), s=Math.sin(-th);
   // Ends swap at halftime, so the union of both halves spans the full pitch:
   // mirror H2 around the union's midpoint per axis, NOT the data centroid —
   // when play is lopsided the centroid sits off pitch-centre and the flipped
@@ -521,6 +547,7 @@ function render(){
   // fully automatic: classify every low-activity window against the current
   // halftime (bench anchor), exclude the off-pitch ones, tell the user which
   const bench = benchDefaults(PTS, WINDOWS, half);
+  const anchor = benchAnchor(PTS, WINDOWS, half);
   const exclW = WINDOWS.filter((w,i) => bench[i] && Math.min(w[1],ft) - Math.max(w[0],kick) > 30);
   const excl = exclW.map(w => [Math.max(w[0],kick) - kick, Math.min(w[1],ft) - kick]);
   // for the note, bridge sub-90s gaps so one off-block reads as one range
@@ -535,7 +562,7 @@ function render(){
       + shown.map(w => secToClock(w[0]) + '–' + secToClock(w[1])).join(', ')
       + '. Halftime, bench spells and card sit-outs don’t count as play.'
     : '';
-  const r = analyse(PTS, kick, half, ft, excl);
+  const r = analyse(PTS, kick, half, ft, excl, anchor);
   const name = $('pname').value.trim();
   document.title = (name? name+' — ' : '') + 'Barkerites Match Report';
   $('tiles').innerHTML = [
@@ -590,16 +617,17 @@ function render(){
 //      not bench — Colin's game 1: back on for Q3 at HR 132 vs active 157).
 // Fully automatic — no user interaction (Colin: "that's just extra noise").
 // The excluded windows are listed in a plain-text note for transparency.
-function benchDefaults(pts, wins, autoHalf){
+// bench anchor: the STILLEST window around halftime (the actual sit — break
+// plus any benched-after spell). NOT simply the window containing the
+// halftime point: that can be the boundary window at the break's start,
+// whose position is still on-pitch (KS GW1: that anchor landed 42m from
+// the real bench and misclassified quiet play as bench).
+// Fallback: the longest true sit anywhere in the recording.
+// Returns [x, y] in raw local-metre coords, or null.
+function benchAnchor(pts, wins, autoHalf){
   const med = a => { const s = [...a].sort((x,y)=>x-y); return s[Math.floor(s.length/2)]; };
   const winPts = w => pts.filter(p => p.t >= w[0] && p.t <= w[1]);
   const avgSpdOf = ps => ps.length ? ps.reduce((s,p)=>s+p.spd,0)/ps.length : 0;
-  // bench anchor: the STILLEST window around halftime (the actual sit — break
-  // plus any benched-after spell). NOT simply the window containing the
-  // halftime point: that can be the boundary window at the break's start,
-  // whose position is still on-pitch (KS GW1: that anchor landed 42m from
-  // the real bench and misclassified quiet play as bench).
-  // Fallback: the longest true sit anywhere in the recording.
   const nearHalf = wins.filter(w => w[1] >= autoHalf - 120 && w[0] <= autoHalf + 720);
   let anchorW = nearHalf.length
     ? nearHalf.reduce((a,b) => avgSpdOf(winPts(a)) <= avgSpdOf(winPts(b)) ? a : b)
@@ -608,11 +636,17 @@ function benchDefaults(pts, wins, autoHalf){
     const sits = wins.filter(w => avgSpdOf(winPts(w)) < 0.5);
     if (sits.length) anchorW = sits.reduce((a,b) => (a[1]-a[0]) > (b[1]-b[0]) ? a : b);
   }
-  let bx = null, by = null;
-  if (anchorW){
-    const ps = winPts(anchorW);
-    if (ps.length){ bx = med(ps.map(p=>p.x)); by = med(ps.map(p=>p.y)); }
-  }
+  if (!anchorW) return null;
+  const ps = winPts(anchorW);
+  return ps.length ? [med(ps.map(p=>p.x)), med(ps.map(p=>p.y))] : null;
+}
+
+function benchDefaults(pts, wins, autoHalf){
+  const med = a => { const s = [...a].sort((x,y)=>x-y); return s[Math.floor(s.length/2)]; };
+  const winPts = w => pts.filter(p => p.t >= w[0] && p.t <= w[1]);
+  const avgSpdOf = ps => ps.length ? ps.reduce((s,p)=>s+p.spd,0)/ps.length : 0;
+  const anchor = benchAnchor(pts, wins, autoHalf);
+  const bx = anchor ? anchor[0] : null, by = anchor ? anchor[1] : null;
   const act = pts.filter(p => p.spd >= 1.7 && p.hr).map(p => p.hr).sort((a,b)=>a-b);
   const actMed = act.length >= 50 ? act[Math.floor(act.length/2)] : null;
   const BENCH_RADIUS = 16, HR_DEFICIT = 12, SHADOW = 180;
