@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colin — Match Reports</title>
+<style>
+:root{--ground:#10161d;--card:#171f28;--ink:#e8edf2;--ink-2:#a7b4c0;--ink-3:#6b7a88;--accent:#e8842a;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ground);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;padding:28px 16px;max-width:720px;margin:0 auto}
+h1{font-size:1.6rem;margin-bottom:4px}
+.sub{color:var(--ink-3);font-size:.9rem;margin-bottom:24px}
+a.game{display:block;background:var(--card);border-radius:12px;padding:18px 20px;margin-bottom:14px;text-decoration:none;color:var(--ink);border:1px solid rgba(255,255,255,.06)}
+a.game:hover{border-color:var(--accent)}
+a.game.overall{border-color:rgba(232,132,42,.45)}
+.g-top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
+.g-title{font-weight:600;font-size:1.05rem}
+.g-result{color:var(--ink-2);font-size:.9rem}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{background:rgba(255,255,255,.05);border-radius:999px;padding:4px 12px;font-size:.8rem;color:var(--ink-2)}
+.chip b{color:var(--ink)}
+.chip.hot b{color:var(--accent)}
+.nodata{background:var(--card);border-radius:12px;padding:14px 20px;margin-bottom:14px;color:var(--ink-3);font-size:.85rem;border:1px dashed rgba(255,255,255,.1)}
+.note{color:var(--ink-3);font-size:.8rem;margin-top:22px;line-height:1.5}
+</style>
+</head>
+<body>
+<h1>Colin — Match Reports</h1>
+<div class="sub">Barkerites &middot; last man &middot; MHL 5, 2026 season. Tap a game for the full report: heat maps by quarter, speeds, sprints, heart-rate zones.</div>
+
+<a class="game overall" href="games/overall-colin.html">
+  <div class="g-top"><span class="g-title">&#9733; Season overall &middot; all 3 games combined</span><span class="g-result">one heat map &middot; averages</span></div>
+  <div class="chips">
+    <span class="chip"><b>188 min</b> on pitch</span>
+    <span class="chip"><b>3.9 km</b> per game</span>
+    <span class="chip">Work rate <b>62 m/min</b></span>
+    <span class="chip">Top <b>26.9 km/h</b></span>
+  </div>
+</a>
+
+<div class="nodata">Game 4 &middot; vs Tannibellies &middot; Sat 15 Aug &middot; L 0&ndash;3 — no GPS data (referee had the watch removed mid-game).</div>
+
+<a class="game" href="games/game3-colin.html">
+  <div class="g-top"><span class="g-title">Game 3 &middot; vs Eagles</span><span class="g-result">Sun 19 Jul &middot; D 2&ndash;2 &middot; SK2</span></div>
+  <div class="chips">
+    <span class="chip"><b>Full game</b> &middot; 70 min on pitch, no subs</span>
+    <span class="chip"><b>4.3 km</b></span>
+    <span class="chip">Top <b>24.1 km/h</b></span>
+    <span class="chip hot">Work rate held all four quarters</span>
+  </div>
+</a>
+
+<a class="game" href="games/game2-colin.html">
+  <div class="g-top"><span class="g-title">Game 2 &middot; vs Hypernovas</span><span class="g-result">Sun 12 Jul &middot; D 3&ndash;3 &middot; SK1</span></div>
+  <div class="chips">
+    <span class="chip"><b>61 min</b> on pitch &middot; ~12 min bench</span>
+    <span class="chip"><b>3.9 km</b></span>
+    <span class="chip">Top <b>23.2 km/h</b></span>
+    <span class="chip">10 sprints &middot; Q4 in midfield</span>
+  </div>
+</a>
+
+<a class="game" href="games/game1-colin.html">
+  <div class="g-top"><span class="g-title">Game 1 &middot; vs Old Rafflesians &ndash; C</span><span class="g-result">Sun 5 Jul &middot; Draw 1&ndash;1 &middot; SK1</span></div>
+  <div class="chips">
+    <span class="chip"><b>57 min</b> on pitch &middot; benched Q2</span>
+    <span class="chip"><b>3.5 km</b></span>
+    <span class="chip">Top <b>26.9 km/h</b> &middot; season best</span>
+    <span class="chip hot">Finished strong: fast run <b>+14%</b> Q4 vs Q1</span>
+  </div>
+</a>
+
+<div class="note">
+Reports are built from watch GPS on a confirmed pitch frame &mdash; halftime, bench, quarter breaks and stoppages are excluded from every map and stat. Wrist GPS at ~1&ndash;3s samples: shapes honest, edges approximate.
+</div>
+</body>
+</html>
