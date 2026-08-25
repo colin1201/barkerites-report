@@ -428,8 +428,14 @@ function analyse(allPts, kickT, halfT, ftT, exclIn, anchorIn){
     for (const [lo,hi,nm] of bands) if (pts[i].hr>=lo && pts[i].hr<hi){ zones[nm]+=dt; break; }
   }
   // sprints + top speed from RAW speed (smoothing crushes short peaks),
-  // glitch-gated; an excluded window ends a burst and never sets the game top
-  let sprints=0, inb=false, top=0;
+  // glitch-gated; an excluded window ends a burst and never sets the game top.
+  // HYSTERESIS + DEBOUNCE (parity with game_report.py, 25 Aug 2026): an effort
+  // starts at 20 km/h and only ends once he has been below 15 km/h for at least
+  // 2s. A flat 20 km/h threshold counts one sprint twice whenever the trace
+  // dips for a single sample — invisible at 2s sampling, obvious at 1 Hz, where
+  // it inflated a real game's count by about 30%.
+  const SPRINT_ENTER = 20, SPRINT_EXIT = 15, SPRINT_MIN_BREAK = 2;
+  let sprints=0, inb=false, top=0, belowSince=null;
   for (let i=0;i<pts.length;i++){
     const q = qIdx(pts[i].t);
     const ok = q >= 0 && !glitch(i);
@@ -437,8 +443,17 @@ function analyse(allPts, kickT, halfT, ftT, exclIn, anchorIn){
       top = Math.max(top, pts[i].spdRaw*3.6);
       quarters[q].top = Math.max(quarters[q].top, pts[i].spdRaw*3.6);
     }
-    const fast = ok && pts[i].spdRaw*3.6 >= 20;
-    if (fast && !inb){ sprints++; quarters[q].sprints++; inb=true; } else if (!fast) inb=false;
+    const kmh = pts[i].spdRaw*3.6;
+    if (!inb){
+      if (ok && kmh >= SPRINT_ENTER){ sprints++; quarters[q].sprints++; inb=true; belowSince=null; }
+    } else if (!ok){
+      inb=false; belowSince=null;
+    } else if (kmh >= SPRINT_EXIT){
+      belowSince=null;
+    } else {
+      if (belowSince===null) belowSince = pts[i].t;
+      if (pts[i].t - belowSince >= SPRINT_MIN_BREAK){ inb=false; belowSince=null; }
+    }
   }
   // on-pitch time: quarter span minus excluded windows minus parked spells
   // minus remaining true stills >= 60s minus recording holes — a benched
