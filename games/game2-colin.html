@@ -66,6 +66,27 @@
   .flag.spike{ background:rgba(232,132,42,.18); color:#f0a25e; }
   .flag.low{ background:rgba(120,160,200,.16); color:#9dbede; }
   .tile .val .unit{ font-size:13px; font-weight:500; }
+  .board.doing{ border-color:rgba(232,132,42,.32); background:linear-gradient(180deg,rgba(232,132,42,.055),transparent 70%),var(--card); }
+  .takeaway{ display:flex; gap:13px; padding:13px 0; border-bottom:1px solid var(--tile-border); }
+  .takeaway:last-child{ border-bottom:none; padding-bottom:2px; }
+  .takeaway:first-of-type{ padding-top:2px; }
+  .tnum{ flex:0 0 25px; height:25px; border-radius:50%; background:var(--accent); color:#12181f;
+    font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .tbody{ flex:1; min-width:0; }
+  .tbody .lead{ font-size:15px; font-weight:650; line-height:1.45; }
+  .tbody .why{ font-size:13.5px; color:var(--ink-2); line-height:1.55; margin-top:5px; }
+  details.coach{ border:1px dashed var(--tile-border); border-radius:10px; padding:0 14px; }
+  details.coach > summary{ cursor:pointer; list-style:none; padding:13px 0; font-size:13px;
+    color:var(--ink-3); line-height:1.5; }
+  details.coach > summary::-webkit-details-marker{ display:none; }
+  details.coach > summary::before{ content:"▸"; color:var(--accent); margin-right:8px; display:inline-block; }
+  details.coach[open] > summary::before{ transform:rotate(90deg); }
+  details.coach > summary::after{ content:""; }
+  details.coach[open]{ padding-bottom:14px; }
+  details.coach .board{ margin-bottom:12px; }
+  details.coach .board:last-of-type{ margin-bottom:0; }
+  .ctag{ display:inline-block; background:rgba(232,132,42,.16); color:var(--accent); font-weight:650;
+    padding:1px 8px; border-radius:20px; margin-right:7px; font-size:12px; }
 </style></head><body>
 <div class="wrap">
   <a class="back" href="../colin.html">&larr; all my match reports</a>
@@ -80,7 +101,13 @@
     <div class="tile"><div class="lbl">Distance</div><div class="val">4.3 <span style="font-size:13px;font-weight:500">km</span></div><div class="sub">82 min recorded</div></div>
     <div class="tile"><div class="lbl">Top speed</div><div class="val">23.2 <span style="font-size:13px;font-weight:500">km/h</span></div><div class="sub">fastest burst</div></div>
     <div class="tile"><div class="lbl">Sprint efforts</div><div class="val">10</div><div class="sub">bursts &ge; 20 km/h</div></div>
+    <div class="tile"><div class="lbl">Work rate</div><div class="val">62.7 <span class="unit">m/min</span></div><div class="sub">your midfield games run 64&ndash;100 m/min</div></div>
     <div class="tile"><div class="lbl">Avg HR</div><div class="val">160 <span style="font-size:13px;font-weight:500">bpm</span></div><div class="sub">&asymp;87% of max</div></div>
+  </div>
+
+  <div class="board doing">
+    <h2>What to do with this</h2>
+    <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">Your engine is not the limiter in this role &mdash; reading the play is.</div><div class="why"><b>62.7 m/min</b> is normal for you at the back. your midfield games run 64&ndash;100, so if you get moved forward again it is a genuinely different week of legs, not just a different shirt. Here the ground you save by starting in the right place beats the ground you cover.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">Keep a near-max stride in the warm-up even on a game like this one.</div><div class="why">You topped out at <b>23.2 km/h</b>, <b>80%</b> of your best &mdash; you did not go to the well today. But you have hit 98% in a match, so any given game can ask for it. The warm-up has to assume the hardest version of the day.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Your sprints were spread out, not bunched.</div><div class="why">All 10 sat more than a minute apart, typically 6 min 05 s. That is the pattern of picking your moments rather than chasing &mdash; the legs stay available for the last quarter.</div></div></div>
   </div>
 
   <div class="board">
@@ -106,16 +133,19 @@
     <div class="qnote">On pitch = wall-clock minutes excluding halftime, bench and still time 60s+ &mdash; a 15-min quarter runs ~18-19 real minutes because the game clock stops and the watch doesn't. Fast run = metres covered above 15 km/h &mdash; the number to watch for late-game fade. Sprints = bursts &ge; 20 km/h.</div>
   </div>
 
+  <details class="coach">
+  <summary><span class="ctag">Coach's data</span> the load numbers I use to build your week &mdash; nothing here needs a decision from you</summary>
+
   <div class="board">
     <h2>Physical output</h2>
-    <div class="headline">He covered <b>62.7 metres per minute</b> on the pitch &mdash; against 64&ndash;100 in his midfield games, and touched <b>80%</b> of his flat-out best speed.</div>
-    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Work rate</div><div class="val">62.7 <span class="unit">m/min</span></div><div class="sub">his midfield games run 64&ndash;100 m/min</div></div><div class="tile"><div class="lbl">Personal best reached</div><div class="val">80%</div><div class="sub">of his 28.9 km/h flat-out best</div></div><div class="tile"><div class="lbl">Sprint rate</div><div class="val">1.6</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">2s sampling — too coarse for acceleration counts</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">2s sampling — too coarse for acceleration counts</div></div></div>
-    <div class="qnote"><b>The acceleration counts are deliberately blank for this game, not zero.</b> The watch stored 2s sampling — too coarse for acceleration counts, and at that spacing a real hard burst is averaged away before it reaches the file &mdash; the same 17 minutes measured every second showed 43 accelerations and, sampled every 2 seconds, showed 6. A number here would describe the watch's recording setting, not the game. Everything else on this page is unaffected. He ran <b>0 m</b> above 85% of his best speed, none above 95%.</div>
+    <div class="headline">You covered <b>62.7 metres per minute</b> on the pitch &mdash; against 64&ndash;100 in your midfield games, and touched <b>80%</b> of your flat-out best speed.</div>
+    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">1.6</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val">0 <span class='unit'>m</span></div><div class="sub">run above 85% of your 28.9 km/h best</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">2s sampling — too coarse for acceleration counts</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">2s sampling — too coarse for acceleration counts</div></div></div>
+    <div class="qnote"><b>The acceleration counts are deliberately blank for this game, not zero.</b> The watch stored 2s sampling — too coarse for acceleration counts, and at that spacing a real hard burst is averaged away before it reaches the file &mdash; the same 17 minutes measured every second showed 43 accelerations and, sampled every 2 seconds, showed 6. A number here would describe the watch's recording setting, not the game. Everything else on this page is unaffected. You ran <b>0 m</b> above 85% of your best speed, none above 95%.</div>
   </div>
 
   <div class="board">
     <h2>How the distance splits by speed</h2>
-    <div class="headline"><b>348 of his 3,864 metres</b> (9%) were run above 15 km/h &mdash; the part of the distance that actually costs him.</div>
+    <div class="headline"><b>348 of your 3,864 metres</b> (9%) were run above 15 km/h &mdash; the part of the distance that actually costs you.</div>
     <div class="tscroll"><table>
       <tr><th>Speed band</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Whole game</th><th>Share</th></tr>
       <tr><td>Walking (under 6 km/h)</td><td>675m</td><td>667m</td><td>388m</td><td>409m</td><td>2,139m</td><td>55%</td></tr><tr><td>Jogging (6&ndash;11 km/h)</td><td>292m</td><td>289m</td><td>128m</td><td>310m</td><td>1,019m</td><td>26%</td></tr><tr><td>Running (11&ndash;15 km/h)</td><td>57m</td><td>79m</td><td>78m</td><td>144m</td><td>358m</td><td>9%</td></tr><tr style="font-weight:650"><td>Fast running (15&ndash;20 km/h)</td><td>54m</td><td>36m</td><td>37m</td><td>142m</td><td>269m</td><td>7%</td></tr><tr style="font-weight:650"><td>Sprinting (20 km/h and up)</td><td>41m</td><td>5m</td><td>13m</td><td>20m</td><td>79m</td><td>2%</td></tr>
@@ -125,7 +155,7 @@
 
   <div class="board">
     <h2>Repeat sprints &amp; training load</h2>
-    <div class="headline">His 10 sprints were spread out &mdash; none came within a minute of another.</div>
+    <div class="headline">Your 10 sprints were spread out &mdash; none came within a minute of another.</div>
     <div class="split">
       <div>
         <div class="sublbl">Repeat-sprint profile</div>
@@ -139,6 +169,8 @@
       </div>
     </div>
   </div>
+
+  </details>
 
   <div class="board">
     <h2>Heart-rate zones (minutes)</h2>
