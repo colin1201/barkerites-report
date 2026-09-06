@@ -117,6 +117,28 @@
   .btn.ghost{ background:transparent; color:var(--ink); border:1px solid var(--tile-border); }
   .btn:active{ transform:translateY(1px); }
   .fmt{ font-size:12px; color:var(--ink-3); margin-top:8px; }
+
+  /* Key match stats — the Sofascore "Run tab" panel (Colin, 6 Sep 2026: the three
+     headline numbers, then every speed band as metres AND share of the distance).
+     GAME PAGES ONLY, and it sits between the movement map and the quarter maps.
+     Bars are proportional to share, so the eye reads the split before the digits. */
+  .kstop{ display:flex; flex-wrap:wrap; gap:10px 34px; margin-bottom:18px; }
+  .kstop div{ display:flex; align-items:baseline; gap:6px; }
+  .kstop .kv{ font-size:30px; font-weight:800; letter-spacing:-.02em; color:var(--ink); }
+  .kstop .ku{ font-size:14px; font-weight:600; color:var(--ink-2); }
+  .kstop .kl{ font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); margin-left:2px; }
+  .kband{ margin-bottom:11px; }
+  .kbrow{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:5px; }
+  .kbl{ font-size:13.5px; color:var(--ink); }
+  .kbl em{ font-style:normal; color:var(--ink-3); font-size:12px; margin-left:5px; }
+  .kbv{ font-size:13.5px; color:var(--ink-2); white-space:nowrap; }
+  .kbv b{ color:var(--ink); margin-left:6px; }
+  .kbar{ height:8px; border-radius:5px; background:rgba(255,255,255,.06); overflow:hidden; }
+  .kbar i{ display:block; height:100%; border-radius:5px; }
+  @media (max-width:420px){
+    .kstop{ gap:10px 22px; } .kstop .kv{ font-size:26px; }
+    .kbl{ font-size:13px; } .kbl em{ display:block; margin:1px 0 0; } .kbv{ font-size:13px; }
+  }
   /* Tier-1 pro metrics */
   .headline{ font-size:15px; line-height:1.5; color:var(--ink); font-weight:600;
     margin:-2px 0 12px; }
