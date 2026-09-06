@@ -548,7 +548,7 @@ function drawMap(cv, grid, NX, NY, mxv){
   const g=document.createElement('canvas'); g.width=NX; g.height=NY;
   const gx=g.getContext('2d'); const im=gx.createImageData(NX,NY);
   for(let j=0;j<NY;j++) for(let i=0;i<NX;i++){
-    const v=grid[j][NX-1-i]/mxv, k=(j*NX+i)*4;
+    const v=grid[NY-1-j][NX-1-i]/mxv, k=(j*NX+i)*4;   // 180° rotation, not a one-axis mirror (parity with game_report.py, 6 Sep 2026)
     im.data[k]=255; im.data[k+1]=255; im.data[k+2]=255;
     im.data[k+3]=Math.round(255*Math.pow(Math.min(1,v),0.62));
   }

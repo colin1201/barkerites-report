@@ -155,7 +155,7 @@
   .ratewarn b{ color:var(--accent); }
 </style></head><body>
 <div class="wrap">
-  <a class="back" href="../colin.html">&larr; all match reports</a>
+  <a class="back" href="../colin.html">&larr; all my match reports</a>
   <header>
     <div class="eyebrow">Barkerites · MHL 5 · Game 6 · L 1-5</div>
     <h1>vs Lodras HC</h1>
@@ -266,7 +266,7 @@ function zoneShares(grid, NX, NY){
   for(let j=0;j<NY;j++){
     const lane = j < 9 ? 0 : (j < 19 ? 1 : 2);
     for(let i=0;i<NX;i++){
-      const v = grid[j][NX-1-i]; if(!v) continue;   // same x-flip as the heat
+      const v = grid[NY-1-j][NX-1-i]; if(!v) continue;   // same 180° rotation as the heat (see drawMap)
       tot += v;
       const x0 = i/(NX/4), x1 = (i+1)/(NX/4);       // in zone-column units
       const c0 = Math.floor(x0), c1 = Math.min(3, Math.floor(x1 - 1e-9));
@@ -293,7 +293,14 @@ function drawMap(cv, grid, mx, opts){
   const g = document.createElement('canvas'); g.width = NX; g.height = NY;
   const gx = g.getContext('2d'); const im = gx.createImageData(NX,NY);
   for(let j=0;j<NY;j++) for(let i=0;i<NX;i++){
-    const v = grid[j][NX-1-i]/mx;
+    // 180° ROTATION of the stored grid, not a one-axis flip. The stored frame has the
+    // own goal at high x; to draw it on the LEFT we reverse x — but reversing ONE axis
+    // is a reflection, and until 6 Sep 2026 that is what this did: every map was a
+    // MIRROR image of the pitch (a right mid drew in the top lane, the east bench at the
+    // bottom; a true top-down view with own goal-north on the left puts east at the TOP).
+    // Colin caught it on G6: "its still showing me on the left". Reversing BOTH axes
+    // keeps handedness, so a player's right is the bottom lane when attacking rightward.
+    const v = grid[NY-1-j][NX-1-i]/mx;
     const k = (j*NX+i)*4;
     im.data[k]=255; im.data[k+1]=255; im.data[k+2]=255; im.data[k+3]=Math.round(255*Math.pow(Math.min(1,v),0.62));
   }
