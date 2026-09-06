@@ -186,7 +186,7 @@
   </div>
 
   <div class="board">
-    <div class="h2row"><h2>Heat map by game</h2><span class="h2sub">same colour scale across all games — red = most time, blue = least</span></div>
+    <div class="h2row"><h2>Heat map by game</h2><span class="h2sub">each map on its own scale — red is that game's busiest spot, so compare shapes, not colours</span></div>
     <div class="qgrid" id="gmaps"><div><canvas class='gmap' data-g='0' width='600' height='361'></canvas><div class='qcap'>G1 · Old Rafflesians Assoc-C · 57 min</div></div><div><canvas class='gmap' data-g='1' width='600' height='361'></canvas><div class='qcap'>G2 · Hypernovas · 61 min</div></div><div><canvas class='gmap' data-g='2' width='600' height='361'></canvas><div class='qcap'>G3 · Eagles · 70 min</div></div><div><canvas class='gmap' data-g='3' width='600' height='361'></canvas><div class='qcap'>G5 · Tornados · 39 min</div></div><div><canvas class='gmap' data-g='4' width='600' height='361'></canvas><div class='qcap'>G6 · Lodras HC · 60 min</div></div></div>
   </div>
 
@@ -419,11 +419,15 @@ function render(){
   // jet (red->orange->yellow->green->blue) is now the renderer's default —
   // Colin saw it on this map first and approved it (6 Sep 2026)
   drawMap(document.getElementById('pitch'), grid, gridMax(grid), {zones: zonesOn});
-  const gmax = Math.max(...GAMES.map(g => gridMax(g.grid.map(r => r.map(v => v*g.w)))));
+  // Each per-game map is scaled to ITS OWN busiest spot. A shared scale made every
+  // midfield game top out at yellow (Colin, 6 Sep 2026: "why is my g6 lodras heat
+  // map showing no red or orange?") because a last man's small standing area sets
+  // a density no spread-out game can reach. Own-scale shows each game's SHAPE;
+  // the caption says so, so red is never read as "more time than in game 3".
   document.querySelectorAll('.gmap').forEach(cv => {
     const g = GAMES[+cv.dataset.g], on = gs.includes(g);
     cv.parentElement.style.display = on ? '' : 'none';
-    if (on) drawMap(cv, g.grid.map(r => r.map(v => v*g.w)), gmax, {zones: zonesOn});
+    if (on){ const gg = g.grid.map(r => r.map(v => v*g.w)); drawMap(cv, gg, gridMax(gg), {zones: zonesOn}); }
   });
   const label = filtered ? CHIP_KEYS[chip] : 'all positions';
   document.getElementById('map-sub').textContent = `${t.n} game${t.n!==1?'s':''} · ${label} · ${fmt(t.min)} min`;
