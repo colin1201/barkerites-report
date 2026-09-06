@@ -94,6 +94,12 @@
   .share canvas{ width:100%; height:auto; border-radius:16px; border:1px solid var(--tile-border); display:block; }
   .share .how{ font-size:14px; color:var(--ink-2); line-height:1.6; }
   .share .how b{ color:var(--ink); }
+  .picks{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+  @media (max-width:640px){ .picks{ grid-template-columns:1fr; } }
+  .picks label{ display:flex; flex-direction:column; gap:5px; font-size:12px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .picks select{ background:var(--card); color:var(--ink); border:1px solid var(--tile-border); border-radius:8px;
+    padding:9px 10px; font-size:14px; font-family:inherit; }
   .btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
   .btn{ background:var(--accent); color:#12181f; border:0; border-radius:10px; padding:11px 16px; font-size:14px;
     font-weight:650; cursor:pointer; }
@@ -169,7 +175,7 @@
 
   <div class="board doing">
     <h2>What to do with this</h2>
-    <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">Pick your sprints &mdash; this role runs you harder than the back does.</div><div class="why">You covered <b>101.9 m/min</b> against 61&ndash;63 in your last-man games: about <b>64% more running per minute</b>. 23 sprints in 61 minutes is 3.8 every 10 min. That is the job, not a fault &mdash; but it sits near the ceiling of what anyone repeats for a full game, so <b>which</b> runs you make is the whole thing.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">Warm up to near-max &mdash; or your first sprint of the game is your warm-up.</div><div class="why">You hit <b>29.5 km/h</b>, <b>102%</b> of your flat-out best. The quickest thing in your current warm-up is a 70&ndash;80% stride, so the game took you somewhere your preparation never does. Reaching 102% cold, late on, is the classic way a hamstring goes. One near-max stride before push-back covers it.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Look at where your sprints bunched &mdash; the map knows where, you know why.</div><div class="why"><b>12 of your 23 sprints</b> came in 5 bunches less than a minute apart, the longest <b>3 back-to-back</b>, typically 2 min 12 s between efforts. Bunching is exactly what pressing looks like, so this is not a fault &mdash; it is a question: were those the press, or chasing balls that were gone? You will remember. The quarter maps below show which part of the pitch they happened in.</div></div></div>
+    <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">Pick your sprints &mdash; this role runs you harder than the back does.</div><div class="why">You covered <b>101.9 m/min</b> against 61&ndash;63 in your last-man games: about <b>64% more running per minute</b>. 23 sprints in 61 minutes is 3.8 every 10 min. That is the job, not a fault &mdash; but it sits near the ceiling of what anyone repeats for a full game, so <b>which</b> runs you make is the whole thing.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">Warm up to near-max &mdash; or your first sprint of the game is your warm-up.</div><div class="why">You hit <b>29.5 km/h</b>, <b>100%</b> of your flat-out best. The quickest thing in your current warm-up is a 70&ndash;80% stride, so the game took you somewhere your preparation never does. Reaching 100% cold, late on, is the classic way a hamstring goes. One near-max stride before push-back covers it.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Look at where your sprints bunched &mdash; the map knows where, you know why.</div><div class="why"><b>12 of your 23 sprints</b> came in 5 bunches less than a minute apart, the longest <b>3 back-to-back</b>, typically 2 min 12 s between efforts. Bunching is exactly what pressing looks like, so this is not a fault &mdash; it is a question: were those the press, or chasing balls that were gone? You will remember. The quarter maps below show which part of the pitch they happened in.</div></div></div>
   </div>
 
   <div class="board">
@@ -200,9 +206,9 @@
 
   <div class="board">
     <h2>Physical output</h2>
-    <div class="headline">You covered <b>101.9 metres per minute</b> on the pitch &mdash; against 61&ndash;63 in your last-man games, and touched <b>102%</b> of your flat-out best speed, with <b>166 hard accelerations and stops</b>.</div>
-    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">3.8</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val">40 <span class='unit'>m</span></div><div class="sub">run above 85% of your 28.9 km/h best</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val">91</div><div class="sub">hard ones (2 m/s&sup2;+), 19 of them very hard</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val">75</div><div class="sub">hard stops, 14 of them very hard</div></div></div>
-    <div class="qnote">Acceleration and deceleration counts come from 1s sampling. An <b>acceleration</b> is a burst where you gained speed at 2 m/s&sup2; or more (roughly: 0 to 7 km/h in a second); very hard is 3 m/s&sup2;. You ran <b>40 m</b> above 85% of your best speed and <b>14 m</b> above 95%.</div>
+    <div class="headline">You covered <b>101.9 metres per minute</b> on the pitch &mdash; against 61&ndash;63 in your last-man games, and touched <b>100%</b> of your flat-out best speed, with <b>166 hard accelerations and stops</b>.</div>
+    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">3.8</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val">33 <span class='unit'>m</span></div><div class="sub">run above 85% of your 29.5 km/h best</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val">91</div><div class="sub">hard ones (2 m/s&sup2;+), 19 of them very hard</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val">75</div><div class="sub">hard stops, 14 of them very hard</div></div></div>
+    <div class="qnote">Acceleration and deceleration counts come from 1s sampling. An <b>acceleration</b> is a burst where you gained speed at 2 m/s&sup2; or more (roughly: 0 to 7 km/h in a second); very hard is 3 m/s&sup2;. You ran <b>33 m</b> above 85% of your best speed and <b>14 m</b> above 95%.</div>
   </div>
 
   <div class="board">

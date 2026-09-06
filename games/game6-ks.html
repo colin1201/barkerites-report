@@ -94,6 +94,12 @@
   .share canvas{ width:100%; height:auto; border-radius:16px; border:1px solid var(--tile-border); display:block; }
   .share .how{ font-size:14px; color:var(--ink-2); line-height:1.6; }
   .share .how b{ color:var(--ink); }
+  .picks{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+  @media (max-width:640px){ .picks{ grid-template-columns:1fr; } }
+  .picks label{ display:flex; flex-direction:column; gap:5px; font-size:12px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .picks select{ background:var(--card); color:var(--ink); border:1px solid var(--tile-border); border-radius:8px;
+    padding:9px 10px; font-size:14px; font-family:inherit; }
   .btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
   .btn{ background:var(--accent); color:#12181f; border:0; border-radius:10px; padding:11px 16px; font-size:14px;
     font-weight:650; cursor:pointer; }
@@ -163,13 +169,13 @@
     <div class="tile"><div class="lbl">Distance</div><div class="val">3.8 <span style="font-size:13px;font-weight:500">km</span></div><div class="sub">82 min recorded</div></div>
     <div class="tile"><div class="lbl">Top speed</div><div class="val">26.9 <span style="font-size:13px;font-weight:500">km/h</span></div><div class="sub">fastest burst</div></div>
     <div class="tile"><div class="lbl">Sprint efforts</div><div class="val">2</div><div class="sub">bursts &ge; 20 km/h</div></div>
-    <div class="tile"><div class="lbl">Work rate</div><div class="val">53.8 <span class="unit">m/min</span></div><div class="sub">your midfield games run 64&ndash;100 m/min</div></div>
-    <div class="tile"><div class="lbl">Avg HR</div><div class="val">153 <span style="font-size:13px;font-weight:500">bpm</span></div><div class="sub">&asymp;84% of max</div></div>
+    <div class="tile"><div class="lbl">Work rate</div><div class="val">53.8 <span class="unit">m/min</span></div><div class="sub">metres per minute on the pitch</div></div>
+    <div class="tile"><div class="lbl">Avg HR</div><div class="val">153 <span style="font-size:13px;font-weight:500">bpm</span></div><div class="sub">no max HR on file for this player</div></div>
   </div>
 
   <div class="board doing">
     <h2>What to do with this</h2>
-    <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">Your engine is not the limiter in this role &mdash; reading the play is.</div><div class="why"><b>53.8 m/min</b> is normal for you at the back. your midfield games run 64&ndash;100, so if you get moved forward again it is a genuinely different week of legs, not just a different shirt. Here the ground you save by starting in the right place beats the ground you cover.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">Warm up to near-max &mdash; or your first sprint of the game is your warm-up.</div><div class="why">You hit <b>26.9 km/h</b>, <b>93%</b> of your flat-out best. The quickest thing in your current warm-up is a 70&ndash;80% stride, so the game took you somewhere your preparation never does. Reaching 93% cold, late on, is the classic way a hamstring goes. One near-max stride before push-back covers it.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Your sprints were spread out, not bunched.</div><div class="why">All 2 sat more than a minute apart, typically 6 min 01 s. That is the pattern of picking your moments rather than chasing &mdash; the legs stay available for the last quarter.</div></div></div>
+    <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">You covered 53.8 m/min on the pitch.</div><div class="why">2 sprints in 54 minutes. No measured norm for &ldquo;centre back / right back&rdquo; yet &mdash; a couple more games in this role and there will be one to judge it against.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">Top speed <b>26.9 km/h</b> &mdash; no flat-out reference on file for this player.</div><div class="why">The warm-up read on these pages compares a game's top speed with the player's own measured maximum. None has been measured for this player, so the speed is reported as-is rather than as a share of someone else's best. A track max, once measured, goes in as <code>--track-max</code>.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Your sprints were spread out, not bunched.</div><div class="why">All 2 sat more than a minute apart, typically 6 min 01 s. That is the pattern of picking your moments rather than chasing &mdash; the legs stay available for the last quarter.</div></div></div>
   </div>
 
   <div class="board">
@@ -200,9 +206,9 @@
 
   <div class="board">
     <h2>Physical output</h2>
-    <div class="headline">You covered <b>53.8 metres per minute</b> on the pitch &mdash; against 64&ndash;100 in your midfield games, and touched <b>93%</b> of your flat-out best speed.</div>
-    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">0.4</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val">12 <span class='unit'>m</span></div><div class="sub">run above 85% of your 28.9 km/h best</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">2s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">2s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div></div>
-    <div class="qnote"><b>The acceleration counts are deliberately blank for this game, not zero.</b> The watch stored 2s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated, and at that spacing a real hard burst is averaged away before it reaches the file &mdash; the same 17 minutes measured every second showed 43 accelerations and, sampled every 2 seconds, showed 6. A number here would describe the watch's recording setting, not the game. Everything else on this page is unaffected. You ran <b>12 m</b> above 85% of your best speed, none above 95%.</div>
+    <div class="headline">You covered <b>53.8 metres per minute</b> on the pitch.</div>
+    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">0.4</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val"><span class="na">not measurable</span></div><div class="sub">no flat-out reference on file for this player</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">2s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">2s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div></div>
+    <div class="qnote"><b>The acceleration counts are deliberately blank for this game, not zero.</b> The watch stored 2s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated, and at that spacing a real hard burst is averaged away before it reaches the file &mdash; the same 17 minutes measured every second showed 43 accelerations and, sampled every 2 seconds, showed 6. A number here would describe the watch's recording setting, not the game. Everything else on this page is unaffected.</div>
   </div>
 
   <div class="board">
@@ -242,7 +248,7 @@
 
   <div class="board">
     <h2>Game notes</h2>
-    <div class="notes">Started right back, played most of the game as a deep central back in the back three. On the pitch through Q2 (deep, low-speed positioning - not a sub); off for Q3 (ankle and calf), back on for Q4. Windows aligned to Colin&#x27;s push-back clock (KS&#x27;s watch started 26s earlier). File is 2s-sampled GPX - the Tier-1 figures are understated and marked as such.</div>
+    <div class="notes">Started right back, played most of the game as a deep central back in the back three. On the pitch through Q2 (deep, low-speed positioning - not a sub); off for Q3 (ankle and calf), back on for Q4. Windows aligned to Colin&#x27;s push-back clock (KS&#x27;s watch started 26s earlier). File is 2s-sampled GPX - the Tier-1 figures are understated and marked as such. Benchmarks: none borrowed - no track max or max HR on file for KS.</div>
   </div>
 
   <p class="foot">Heat map: moving time only, both halves rotated onto one attacking direction, wrist GPS at 2s sampling of an exported file with no distance channel — shapes honest, edges approximate. Orientation assumes more time spent defending than attacking (dense end = own goal). HR from wrist optical: treat in-game values as a trend, not gospel. Pitch frame: surveyed Sengkang Hockey Stadium Pitch 1 corners. halftime 36-42 min + bench 42-58 min + quarter breaks excluded from maps and stats.</p>
