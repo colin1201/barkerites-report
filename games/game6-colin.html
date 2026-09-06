@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- REBUILD: py game_report.py --activity &quot;24247043328&quot; --halftime &quot;35.6-42.0&quot; --bench &quot;26.4-34.5&quot; --breaks &quot;15.0-17.8,59.0-61.6&quot; --venue &quot;sengkang-p1&quot; --flip-ends --position &quot;right mid&quot; (engine build 2026-08-25, Tier-1 metrics) -->
+<title>Game 6 vs Lodras HC</title>
+<style>
+  :root{ --ground:#10161d; --card:#171f28; --ink:#e8edf2; --ink-2:#a7b4c0; --ink-3:#6b7a88;
+    --pitch:#173d5a; --pitch-edge:#122f46; --line:rgba(255,255,255,.42);
+    --accent:#e8842a; --tile-border:#242f3a; }
+  body{ background:var(--ground); color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif; margin:0; padding:24px 16px 40px; }
+  .wrap{ max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+  a.back{ color:var(--ink-3); font-size:13px; text-decoration:none; }
+  .eyebrow{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  h1{ font-size:24px; margin:2px 0 0; font-weight:650; }
+  .meta{ color:var(--ink-2); font-size:14px; margin-top:4px; }
+  .board{ background:var(--card); border:1px solid var(--tile-border); border-radius:10px; padding:16px; }
+  h2{ font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); margin:0 0 10px; font-weight:600; }
+  canvas{ width:100%; height:auto; display:block; border-radius:6px; }
+  .dir{ display:flex; justify-content:space-between; font-size:12px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-3); margin-top:8px; }
+  .tiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+  .tile{ background:var(--card); border:1px solid var(--tile-border); border-radius:10px; padding:12px 14px; }
+  .tile .lbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .tile .val{ font-size:24px; font-weight:650; margin-top:3px; font-variant-numeric:tabular-nums; }
+  .tile .sub{ font-size:12px; color:var(--ink-2); margin-top:2px; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; }
+  th{ text-align:left; color:var(--ink-3); font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    padding:6px 8px; border-bottom:1px solid var(--tile-border); }
+  td{ padding:7px 8px; border-bottom:1px solid var(--tile-border); }
+  tr:last-child td{ border-bottom:none; }
+  .tscroll{ overflow-x:auto; }
+  .tscroll table{ min-width:470px; }
+  .qnote{ font-size:12.5px; color:var(--ink-3); margin-top:8px; line-height:1.5; }
+  .qnote.fade{ font-size:13.5px; color:var(--ink); }
+  .zbar{ display:flex; height:16px; border-radius:8px; overflow:hidden; gap:2px; margin-top:6px; }
+  .zbar div{ background:var(--accent); min-width:2px; }
+  .zl{ display:flex; gap:14px; font-size:12px; color:var(--ink-2); margin-top:8px; flex-wrap:wrap;
+    font-variant-numeric:tabular-nums; }
+  .notes{ font-size:14px; color:var(--ink-2); line-height:1.6; white-space:pre-line; }
+  .foot{ font-size:12px; color:var(--ink-3); line-height:1.5; max-width:70ch; }
+  /* clear:both — the map-heading's float:right caption used to swallow this
+     grid's width on phones (per-game maps rendered 63px wide, 6 Sep 2026 audit) */
+  .qgrid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; clear:both; }
+  @media (max-width:560px){ .qgrid{ grid-template-columns:1fr; } }
+  .qcap{ font-size:12px; color:var(--ink-2); margin-top:5px; text-align:center;
+    font-variant-numeric:tabular-nums; }
+  /* ---- redesign, 6 Sep 2026 (season page first; game pages inherit on rebuild) ---- */
+  /* heading + right-hand caption as flex, so the caption can never eat the row below */
+  .h2row{ display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px 12px; }
+  .h2row .h2sub{ font-weight:500; text-transform:none; letter-spacing:0; color:var(--ink-2); font-size:12.5px; }
+  .controls{ display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; margin:2px 0 12px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{ border:1px solid var(--tile-border); background:rgba(255,255,255,.03); color:var(--ink-2);
+    border-radius:20px; padding:5px 12px; font-size:13px; cursor:pointer; user-select:none; line-height:1.2; }
+  .chip:hover{ border-color:var(--ink-3); }
+  .chip.on{ background:var(--accent); color:#12181f; border-color:var(--accent); font-weight:650; }
+  .tog{ display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); cursor:pointer;
+    user-select:none; margin-left:auto; }
+  .tog input{ accent-color:var(--accent); width:17px; height:17px; margin:0; }
+  /* scorecards: one stat each — value, plain-words label, comparison line, colour band */
+  .cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .card{ background:var(--card); border:1px solid var(--tile-border); border-radius:12px; padding:13px 14px 12px;
+    border-top:3px solid var(--tile-border); }
+  .card.up{ border-top-color:#48bb78; } .card.down{ border-top-color:var(--accent); } .card.flat{ border-top-color:#5b6b7a; }
+  .card .cl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .card .cv{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .card .cv .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:3px; }
+  .card .cs{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
+  .card .cs b{ color:var(--ink); font-weight:650; }
+  .card.up .cs b.d{ color:#7fd6a0; } .card.down .cs b.d{ color:#f0a25e; }
+  /* tables become one card per row on a phone — no sideways scrolling */
+  @media (max-width:600px){
+    .tscroll table.cardify{ min-width:0; }
+    table.cardify, table.cardify tbody, table.cardify tr, table.cardify td{ display:block; }
+    table.cardify thead, table.cardify tr.thead{ display:none; }
+    table.cardify tr{ border:1px solid var(--tile-border); border-radius:10px; padding:8px 11px 6px; margin-bottom:9px;
+      background:rgba(255,255,255,.02); }
+    table.cardify td{ display:flex; justify-content:space-between; gap:12px; padding:5px 0;
+      border-bottom:1px dashed var(--tile-border); font-size:14px; }
+    table.cardify td:last-child{ border-bottom:none; }
+    table.cardify td::before{ content:attr(data-label); color:var(--ink-3); font-size:12px;
+      text-transform:uppercase; letter-spacing:.08em; flex:0 0 auto; }
+    table.cardify td.rowhead{ display:block; font-weight:650; font-size:15px; border-bottom:1px solid var(--tile-border);
+      padding-bottom:7px; margin-bottom:3px; }
+    table.cardify td.rowhead::before{ content:none; }
+    table.cardify tr.total td.rowhead{ color:var(--accent); }
+  }
+  /* share card: the on-page preview IS the canvas the button saves */
+  .share{ display:grid; grid-template-columns:minmax(220px,330px) 1fr; gap:20px; align-items:start; }
+  @media (max-width:640px){ .share{ grid-template-columns:1fr; } .share .preview{ max-width:330px; margin:0 auto; } }
+  .share canvas{ width:100%; height:auto; border-radius:16px; border:1px solid var(--tile-border); display:block; }
+  .share .how{ font-size:14px; color:var(--ink-2); line-height:1.6; }
+  .share .how b{ color:var(--ink); }
+  .btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+  .btn{ background:var(--accent); color:#12181f; border:0; border-radius:10px; padding:11px 16px; font-size:14px;
+    font-weight:650; cursor:pointer; }
+  .btn.ghost{ background:transparent; color:var(--ink); border:1px solid var(--tile-border); }
+  .btn:active{ transform:translateY(1px); }
+  .fmt{ font-size:12px; color:var(--ink-3); margin-top:8px; }
+  /* Tier-1 pro metrics */
+  .headline{ font-size:15px; line-height:1.5; color:var(--ink); font-weight:600;
+    margin:-2px 0 12px; }
+  .tiles-in{ margin-bottom:10px; }
+  .tiles-in .tile{ background:rgba(255,255,255,.03); }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:620px){ .split{ grid-template-columns:1fr; } }
+  .sublbl{ font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:600; margin-bottom:8px; }
+  .kv{ display:flex; flex-direction:column; gap:7px; font-size:14px;
+    font-variant-numeric:tabular-nums; }
+  .kv .r{ display:flex; justify-content:space-between; gap:14px;
+    border-bottom:1px solid var(--tile-border); padding-bottom:6px; }
+  .kv .r:last-child{ border-bottom:none; }
+  .kv .k{ color:var(--ink-2); }
+  .kv .v{ font-weight:650; text-align:right; }
+  .na{ color:var(--ink-3); font-weight:500; font-style:italic; }
+  .flag{ display:inline-block; padding:1px 8px; border-radius:20px; font-size:12px;
+    font-weight:650; letter-spacing:.02em; }
+  .flag.safe{ background:rgba(72,187,120,.16); color:#7fd6a0; }
+  .flag.spike{ background:rgba(232,132,42,.18); color:#f0a25e; }
+  .flag.low{ background:rgba(120,160,200,.16); color:#9dbede; }
+  .tile .val .unit{ font-size:13px; font-weight:500; }
+  .board.doing{ border-color:rgba(232,132,42,.32); background:linear-gradient(180deg,rgba(232,132,42,.055),transparent 70%),var(--card); }
+  .takeaway{ display:flex; gap:13px; padding:13px 0; border-bottom:1px solid var(--tile-border); }
+  .takeaway:last-child{ border-bottom:none; padding-bottom:2px; }
+  .takeaway:first-of-type{ padding-top:2px; }
+  .tnum{ flex:0 0 25px; height:25px; border-radius:50%; background:var(--accent); color:#12181f;
+    font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .tbody{ flex:1; min-width:0; }
+  .tbody .lead{ font-size:15px; font-weight:650; line-height:1.45; }
+  .tbody .why{ font-size:13.5px; color:var(--ink-2); line-height:1.55; margin-top:5px; }
+  details.coach{ border:1px dashed var(--tile-border); border-radius:10px; padding:0 14px; }
+  details.coach > summary{ cursor:pointer; list-style:none; padding:13px 0; font-size:13px;
+    color:var(--ink-3); line-height:1.5; }
+  details.coach > summary::-webkit-details-marker{ display:none; }
+  details.coach > summary::before{ content:"▸"; color:var(--accent); margin-right:8px; display:inline-block; }
+  details.coach[open] > summary::before{ transform:rotate(90deg); }
+  details.coach > summary::after{ content:""; }
+  details.coach[open]{ padding-bottom:14px; }
+  details.coach .board{ margin-bottom:12px; }
+  details.coach .board:last-of-type{ margin-bottom:0; }
+  .ctag{ display:inline-block; background:rgba(232,132,42,.16); color:var(--accent); font-weight:650;
+    padding:1px 8px; border-radius:20px; margin-right:7px; font-size:12px; }
+  .ratewarn{ background:rgba(232,132,42,.10); border:1px solid rgba(232,132,42,.42);
+    border-radius:10px; padding:13px 15px; font-size:13.5px; line-height:1.55; color:var(--ink); }
+  .ratewarn b{ color:var(--accent); }
+</style></head><body>
+<div class="wrap">
+  <a class="back" href="../colin.html">&larr; all match reports</a>
+  <header>
+    <div class="eyebrow">Barkerites · MHL 5 · Game 6 · L 1-5</div>
+    <h1>vs Lodras HC</h1>
+    <div class="meta">Sat 5 Sep 2026, 1940 · right mid · 6.4 km · 82 min recorded</div>
+  </header>
+
+  
+
+  <div class="tiles">
+    <div class="tile"><div class="lbl">Own half</div><div class="val">36%</div><div class="sub">of moving time</div></div>
+    <div class="tile"><div class="lbl">Distance</div><div class="val">6.4 <span style="font-size:13px;font-weight:500">km</span></div><div class="sub">82 min recorded</div></div>
+    <div class="tile"><div class="lbl">Top speed</div><div class="val">29.5 <span style="font-size:13px;font-weight:500">km/h</span></div><div class="sub">fastest burst</div></div>
+    <div class="tile"><div class="lbl">Sprint efforts</div><div class="val">23</div><div class="sub">bursts &ge; 20 km/h</div></div>
+    <div class="tile"><div class="lbl">Work rate</div><div class="val">101.4 <span class="unit">m/min</span></div><div class="sub">your last-man games run 61&ndash;63 m/min</div></div>
+    <div class="tile"><div class="lbl">Avg HR</div><div class="val">164 <span style="font-size:13px;font-weight:500">bpm</span></div><div class="sub">&asymp;90% of max</div></div>
+  </div>
+
+  <div class="board doing">
+    <h2>What to do with this</h2>
+    <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">Pick your sprints &mdash; this role runs you harder than the back does.</div><div class="why">You covered <b>101.4 m/min</b> against 61&ndash;63 in your last-man games: about <b>64% more running per minute</b>. 23 sprints in 62 minutes is 3.7 every 10 min. That is the job, not a fault &mdash; but it sits near the ceiling of what anyone repeats for a full game, so <b>which</b> runs you make is the whole thing.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">Warm up to near-max &mdash; or your first sprint of the game is your warm-up.</div><div class="why">You hit <b>29.5 km/h</b>, <b>102%</b> of your flat-out best. The quickest thing in your current warm-up is a 70&ndash;80% stride, so the game took you somewhere your preparation never does. Reaching 102% cold, late on, is the classic way a hamstring goes. One near-max stride before push-back covers it.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Look at where your sprints bunched &mdash; the map knows where, you know why.</div><div class="why"><b>12 of your 23 sprints</b> came in 5 bunches less than a minute apart, the longest <b>3 back-to-back</b>, typically 2 min 12 s between efforts. Bunching is exactly what pressing looks like, so this is not a fault &mdash; it is a question: were those the press, or chasing balls that were gone? You will remember. The quarter maps below show which part of the pitch they happened in.</div></div></div>
+  </div>
+
+  <div class="board">
+    <h2>Movement heat map <span style="float:right;font-weight:500;text-transform:none;letter-spacing:0">att 40% · mid 45% · def 16%</span></h2>
+    <canvas id="pitch" width="1200" height="722"></canvas>
+    <div class="dir"><span>&#9664; Own goal</span><span>Direction of attack &#9654;</span></div>
+  </div>
+
+  <div class="board">
+    <h2>Heat map by quarter <span style="float:right;font-weight:500;text-transform:none;letter-spacing:0">same brightness scale across all four</span></h2>
+    <div class="qgrid">
+      <div><canvas class="qmap" data-q="0" width="600" height="361"></canvas><div class="qcap">Q1 · 1422m</div></div>
+      <div><canvas class="qmap" data-q="1" width="600" height="361"></canvas><div class="qcap">Q2 · 989m</div></div>
+      <div><canvas class="qmap" data-q="2" width="600" height="361"></canvas><div class="qcap">Q3 · 1811m</div></div>
+      <div><canvas class="qmap" data-q="3" width="600" height="361"></canvas><div class="qcap">Q4 · 2049m</div></div>
+    </div>
+  </div>
+
+  <div class="board">
+    <h2>By quarter (split around halftime)</h2>
+    <div class="tscroll"><table><tr><th></th><th>On pitch</th><th>Distance</th><th>Fast run</th><th>Sprints</th><th>Top speed</th><th>Avg HR</th></tr><tr><td>Q1</td><td>15 min</td><td>1422m</td><td>251m</td><td>6</td><td>29.5 km/h</td><td>162</td></tr><tr><td>Q2</td><td>10 min</td><td>989m</td><td>168m</td><td>1</td><td>21.1 km/h</td><td>166</td></tr><tr><td>Q3</td><td>17 min</td><td>1811m</td><td>388m</td><td>8</td><td>29.4 km/h</td><td>165</td></tr><tr><td>Q4</td><td>20 min</td><td>2049m</td><td>447m</td><td>8</td><td>24.0 km/h</td><td>165</td></tr></table></div>
+    <div class="qnote fade">Late-game read — Q4 vs Q1, per minute on pitch: total distance +7%, fast running +33%.</div>
+    <div class="qnote">On pitch = wall-clock minutes excluding halftime, bench and still time 60s+ &mdash; a 15-min quarter runs ~18-19 real minutes because the game clock stops and the watch doesn't. Fast run = metres covered above 15 km/h &mdash; the number to watch for late-game fade. Sprints = bursts &ge; 20 km/h.</div>
+  </div>
+
+  <details class="coach">
+  <summary><span class="ctag">Coach's data</span> the load numbers I use to build your week &mdash; nothing here needs a decision from you</summary>
+
+  <div class="board">
+    <h2>Physical output</h2>
+    <div class="headline">You covered <b>101.4 metres per minute</b> on the pitch &mdash; against 61&ndash;63 in your last-man games, and touched <b>102%</b> of your flat-out best speed, with <b>167 hard accelerations and stops</b>.</div>
+    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">3.7</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val">40 <span class='unit'>m</span></div><div class="sub">run above 85% of your 28.9 km/h best</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val">92</div><div class="sub">hard ones (2 m/s&sup2;+), 19 of them very hard</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val">75</div><div class="sub">hard stops, 14 of them very hard</div></div></div>
+    <div class="qnote">Acceleration and deceleration counts come from 1s sampling. An <b>acceleration</b> is a burst where you gained speed at 2 m/s&sup2; or more (roughly: 0 to 7 km/h in a second); very hard is 3 m/s&sup2;. You ran <b>40 m</b> above 85% of your best speed and <b>14 m</b> above 95%.</div>
+  </div>
+
+  <div class="board">
+    <h2>How the distance splits by speed</h2>
+    <div class="headline"><b>1,254 of your 6,269 metres</b> (20%) were run above 15 km/h &mdash; the part of the distance that actually costs you.</div>
+    <div class="tscroll"><table>
+      <tr><th>Speed band</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Whole game</th><th>Share</th></tr>
+      <tr><td>Walking (under 6 km/h)</td><td>431m</td><td>259m</td><td>449m</td><td>591m</td><td>1,730m</td><td>28%</td></tr><tr><td>Jogging (6&ndash;11 km/h)</td><td>454m</td><td>349m</td><td>572m</td><td>608m</td><td>1,983m</td><td>32%</td></tr><tr><td>Running (11&ndash;15 km/h)</td><td>286m</td><td>212m</td><td>401m</td><td>403m</td><td>1,302m</td><td>21%</td></tr><tr style="font-weight:650"><td>Fast running (15&ndash;20 km/h)</td><td>172m</td><td>164m</td><td>264m</td><td>328m</td><td>928m</td><td>15%</td></tr><tr style="font-weight:650"><td>Sprinting (20 km/h and up)</td><td>79m</td><td>4m</td><td>124m</td><td>119m</td><td>326m</td><td>5%</td></tr>
+    </table></div>
+    <div class="qnote">Every figure is metres covered while travelling in that speed range, so the five rows add up to the game's total distance. Walking and jogging are the bulk of any hockey game &mdash; the two bottom rows are the ones that cost you.</div>
+  </div>
+
+  <div class="board">
+    <h2>Repeat sprints &amp; training load</h2>
+    <div class="headline"><b>12 of your 23 sprints</b> came in 5 back-to-back clusters with under a minute between them, and the week into this game ran at <b>1.89&times;</b> your recent average load.</div>
+    <div class="split">
+      <div>
+        <div class="sublbl">Repeat-sprint profile</div>
+        <div class="kv"><div class="r"><span class="k">Sprint efforts</span><span class="v">23</span></div><div class="r"><span class="k">Back-to-back clusters</span><span class="v">5</span></div><div class="r"><span class="k">Sprints inside a cluster</span><span class="v">12</span></div><div class="r"><span class="k">Longest cluster</span><span class="v">3 sprints</span></div><div class="r"><span class="k">Typical recovery (median)</span><span class="v">2 min 12 s</span></div><div class="r"><span class="k">Tightest turnaround</span><span class="v">8 s</span></div></div>
+        <div class="qnote">A <b>cluster</b> is two or more sprints with less than 60 seconds of recovery between them &mdash; the pattern that empties the legs fastest. Recovery time spent on the bench or at a break is not counted as recovery between sprints.</div>
+      </div>
+      <div>
+        <div class="sublbl">Training load, the 7 days up to this game</div>
+        <div class="kv"><div class="r"><span class="k">This week</span><span class="v">324 min over 9 sessions</span></div><div class="r"><span class="k">Average week, previous 4</span><span class="v">171 min over 7.5 sessions</span></div><div class="r"><span class="k">Ratio</span><span class="v">1.89&times;</span></div><div class="r"><span class="k">Verdict</span><span class="v"><span class="flag spike">SPIKE &mdash; injury risk</span></span></div></div>
+        <div class="qnote">Load here is total training minutes, compared with the average week over the previous four weeks. Under 0.8 = detraining, 0.8&ndash;1.3 = safe, above 1.3 = injury risk.</div>
+      </div>
+    </div>
+  </div>
+
+  </details>
+
+  <div class="board">
+    <h2>Heart-rate zones (minutes)</h2>
+    <div class="zbar"><div style="flex:0.01;opacity:0.18"></div><div style="flex:1;opacity:0.35"></div><div style="flex:5;opacity:0.55"></div><div style="flex:28;opacity:0.78"></div><div style="flex:26;opacity:1"></div></div>
+    <div class="zl"><span>Z1 0m</span><span>Z2 1m</span><span>Z3 5m</span><span>Z4 28m</span><span>Z5 26m</span></div>
+  </div>
+
+  <div class="board">
+    <h2>Game notes</h2>
+    <div class="notes">Away at SK1, both teams 3-5-2. Started right mid; subbed off mid-Q2, back at left mid for the last minute of the half, right mid for all of H2. Biggest impact: pressing their left back and tracking back to defend. One shot on target (saved). Own read: too often looked for the pass inside instead of driving the flank - too many defenders in front, took the simple option; no forward running the channel. Felt the legs going in Q4 while covering the whole flank, but Q4 was the strongest quarter for fast running. Teammate: a bit too square when defending. Knee: nothing during, regular stiffness after. Paused the watch at every quarter break (the recording holes).</div>
+  </div>
+
+  <p class="foot">Heat map: moving time only, both halves rotated onto one attacking direction, wrist GPS at 1s sampling — shapes honest, edges approximate. Ends were set from a teammate's file, not the usual assumption, because you attacked more than you defended. HR from wrist optical: treat in-game values as a trend, not gospel. Pitch frame: surveyed Sengkang Hockey Stadium Pitch 1 corners. halftime 36-42 min + bench 26-34 min + quarter breaks excluded from maps and stats.</p>
+</div>
+<script>
+const DATA = {"grid": [[0, 1, 0, 1, 0, 0, 1, 0, 4, 1, 1, 0, 2, 4, 6, 4, 9, 8, 7, 5, 8, 5, 8, 3, 1, 3, 7, 7, 13, 9, 8, 4, 3, 5, 5, 0, 1, 0, 1, 4, 1, 0, 3, 0, 0, 1], [0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 1, 0, 0, 3, 5, 6, 9, 15, 10, 11, 7, 10, 6, 13, 5, 5, 6, 10, 15, 11, 10, 2, 1, 4, 5, 3, 3, 4, 1, 2, 2, 6, 4, 1, 2, 1], [0, 2, 11, 1, 2, 2, 3, 1, 2, 1, 4, 1, 4, 6, 3, 5, 4, 6, 7, 8, 11, 13, 15, 11, 17, 16, 13, 10, 8, 6, 7, 6, 2, 1, 4, 3, 1, 1, 0, 3, 4, 2, 1, 6, 3, 1], [0, 8, 6, 3, 1, 1, 4, 1, 5, 1, 6, 4, 10, 6, 7, 10, 8, 13, 17, 12, 13, 9, 13, 10, 13, 10, 2, 6, 8, 5, 6, 6, 4, 5, 3, 1, 3, 2, 4, 1, 2, 5, 1, 3, 3, 0], [0, 4, 6, 4, 1, 14, 6, 3, 5, 2, 7, 7, 8, 10, 9, 13, 12, 10, 12, 9, 10, 10, 12, 12, 8, 8, 5, 13, 7, 4, 6, 5, 1, 6, 1, 3, 2, 3, 1, 3, 5, 1, 3, 1, 2, 3], [2, 4, 3, 6, 9, 8, 3, 8, 2, 4, 6, 6, 9, 11, 12, 8, 16, 10, 8, 16, 8, 11, 9, 9, 4, 3, 8, 8, 7, 6, 7, 7, 6, 6, 4, 4, 1, 1, 2, 2, 5, 3, 2, 5, 4, 5], [0, 3, 3, 6, 9, 2, 4, 4, 12, 10, 12, 7, 4, 2, 8, 10, 11, 3, 4, 7, 9, 13, 5, 3, 4, 6, 5, 5, 5, 4, 4, 3, 6, 4, 3, 2, 0, 0, 2, 0, 1, 5, 4, 4, 1, 1], [0, 1, 1, 8, 14, 9, 6, 12, 7, 5, 9, 5, 9, 8, 7, 8, 5, 3, 10, 4, 9, 6, 6, 3, 3, 5, 7, 10, 3, 3, 5, 8, 8, 2, 4, 1, 2, 0, 0, 3, 3, 2, 3, 0, 5, 0], [1, 4, 1, 4, 3, 11, 7, 5, 4, 10, 7, 15, 15, 3, 7, 2, 6, 3, 4, 6, 4, 5, 1, 5, 6, 3, 5, 10, 6, 16, 2, 7, 9, 8, 4, 1, 4, 0, 0, 4, 1, 1, 0, 0, 1, 3], [2, 2, 1, 1, 3, 13, 9, 7, 7, 4, 9, 8, 6, 4, 4, 4, 3, 6, 9, 4, 1, 0, 6, 1, 6, 4, 5, 5, 7, 4, 3, 2, 1, 5, 1, 1, 0, 0, 3, 5, 3, 0, 1, 1, 0, 0], [0, 1, 4, 1, 6, 14, 9, 7, 11, 6, 5, 3, 5, 3, 1, 2, 1, 4, 4, 1, 1, 9, 6, 3, 5, 6, 6, 4, 0, 1, 2, 1, 2, 1, 0, 0, 2, 0, 0, 2, 4, 0, 1, 1, 0, 0], [2, 4, 3, 6, 9, 11, 6, 5, 9, 3, 7, 3, 2, 2, 2, 1, 0, 2, 2, 7, 4, 3, 2, 3, 3, 0, 0, 1, 3, 1, 2, 0, 1, 3, 1, 1, 1, 1, 1, 2, 1, 2, 3, 5, 0, 0], [1, 4, 4, 5, 5, 11, 14, 10, 7, 1, 0, 2, 3, 0, 1, 1, 6, 2, 2, 4, 4, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 1, 1, 2, 0, 0, 0, 0, 1, 5, 2, 1, 1, 0, 0, 0], [10, 7, 9, 7, 8, 14, 2, 3, 1, 1, 2, 1, 1, 1, 1, 2, 2, 4, 4, 5, 0, 0, 0, 0, 1, 2, 0, 1, 0, 1, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0], [13, 10, 5, 8, 7, 3, 5, 5, 2, 0, 1, 0, 0, 0, 3, 2, 3, 3, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], [9, 4, 14, 3, 2, 3, 3, 2, 1, 0, 0, 3, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [11, 8, 3, 2, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 1, 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 5, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], "nx": 46, "ny": 28, "total": 2958, "qgrids": [[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 5, 3, 4, 0, 2, 3, 2, 2, 0, 0, 0, 0, 0, 0, 2, 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1], [0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 1, 3, 3, 5, 5, 7, 1, 1, 2, 4, 6, 2, 3, 2, 2, 3, 3, 1, 1, 0, 3, 4, 3, 2, 2, 0, 1, 0, 0, 0, 1, 2, 1], [0, 2, 11, 1, 2, 1, 2, 1, 1, 0, 2, 0, 1, 1, 1, 1, 1, 3, 2, 4, 2, 3, 9, 4, 3, 6, 4, 1, 0, 2, 0, 3, 1, 0, 1, 0, 0, 0, 0, 2, 0, 1, 0, 3, 1, 0], [0, 8, 6, 3, 1, 0, 1, 0, 1, 1, 4, 2, 2, 3, 0, 3, 1, 4, 7, 6, 1, 2, 2, 3, 2, 2, 0, 1, 1, 1, 0, 4, 2, 1, 1, 0, 1, 0, 0, 0, 1, 3, 0, 1, 2, 0], [0, 4, 3, 0, 0, 7, 2, 2, 1, 1, 3, 1, 2, 0, 1, 1, 6, 5, 1, 1, 1, 1, 2, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1], [2, 4, 2, 2, 2, 4, 2, 4, 0, 0, 1, 2, 2, 5, 2, 2, 5, 2, 3, 10, 2, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 3, 2, 2, 1, 1, 1, 1, 5, 5, 3, 1, 0, 0, 3, 3, 5, 2, 1, 4, 3, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 2, 0, 1, 0, 1, 0, 1, 2, 3, 2, 1, 1, 2, 5, 1, 3, 2, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 6, 3, 2, 0, 0, 2, 5, 7, 1, 4, 0, 2, 2, 3, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 2, 0, 1, 3, 6, 2, 1, 0, 2, 5, 3, 1, 0, 1, 1, 2, 2, 3, 2, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 4, 1, 4, 6, 2, 2, 5, 2, 2, 2, 2, 0, 0, 1, 0, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 2, 3, 1, 2, 6, 2, 0, 4, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 3, 1, 0, 0, 5, 1, 1, 4, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [6, 5, 2, 0, 0, 6, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [7, 3, 2, 5, 5, 2, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [7, 1, 7, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [3, 2, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 1, 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 5, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 2, 2, 0, 2, 1, 4, 4, 6, 0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 4, 2, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 1, 6, 5, 3, 3, 5, 2, 5, 5, 0, 4, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 2, 2, 1], [0, 0, 0, 0, 0, 1, 0, 0, 3, 0, 0, 0, 1, 1, 0, 2, 1, 1, 1, 0, 1, 1, 4, 4, 2, 2, 1, 1, 4, 1, 4, 0, 2, 1, 1, 0, 0, 1, 2, 1, 0, 1, 0, 1, 1, 0], [0, 0, 3, 4, 0, 3, 2, 1, 1, 1, 3, 1, 0, 1, 1, 1, 1, 0, 0, 2, 2, 3, 1, 2, 1, 1, 0, 6, 2, 1, 2, 0, 0, 0, 0, 2, 0, 1, 0, 2, 2, 0, 1, 0, 1, 2], [0, 0, 1, 3, 3, 4, 0, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 2, 3, 0, 0, 0, 2, 1, 3, 1, 0, 0, 1, 0, 2, 0, 1, 0, 1, 2, 3, 1, 4, 4, 5], [0, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 3, 1, 0, 0, 0, 2, 2, 3, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 3, 1, 1], [0, 0, 0, 0, 0, 0, 0, 3, 2, 0, 0, 1, 0, 3, 2, 0, 0, 1, 0, 0, 1, 2, 3, 0, 0, 0, 1, 0, 2, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0], [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 4, 2, 0, 0, 2, 0, 0, 0, 0, 1, 3, 0, 0, 0, 1, 1, 4, 2, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3], [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 2, 2, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 2, 6, 8, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 2, 6, 3, 1, 1, 0, 0, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 2, 3, 2, 1, 0, 0, 0, 0, 1, 0, 0, 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 3, 5, 2, 0, 0, 0, 0, 0, 0, 0, 3, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [8, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0, 1, 0, 4, 1, 1, 0, 2, 1, 1, 1, 1, 0, 1, 2, 5, 1, 3, 1, 1, 2, 5, 3, 2, 0, 2, 1, 0, 0, 4, 0, 0, 0, 1, 2, 1, 0, 2, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 3, 2, 5, 4, 5, 2, 3, 0, 0, 1, 1, 2, 3, 2, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 2, 2, 0, 0, 0], [0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 2, 0, 1, 3, 1, 2, 1, 0, 3, 1, 4, 1, 1, 2, 6, 1, 2, 2, 0, 0, 1, 2, 0, 0, 2, 1, 0, 0, 0, 1, 4, 1, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 3, 1, 1, 0, 1, 0, 4, 2, 7, 4, 4, 5, 4, 1, 4, 3, 2, 2, 3, 3, 0, 3, 2, 1, 1, 0, 0, 2, 1, 1, 1, 1, 2, 0, 1, 1, 1, 1, 0, 0], [0, 0, 0, 0, 1, 4, 2, 0, 2, 0, 0, 2, 1, 2, 4, 6, 2, 3, 4, 3, 2, 0, 5, 3, 2, 1, 3, 3, 1, 2, 1, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 1, 2, 1, 0, 0], [0, 0, 0, 1, 4, 0, 1, 1, 1, 0, 3, 1, 3, 5, 8, 2, 2, 1, 1, 2, 0, 1, 1, 1, 2, 1, 3, 1, 0, 1, 0, 2, 0, 0, 1, 1, 1, 0, 2, 1, 3, 0, 1, 1, 0, 0], [0, 0, 0, 4, 8, 0, 0, 0, 2, 4, 3, 3, 2, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 0, 0, 0, 2, 5, 1, 0, 2, 0, 0, 2, 0, 1, 1, 3, 1, 0, 0], [0, 0, 0, 8, 9, 5, 4, 3, 1, 2, 0, 1, 5, 2, 0, 2, 3, 0, 3, 2, 4, 1, 1, 1, 1, 2, 2, 1, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 2, 2, 2, 3, 0, 0, 0], [1, 3, 1, 0, 2, 2, 2, 2, 0, 2, 1, 2, 3, 0, 2, 0, 3, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 2, 0, 1, 0, 1, 0, 1, 0, 0, 2, 0, 0, 4, 0, 1, 0, 0, 0, 0], [2, 0, 1, 0, 0, 5, 4, 2, 3, 1, 1, 2, 3, 2, 3, 1, 0, 1, 0, 0, 0, 0, 2, 1, 1, 0, 1, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3, 5, 1, 0, 1, 1, 0, 0], [0, 1, 0, 0, 2, 3, 5, 0, 3, 3, 3, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 4, 1, 0, 0, 0, 0, 3, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 1, 1, 0, 0], [2, 2, 0, 4, 2, 3, 1, 2, 4, 1, 7, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 2, 3, 5, 0, 0], [1, 1, 1, 2, 1, 4, 6, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 4, 0, 1, 1, 0, 0, 0], [4, 1, 3, 1, 2, 5, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0], [4, 6, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], [1, 0, 2, 0, 1, 2, 3, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 2, 3, 5, 2, 3, 1, 1, 3, 0, 0, 1, 2, 4, 11, 8, 3, 2, 1, 3, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 3, 3, 7, 1, 3, 2, 3, 0, 2, 1, 2, 1, 6, 6, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 0, 1, 1, 2, 1, 1, 4, 3, 0, 2, 5, 4, 5, 2, 3, 4, 2, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0, 0, 1, 2, 3, 5, 5, 7, 3, 5, 1, 6, 3, 1, 1, 1, 2, 1, 2, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 3, 5, 7, 3, 5, 3, 2, 7, 3, 5, 6, 4, 5, 4, 6, 2, 4, 4, 1, 2, 3, 0, 2, 1, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 2, 3, 3, 1, 2, 4, 9, 6, 3, 4, 5, 5, 3, 3, 1, 2, 5, 5, 6, 2, 6, 5, 5, 5, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 3, 3, 3, 1, 6, 3, 1, 1, 4, 3, 4, 1, 2, 2, 3, 5, 1, 2, 2, 2, 4, 3, 4, 3, 3, 0, 1, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 5, 2, 2, 5, 4, 2, 9, 2, 2, 0, 3, 5, 1, 0, 2, 1, 1, 1, 1, 1, 1, 2, 4, 8, 1, 3, 3, 7, 8, 2, 1, 1, 2, 0, 0, 1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 4, 1, 3, 2, 0, 3, 8, 2, 4, 3, 2, 1, 0, 1, 1, 1, 4, 1, 1, 0, 4, 5, 1, 4, 4, 4, 9, 2, 6, 9, 7, 4, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 2, 3, 4, 3, 0, 2, 1, 2, 1, 0, 2, 1, 3, 6, 2, 1, 0, 1, 0, 4, 4, 2, 2, 5, 2, 3, 2, 1, 4, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 5, 2, 3, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 4, 4, 3, 3, 4, 4, 1, 0, 0, 0, 0, 1, 1, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0], [0, 0, 0, 1, 5, 1, 2, 0, 1, 1, 0, 0, 1, 2, 2, 0, 0, 1, 2, 5, 4, 3, 2, 3, 2, 0, 0, 1, 2, 1, 2, 0, 1, 3, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0], [0, 0, 2, 3, 4, 0, 1, 0, 1, 0, 0, 2, 1, 0, 0, 1, 5, 2, 1, 4, 4, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 1, 0, 2, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0], [0, 1, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 1, 2, 4, 5, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 2, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]]};
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+function gridMax(grid){ let m=0; for(const row of grid) for(const v of row) m=Math.max(m,v); return m; }
+// 12 zones = the four 23m quarters of the pitch x three lanes, in DISPLAY
+// orientation (own goal on the left, as drawn). Share of the grid's total, so on
+// a per-minute-normalised grid it is share of TIME. 46 columns / 4 = 11.5, so the
+// straddling column is split half-half; 28 rows -> lanes of 9/10/9.
+function zoneShares(grid, NX, NY){
+  const z = [[0,0,0,0],[0,0,0,0],[0,0,0,0]]; let tot = 0;
+  for(let j=0;j<NY;j++){
+    const lane = j < 9 ? 0 : (j < 19 ? 1 : 2);
+    for(let i=0;i<NX;i++){
+      const v = grid[j][NX-1-i]; if(!v) continue;   // same x-flip as the heat
+      tot += v;
+      const x0 = i/(NX/4), x1 = (i+1)/(NX/4);       // in zone-column units
+      const c0 = Math.floor(x0), c1 = Math.min(3, Math.floor(x1 - 1e-9));
+      if (c0 === c1) z[lane][c0] += v;
+      else { const f = (c1 - x0); z[lane][c0] += v*f; z[lane][c1] += v*(1-f); }
+    }
+  }
+  return { tot, pct: z.map(r => r.map(v => tot ? v/tot*100 : 0)) };
+}
+// Redraw everything registered here on resize, so line widths track the CSS size.
+window.__redraw = window.__redraw || [];
+let __rt; window.addEventListener('resize', () => { clearTimeout(__rt); __rt = setTimeout(() => window.__redraw.forEach(f => f()), 120); });
+function drawMap(cv, grid, mx, opts){
+  opts = opts || {};
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, NX = DATA.nx, NY = DATA.ny;
+  // bitmap px per CSS px — pitch lines are set in CSS px so a 150px-wide map
+  // still shows its 23m lines (they were 0.1px on the old 63px thumbnails)
+  const cssW = cv.getBoundingClientRect().width || W, k = W / cssW;
+  const M = Math.round(W*0.022);
+  const fw = W-2*M, fh = H-2*M;
+  ctx.fillStyle = css('--pitch-edge'); ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = css('--pitch'); ctx.fillRect(M,M,fw,fh);
+  const g = document.createElement('canvas'); g.width = NX; g.height = NY;
+  const gx = g.getContext('2d'); const im = gx.createImageData(NX,NY);
+  for(let j=0;j<NY;j++) for(let i=0;i<NX;i++){
+    const v = grid[j][NX-1-i]/mx;
+    const k = (j*NX+i)*4;
+    im.data[k]=255; im.data[k+1]=255; im.data[k+2]=255; im.data[k+3]=Math.round(255*Math.pow(Math.min(1,v),0.62));
+  }
+  gx.putImageData(im,0,0);
+  const up = document.createElement('canvas'); up.width = fw; up.height = fh;
+  const ux = up.getContext('2d'); ux.imageSmoothingEnabled = true; ux.imageSmoothingQuality = 'high';
+  ux.drawImage(g,0,0,fw,fh);
+  const pix = ux.getImageData(0,0,fw,fh);
+  for(let p=0;p<pix.data.length;p+=4){
+    const a = pix.data[p+3]/255;
+    pix.data[p]   = Math.round(255 - 23*a);
+    pix.data[p+1] = Math.round(214 - 100*a);
+    pix.data[p+2] = Math.round(120 - 90*a);
+    pix.data[p+3] = Math.round(255*Math.min(0.92, a*1.15));
+  }
+  ux.putImageData(pix,0,0);
+  ctx.drawImage(up,M,M);
+  const sx = fw/91.4, sy = fh/55;
+  ctx.strokeStyle = css('--line'); ctx.lineWidth = Math.max(1, 1.2*k);
+  ctx.strokeRect(M,M,fw,fh);
+  [45.7,22.9,91.4-22.9].forEach(xm => { ctx.beginPath(); ctx.moveTo(M+xm*sx,M); ctx.lineTo(M+xm*sx,M+fh); ctx.stroke(); });
+  ctx.beginPath(); ctx.arc(M, M+fh/2, 14.63*sx, -Math.PI/2, Math.PI/2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(M+fw, M+fh/2, 14.63*sx, Math.PI/2, 3*Math.PI/2); ctx.stroke();
+  ctx.lineWidth = Math.max(3, 3*k); const gw = 3.66*sy;
+  ctx.beginPath(); ctx.moveTo(M-2,M+fh/2-gw/2); ctx.lineTo(M-2,M+fh/2+gw/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(M+fw+2,M+fh/2-gw/2); ctx.lineTo(M+fw+2,M+fh/2+gw/2); ctx.stroke();
+  // Optional zone-share overlay (the tick box). Empty zones stay BLANK, not "0%".
+  if (opts.zones){
+    const zs = zoneShares(grid, NX, NY);
+    const zw = fw/4, zh = fh/3;
+    ctx.save();
+    ctx.setLineDash([4*k, 5*k]); ctx.lineWidth = Math.max(1, 1*k); ctx.strokeStyle = 'rgba(255,255,255,.30)';
+    for(let c=1;c<4;c++){ if(c===2) continue; ctx.beginPath(); ctx.moveTo(M+c*zw,M); ctx.lineTo(M+c*zw,M+fh); ctx.stroke(); }
+    for(let l=1;l<3;l++){ ctx.beginPath(); ctx.moveTo(M,M+l*zh); ctx.lineTo(M+fw,M+l*zh); ctx.stroke(); }
+    ctx.setLineDash([]);
+    const fs = Math.max(11*k, fw*0.034);
+    ctx.font = `700 ${fs}px "Segoe UI",system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(let l=0;l<3;l++) for(let c=0;c<4;c++){
+      const p = zs.pct[l][c]; if (p < 0.5) continue;
+      const label = Math.round(p) + '%';
+      const cx = M + c*zw + zw/2, cy = M + l*zh + zh/2;
+      const tw = ctx.measureText(label).width, pw = tw + fs*0.9, ph = fs*1.5, r = fs*0.35;
+      ctx.fillStyle = 'rgba(16,22,29,.72)';
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx-pw/2, cy-ph/2, pw, ph, r) : ctx.rect(cx-pw/2, cy-ph/2, pw, ph); ctx.fill();
+      ctx.fillStyle = p >= 15 ? '#ffd9b8' : '#e8edf2';
+      ctx.fillText(label, cx, cy + fs*0.04);
+    }
+    ctx.restore();
+  }
+}
+drawMap(document.getElementById('pitch'), DATA.grid, gridMax(DATA.grid));
+if (DATA.qgrids) {
+  const qmax = Math.max(...DATA.qgrids.map(gridMax));
+  document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, DATA.qgrids[+cv.dataset.q], qmax));
+}
+</script>
+</body></html>
