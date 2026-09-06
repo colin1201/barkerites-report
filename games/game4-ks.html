@@ -119,6 +119,10 @@
   .btn.ghost{ background:transparent; color:var(--ink); border:1px solid var(--tile-border); }
   .btn:active{ transform:translateY(1px); }
   .fmt{ font-size:12px; color:var(--ink-3); margin-top:8px; }
+  /* two share cards in one board: a rule between them so the second reads as a second
+     offer, not as more controls for the first */
+  .sharelbl{ font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px; }
+  .share2{ margin-top:22px; padding-top:22px; border-top:1px solid var(--tile-border); }
 
   /* Key match stats — the Sofascore "Run tab" panel (Colin, 6 Sep 2026: the three
      headline numbers, then every speed band as metres AND share of the distance).
@@ -217,6 +221,7 @@
 
   <div class="board">
     <h2>Movement heat map <span style="float:right;font-weight:500;text-transform:none;letter-spacing:0">att 1% · mid 16% · def 83%</span></h2>
+    <div class="controls"><label class="tog"><input type="checkbox" id="zones"> Show % of time in each zone</label></div>
     <canvas id="pitch" width="1200" height="722"></canvas>
     <div class="dir"><span>&#9664; Own goal</span><span>Direction of attack &#9654;</span></div>
   </div>
@@ -295,10 +300,11 @@
   </div>
 
   <div class="board">
-    <div class="h2row"><h2>Share it</h2><span class="h2sub">one card, three numbers you pick, this game's map</span></div>
+    <div class="h2row"><h2>Share it</h2><span class="h2sub">two cards &mdash; your numbers, and the map</span></div>
     <div class="share">
       <div class="preview"><canvas id="share" width="1080" height="1920"></canvas></div>
       <div>
+        <div class="sharelbl">Card 1 &middot; your three numbers</div>
         <div class="how">Pick the <b>three numbers</b> you want on the card &mdash; the first is the big one.</div>
         <div class="picks">
           <label><span>1st (big)</span><select id="s1"></select></label>
@@ -307,6 +313,15 @@
         </div>
         <div class="btns"><button class="btn" id="dl">Download as image</button></div>
         <div class="fmt">Saves a 1080 &times; 1920 image &mdash; sized for a phone story, and it posts fine anywhere else. On a phone the button opens the share sheet directly. A plain screenshot of the card also works.</div>
+      </div>
+    </div>
+    <div class="share share2">
+      <div class="preview"><canvas id="share2" width="1080" height="1920"></canvas></div>
+      <div>
+        <div class="sharelbl">Card 2 &middot; the heat map, upright</div>
+        <div class="how">Just the pitch, turned upright so it fills a phone screen, with the <b>share of time in each zone</b> printed on it. No stats &mdash; it reads on its own.</div>
+        <div class="btns"><button class="btn ghost" id="dl2">Download heat map</button></div>
+        <div class="fmt">Same 1080 &times; 1920 size as card 1. The zone percentages are the share of your time on the pitch, so the twelve of them add up to 100%.</div>
       </div>
     </div>
   </div>
@@ -531,12 +546,47 @@ function drawShare(cv, o){
   x.fillStyle = INK3; x.font = F('500 28px');
   x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 12);
 }
-// Save the card. On a phone this opens the share sheet; elsewhere it downloads.
-// buildOpts(H) returns the same object drawShare takes, so the saved PNG is
-// rendered from the SAME code as the on-page preview and cannot disagree with it.
-function sharePNG(buildOpts, name, title, H){
+// SECOND SHARE CARD (Colin, 6 Sep 2026): "a portrait version of just the heat map, with
+// the percentage of time in each zone". No stats, no bars — the pitch turned upright and
+// filling the safe zone, with the 12 zone shares on it. The upright renderer stays alive
+// only for this; every ON-PAGE map is landscape, decided the same day.
+function drawShareMap(cv, o){
+  const W = 1080, H = o.H || 1920; cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  const top = 250, bottom = H - 340;              // Instagram's own UI bands
+  x.fillStyle = '#10161d'; x.fillRect(0, 0, W, H);
+  const ACC = '#e8842a', INK = '#e8edf2', INK2 = '#a7b4c0', INK3 = '#6b7a88';
+  const F = w => `${w} "Segoe UI",system-ui,-apple-system,sans-serif`;
+  x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+  let y = top + 60;
+  x.fillStyle = ACC;  x.font = F('600 34px'); x.fillText(o.eyebrow, 70, y);
+  y += 74; x.fillStyle = INK;  x.font = F('700 66px'); x.fillText(o.title, 70, y);
+  y += 48; x.fillStyle = INK2; x.font = F('400 36px'); x.fillText(o.subtitle, 70, y);
+  // the pitch, as large as the safe zone allows, keeping its 722:1200 upright shape
+  y += 50;
+  const footerH = 84, availH = bottom - footerH - y, availW = W - 120;
+  let mh = availH, mw = Math.round(mh * 722 / 1200);
+  if (mw > availW){ mw = availW; mh = Math.round(mw * 1200 / 722); }
+  const mx0 = Math.round((W - mw) / 2);
+  const off = document.createElement('canvas');
+  off.width = 722; off.height = 1200;
+  drawMap(off, o.grid, gridMax(o.grid), {portrait: true, zones: true});
+  x.save(); x.beginPath();
+  x.roundRect ? x.roundRect(mx0, y, mw, mh, 22) : x.rect(mx0, y, mw, mh);
+  x.clip(); x.drawImage(off, mx0, y, mw, mh); x.restore();
+  x.fillStyle = INK3; x.font = F('500 26px');
+  x.fillText('▲ attacking this way', mx0 + 2, y + mh + 36);
+  x.textAlign = 'right'; x.fillText('own goal ▼', mx0 + mw - 2, y + mh + 36); x.textAlign = 'left';
+  x.fillStyle = INK3; x.font = F('500 26px');
+  x.fillText('% = share of time on the pitch spent in that zone', 70, bottom - 46);
+  x.font = F('500 28px'); x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 8);
+}
+// Save a card. On a phone this opens the share sheet; elsewhere it downloads.
+// buildOpts(H) returns the object the renderer takes, so the saved PNG comes from the
+// SAME code as the on-page preview and cannot disagree with it. `draw` picks which card.
+function sharePNG(buildOpts, name, title, H, draw){
   const cv = document.createElement('canvas');
-  drawShare(cv, buildOpts(H || 1920));
+  (draw || drawShare)(cv, buildOpts(H || 1920));
   cv.toBlob(async b => {
     const file = new File([b], name, {type:'image/png'});
     if (navigator.canShare && navigator.canShare({files:[file]})) {
@@ -557,15 +607,11 @@ function sharePNG(buildOpts, name, title, H){
 // costs vertical space, and four upright quarter pitches stacked one per row would add
 // well over two screens of scrolling for maps whose job is a quick shape comparison —
 // they are already full width. The big map is where the extra area actually pays.
+let zonesOn = false;
 function paintMaps(){
-  const p = isPortrait();
   const main = document.getElementById('pitch');
-  if (p){ main.width = 722; main.height = 1200; } else { main.width = 1200; main.height = 722; }
-  drawMap(main, DATA.grid, gridMax(DATA.grid), {portrait: p});
-  const dir = document.querySelector('.dir');
-  if (dir) dir.innerHTML = p
-    ? '<span>&#9650; Direction of attack</span><span>Own goal at the bottom</span>'
-    : '<span>&#9664; Own goal</span><span>Direction of attack &#9654;</span>';
+  main.width = 1200; main.height = 722;
+  drawMap(main, DATA.grid, gridMax(DATA.grid), {zones: zonesOn});
   if (DATA.qgrids){
     const qmax = Math.max(...DATA.qgrids.map(gridMax));
     document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, DATA.qgrids[+cv.dataset.q], qmax));
@@ -573,6 +619,12 @@ function paintMaps(){
 }
 window.__redraw.push(paintMaps);
 paintMaps();
+// The zone tick box, same control the season page has had (Colin, 6 Sep 2026: "i want to
+// add the show % of time in each zone for each indv match"). Four 23m quarters x three
+// lanes = 12 zones, share of TIME on the pitch; an empty zone stays blank, never "0%".
+document.getElementById('zones').addEventListener('change', e => {
+  zonesOn = e.target.checked; paintMaps(); renderShare();
+});
 
 // ------------------------------------------------- this game's share card
 // Everything below is GAME-PAGE ONLY: it sits after the drawMap() call, which is
@@ -632,12 +684,25 @@ function fillPickers(){
     });
   });
 }
-function renderShare(){ drawShare(document.getElementById('share'), shareOpts(1920)); }
+// Card 2 carries no stats, so it needs only the three text lines and the grid. Its zone
+// percentages are always shown — that is the whole point of the card — regardless of the
+// page's tick box, which only governs the on-page map.
+function shareMapOpts(H){
+  return { H, grid: DATA.grid, eyebrow: SHARE.eyebrow,
+           title: SHARE.subject, subtitle: SHARE.subtitle };
+}
+function renderShare(){
+  drawShare(document.getElementById('share'), shareOpts(1920));
+  drawShareMap(document.getElementById('share2'), shareMapOpts(1920));
+}
 ['s1','s2','s3'].forEach((id, i) => document.getElementById(id).addEventListener('change', e => {
   picks[i] = e.target.value; fillPickers(); renderShare();
 }));
 fillPickers(); renderShare();
 document.getElementById('dl').onclick =
   () => sharePNG(shareOpts, SHARE.filename, `${SHARE.subject} — ${SHARE.eyebrow}`, 1920);
+document.getElementById('dl2').onclick =
+  () => sharePNG(shareMapOpts, SHARE.filename.replace(/\.png$/, '-heatmap.png'),
+                 `${SHARE.subject} — heat map`, 1920, drawShareMap);
 </script>
 </body></html>
