@@ -179,7 +179,7 @@
   </div>
 
   <div class="board">
-    <div class="h2row"><h2>Heat map by game</h2><span class="h2sub">same brightness scale — more time in a spot = brighter</span></div>
+    <div class="h2row"><h2>Heat map by game</h2><span class="h2sub">same colour scale across all games — red = most time, blue = least</span></div>
     <div class="qgrid" id="gmaps"><div><canvas class='gmap' data-g='0' width='600' height='361'></canvas><div class='qcap'>G1 · Old Rafflesians Assoc-C · 57 min</div></div><div><canvas class='gmap' data-g='1' width='600' height='361'></canvas><div class='qcap'>G2 · Hypernovas · 61 min</div></div><div><canvas class='gmap' data-g='2' width='600' height='361'></canvas><div class='qcap'>G3 · Eagles · 70 min</div></div><div><canvas class='gmap' data-g='3' width='600' height='361'></canvas><div class='qcap'>G5 · Tornados · 39 min</div></div><div><canvas class='gmap' data-g='4' width='600' height='361'></canvas><div class='qcap'>G6 · Lodras HC · 60 min</div></div></div>
   </div>
 
@@ -295,7 +295,7 @@ function drawMap(cv, grid, mx, opts){
     return c0.map((v,k)=>Math.round(v+(c1[k]-v)*f)); };
   for(let p=0;p<pix.data.length;p+=4){
     const a = pix.data[p+3]/255;
-    if (opts.palette === 'jet'){
+    if ((opts.palette || 'jet') === 'jet'){   // jet is the DEFAULT since 6 Sep 2026 (Colin approved it on the season map); pass palette:'orange' to opt out
       const [r,g,b] = jet(a);
       pix.data[p]=r; pix.data[p+1]=g; pix.data[p+2]=b;
       pix.data[p+3] = Math.round(255*Math.min(0.94, a < 0.04 ? a*8 : 0.32 + a*0.68));
@@ -409,9 +409,9 @@ function render(){
   const t = totals(gs), filtered = chip !== 'all';
   const grid = combine(gs);
   // main map + by-game maps
-  // 'jet' palette on the MAIN map only for now — Colin wants to see one map in
-  // the football red->orange->green->blue convention before it goes everywhere
-  drawMap(document.getElementById('pitch'), grid, gridMax(grid), {zones: zonesOn, palette: 'jet'});
+  // jet (red->orange->yellow->green->blue) is now the renderer's default —
+  // Colin saw it on this map first and approved it (6 Sep 2026)
+  drawMap(document.getElementById('pitch'), grid, gridMax(grid), {zones: zonesOn});
   const gmax = Math.max(...GAMES.map(g => gridMax(g.grid.map(r => r.map(v => v*g.w)))));
   document.querySelectorAll('.gmap').forEach(cv => {
     const g = GAMES[+cv.dataset.g], on = gs.includes(g);
