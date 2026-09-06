@@ -166,11 +166,11 @@
   .ratewarn b{ color:var(--accent); }
 </style></head><body>
 <div class="wrap">
-  <a class="back" href="../ks.html">&larr; all match reports</a>
+  <a class="back" href="../ks.html">&larr; all KS match reports</a>
   <header>
     <div class="eyebrow">Barkerites · MHL 5 · Game 2 · D 3-3</div>
     <h1>vs Hypernovas</h1>
-    <div class="meta">Sun 12 Jul 2026, 1808 · right back · 2.9 km · 91 min recorded</div>
+    <div class="meta">Sun 12 Jul 2026, 1808 · right back · 2.2 km · 53 min on the pitch</div>
   </header>
 
   <div class="ratewarn"><b>Read these numbers as a floor, not a measurement.</b> This watch stored a position every 2 seconds and the exported file carries no distance of its own, so the distance is worked out from the dots &mdash; and every turn between them is lost. Testing a known full-rate game thinned to this same rate: distance and work rate came out <b>20% low</b>, sprinting metres <b>64% low</b>, and repeat-sprint clusters went to <b>zero</b>. The real figures are higher, by an amount nobody can recover from this file. <b>Do not compare them with a report recorded every second</b> &mdash; the gap would be the watch, not the player. Switching that watch to 1-second recording fixes future games.</div>
@@ -180,7 +180,7 @@
        season builder and verify_reports.py read by LABEL - only the shell changed. -->
   <div class="cards hero">
     <div class="card"><div class="lbl">Own half</div><div class="val">95 <span class="unit">%</span></div><div class="sub">of time on the pitch</div></div>
-    <div class="card"><div class="lbl">Distance</div><div class="val">2.9 <span class="unit">km</span></div><div class="sub">91 min recorded</div></div>
+    <div class="card"><div class="lbl">Distance</div><div class="val">2.2 <span class="unit">km</span></div><div class="sub">53 min on the pitch</div></div>
     <div class="card"><div class="lbl">Top speed</div><div class="val">20.2 <span class="unit">km/h</span></div><div class="sub">fastest burst of the game</div></div>
     <div class="card"><div class="lbl">Sprint efforts</div><div class="val">1</div><div class="sub">bursts of 20 km/h or more</div></div>
     <div class="card"><div class="lbl">Work rate</div><div class="val">42.1 <span class="unit">m/min</span></div><div class="sub">metres per minute on the pitch</div></div>
@@ -258,6 +258,23 @@
   <div class="board doing">
     <h2>What to do with this</h2>
     <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">You covered 42.1 m/min on the pitch.</div><div class="why">1 sprints in 53 minutes. No measured norm for &ldquo;right back&rdquo; yet &mdash; a couple more games in this role and there will be one to judge it against.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">Top speed <b>20.2 km/h</b> &mdash; no flat-out reference on file for this player.</div><div class="why">The warm-up read on these pages compares a game's top speed with the player's own measured maximum. None has been measured for this player, so the speed is reported as-is rather than as a share of someone else's best. A track max, once measured, goes in as <code>--track-max</code>.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Your sprints were spread out, not bunched.</div><div class="why">All 1 sat more than a minute apart, typically &mdash;. That is the pattern of picking your moments rather than chasing &mdash; the legs stay available for the last quarter.</div></div></div>
+  </div>
+
+  <div class="board">
+    <div class="h2row"><h2>Share it</h2><span class="h2sub">one card, three numbers you pick, this game's map</span></div>
+    <div class="share">
+      <div class="preview"><canvas id="share" width="1080" height="1920"></canvas></div>
+      <div>
+        <div class="how">Pick the <b>three numbers</b> you want on the card &mdash; the first is the big one.</div>
+        <div class="picks">
+          <label><span>1st (big)</span><select id="s1"></select></label>
+          <label><span>2nd</span><select id="s2"></select></label>
+          <label><span>3rd</span><select id="s3"></select></label>
+        </div>
+        <div class="btns"><button class="btn" id="dl">Download as image</button></div>
+        <div class="fmt">Saves a 1080 &times; 1920 image &mdash; sized for a phone story, and it posts fine anywhere else. On a phone the button opens the share sheet directly. A plain screenshot of the card also works.</div>
+      </div>
+    </div>
   </div>
 
   <div class="board">
@@ -380,10 +397,140 @@ function drawMap(cv, grid, mx, opts){
     ctx.restore();
   }
 }
+// ---------------------------------------------------------------- share card
+// ONE implementation, used by the season page AND every game page. It knows
+// nothing about seasons or games: the caller hands it three text lines and three
+// stats, so the two cards cannot drift apart in layout, safe zones or type sizes
+// the way two copies would. It lives ABOVE the drawMap() call because
+// overall_report.py extracts everything up to that line as its shared script.
+// Instagram's own UI covers the top 250px and bottom 340px of a 1080x1920 story,
+// so nothing is drawn outside that band.
+function drawShare(cv, o){
+  const W = 1080, H = o.H || 1920; cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  const story = H > 1400;                       // 9:16 vs 4:5
+  const top = story ? 250 : 60, bottom = story ? H - 340 : H - 60;
+  x.fillStyle = '#10161d'; x.fillRect(0,0,W,H);
+  const ACC = '#e8842a', INK = '#e8edf2', INK2 = '#a7b4c0', INK3 = '#6b7a88';
+  const F = w => `${w} "Segoe UI",system-ui,-apple-system,sans-serif`;
+  x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+  let y = top + 60;
+  x.fillStyle = ACC;  x.font = F('600 34px'); x.fillText(o.eyebrow, 70, y);
+  y += 74; x.fillStyle = INK;  x.font = F('700 66px'); x.fillText(o.title, 70, y);
+  y += 48; x.fillStyle = INK2; x.font = F('400 36px'); x.fillText(o.subtitle, 70, y);
+  // hero: the FIRST chosen stat
+  y += story ? 250 : 190;
+  const heroPx = o.hero.num.length > 4 ? (story ? 190 : 150) : (story ? 250 : 190);
+  x.fillStyle = ACC; x.font = F('800 ' + heroPx + 'px'); x.fillText(o.hero.num, 60, y);
+  const hw = x.measureText(o.hero.num).width;
+  x.fillStyle = INK;  x.font = F('600 48px'); x.fillText(o.hero.unit, 60 + hw + 24, y - 10);
+  x.fillStyle = INK2; x.font = F('400 34px'); x.fillText(o.hero.small, 66, y + 46);
+  // heat map, drawn by the same renderer (and default jet ramp) as the page
+  y += story ? 60 : 40;
+  const mw = W - 120, mh = Math.round(mw * 0.6);
+  const off = document.createElement('canvas'); off.width = 1200; off.height = 722;
+  drawMap(off, o.grid, gridMax(o.grid), {zones: !!o.zones, k: 3});
+  x.save(); x.beginPath(); x.roundRect ? x.roundRect(60, y, mw, mh, 22) : x.rect(60, y, mw, mh); x.clip();
+  x.drawImage(off, 60, y, mw, mh); x.restore();
+  x.fillStyle = INK3; x.font = F('500 26px'); x.fillText('◀ own goal', 66, y + mh + 36);
+  x.textAlign = 'right'; x.fillText('attack ▶', 60 + mw - 6, y + mh + 36); x.textAlign = 'left';
+  // two supporting stats, centred in whatever room is left between map and footer
+  const statsH = 140, footerH = 60;
+  y = y + mh + 40 + Math.max(0, (bottom - footerH - (y + mh + 40) - statsH) / 2);
+  const stat = (x0, big, small) => {
+    x.fillStyle = INK;  x.font = F('800 84px'); x.fillText(big, x0, y + 84);
+    x.fillStyle = INK2; x.font = F('500 34px'); x.fillText(small, x0, y + 130);
+  };
+  stat(70,       o.support[0].big, o.support[0].small);
+  stat(W/2 + 40, o.support[1].big, o.support[1].small);
+  x.fillStyle = INK3; x.font = F('500 28px');
+  x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 12);
+}
+// Save the card. On a phone this opens the share sheet; elsewhere it downloads.
+// buildOpts(H) returns the same object drawShare takes, so the saved PNG is
+// rendered from the SAME code as the on-page preview and cannot disagree with it.
+function sharePNG(buildOpts, name, title, H){
+  const cv = document.createElement('canvas');
+  drawShare(cv, buildOpts(H || 1920));
+  cv.toBlob(async b => {
+    const file = new File([b], name, {type:'image/png'});
+    if (navigator.canShare && navigator.canShare({files:[file]})) {
+      try { await navigator.share({files:[file], title}); return; } catch(e) {}
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }, 'image/png');
+}
 drawMap(document.getElementById('pitch'), DATA.grid, gridMax(DATA.grid));
 if (DATA.qgrids) {
   const qmax = Math.max(...DATA.qgrids.map(gridMax));
   document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, DATA.qgrids[+cv.dataset.q], qmax));
 }
+
+// ------------------------------------------------- this game's share card
+// Everything below is GAME-PAGE ONLY: it sits after the drawMap() call, which is
+// where overall_report.py stops extracting the shared script, so the season page
+// keeps its own stat set and picker wiring and only shares drawShare/sharePNG.
+const SHARE = {"subject": "KS", "eyebrow": "BARKERITES \u00b7 MHL 5 \u00b7 GAME 2 \u00b7 D 3-3", "subtitle": "vs Hypernovas \u00b7 Sun 12 Jul 2026 \u00b7 53 min on pitch", "top": 20.2, "sprints": 1, "dist": 2219, "mpm": 42.1, "fast": 64, "hr": 146, "own": 95, "min": 53, "trackMax": null, "filename": "ks-game2.png"};
+const fmt = n => Math.round(n).toLocaleString('en-GB');
+// Personal best = the fastest this player has EVER been measured, track OR match.
+// A game page cannot see the other games, so the reference is the larger of the
+// recorded track max and THIS game's own top speed. That is what stops the card
+// ever reading "102% of my best" (Colin, 6 Sep 2026, after G6's 29.5 beat the
+// 28.9 track figure) — with no track max on file it simply reads personal best.
+const PB = Math.max(SHARE.trackMax || 0, SHARE.top);
+function bestTxt(){
+  // No measured maximum on file for this player (every teammate build): there is
+  // nothing to compare against, so the card states the fact and claims nothing.
+  // Without this guard PB collapses to the game's own top and EVERY card reads
+  // "personal best" — KS's 20.2 km/h game included, against a real best of 27.0.
+  if (!SHARE.trackMax) return 'fastest burst of the game';
+  if (SHARE.top >= PB - 0.05) return 'top speed · personal best';
+  return `top speed · ${Math.round(SHARE.top/PB*100)}% of ${SHARE.subject}'s best (${PB.toFixed(1)} km/h)`;
+}
+// Colin's list, in the order given. A stat whose value this file cannot
+// support is dropped from the menu entirely rather than offered as a zero.
+// (Wording note: verify_reports.py reads script text too, so avoid third-person
+// pronouns even in a comment — the page's voice check cannot tell them apart.)
+const STATS = {
+  top:     { label:'Top speed',          big:() => [SHARE.top.toFixed(1), 'km/h'],       small:bestTxt },
+  sprints: { label:'Sprints',            big:() => [fmt(SHARE.sprints), SHARE.sprints === 1 ? 'sprint' : 'sprints'],
+                                                                                          small:() => 'bursts of 20 km/h or more' },
+  dist:    { label:'Distance',           big:() => [(SHARE.dist/1000).toFixed(1), 'km'], small:() => 'covered on the pitch' },
+  mpm:     { label:'Work rate',          big:() => [SHARE.mpm.toFixed(0), 'm/min'],      small:() => 'metres per minute on the pitch' },
+  fast:    { label:'Fast running',       big:() => [fmt(SHARE.fast), 'm'],               small:() => 'fast running · above 15 km/h' },
+  hr:      { label:'Average heart rate', big:() => [Math.round(SHARE.hr), 'bpm'],        small:() => 'average heart rate on the pitch' },
+  own:     { label:'Defensive half',     big:() => [Math.round(SHARE.own), '%'],         small:() => 'of the time in the defensive half' },
+  min:     { label:'Minutes on pitch',   big:() => [fmt(SHARE.min), 'min'],              small:() => 'on the pitch this game' },
+};
+if (!SHARE.hr) delete STATS.hr;
+if (!SHARE.fast) delete STATS.fast;
+const picks = ['top', 'sprints', 'dist'].filter(k => STATS[k]);
+function shareOpts(H){
+  const [h1, h2, h3] = picks.map(k => STATS[k]);
+  const [hn, hu] = h1.big(), [b2, u2] = h2.big(), [b3, u3] = h3.big();
+  return { H, grid: DATA.grid, eyebrow: SHARE.eyebrow, title: SHARE.subject, subtitle: SHARE.subtitle,
+           hero: { num: hn, unit: hu, small: h1.small() },
+           support: [{ big: `${b2} ${u2}`, small: h2.small() },
+                     { big: `${b3} ${u3}`, small: h3.small() }] };
+}
+function fillPickers(){
+  ['s1','s2','s3'].forEach((id, i) => {
+    const sel = document.getElementById(id); sel.innerHTML = '';
+    Object.entries(STATS).forEach(([k, s]) => {
+      if (picks.indexOf(k) !== -1 && picks[i] !== k) return;   // no stat twice
+      const o = document.createElement('option');
+      o.value = k; o.textContent = s.label; o.selected = picks[i] === k;
+      sel.appendChild(o);
+    });
+  });
+}
+function renderShare(){ drawShare(document.getElementById('share'), shareOpts(1920)); }
+['s1','s2','s3'].forEach((id, i) => document.getElementById(id).addEventListener('change', e => {
+  picks[i] = e.target.value; fillPickers(); renderShare();
+}));
+fillPickers(); renderShare();
+document.getElementById('dl').onclick =
+  () => sharePNG(shareOpts, SHARE.filename, `${SHARE.subject} — ${SHARE.eyebrow}`, 1920);
 </script>
 </body></html>
