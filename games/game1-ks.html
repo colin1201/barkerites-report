@@ -79,7 +79,9 @@
   .card .val{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
   .card .val .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:2px; }
   .card .sub{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
-  .cards.hero{ margin-bottom:2px; }
+  /* the scorecards now sit INSIDE the key-match-stats board, under the speed bars
+     and their glossary line, so they need separating space above rather than below */
+  .cards.hero{ margin:18px 0 2px; }
   .card .cs b{ color:var(--ink); font-weight:650; }
   .card.up .cs b.d{ color:#7fd6a0; } .card.down .cs b.d{ color:#f0a25e; }
   /* tables become one card per row on a phone — no sideways scrolling */
@@ -200,6 +202,10 @@
   <!-- Scorecards (Colin, 6 Sep 2026: "for the individual games, use the scorecard
        format"). Same six stats, same order, same .lbl/.val/.sub inner structure the
        season builder and verify_reports.py read by LABEL - only the shell changed. -->
+  <!-- Scorecards are the FIRST thing on an individual match report, above the heat map.
+       Briefly moved under the speed bars on 6 Sep 2026 and moved straight back — Colin:
+       "i want this scorecards at the top. it should be the first thing." On the SEASON
+       page they sit after the heat maps instead; that difference is deliberate. -->
   <div class="cards hero">
     <div class="card"><div class="lbl">Own half</div><div class="val">82 <span class="unit">%</span></div><div class="sub">of time on the pitch</div></div>
     <div class="card"><div class="lbl">Distance</div><div class="val">1.6 <span class="unit">km</span></div><div class="sub">29 min on the pitch</div></div>
@@ -216,8 +222,7 @@
   </div>
 
   <div class="board">
-    <h2>Key match stats</h2>
-    <div class="kstop"><div><span class="kv">1,615</span><span class="ku">m</span><span class="kl">distance</span></div><div><span class="kv">22.3</span><span class="ku">km/h</span><span class="kl">top speed</span></div><div><span class="kv">1</span><span class="kl">sprint</span></div></div>
+    <h2>Distance by speed</h2>
     <div class="kband"><div class="kbrow"><span class="kbl">Walking<em>under 6 km/h</em></span><span class="kbv">1,077 m<b>67%</b></span></div><div class="kbar"><i style="width:66.7%;background:#3b5566"></i></div></div><div class="kband"><div class="kbrow"><span class="kbl">Jogging<em>6&ndash;11 km/h</em></span><span class="kbv">315 m<b>20%</b></span></div><div class="kbar"><i style="width:19.5%;background:#2f8f9d"></i></div></div><div class="kband"><div class="kbrow"><span class="kbl">Running<em>11&ndash;15 km/h</em></span><span class="kbv">162 m<b>10%</b></span></div><div class="kbar"><i style="width:10.0%;background:#4faa5a"></i></div></div><div class="kband"><div class="kbrow"><span class="kbl">Fast running<em>15&ndash;20 km/h</em></span><span class="kbv">53 m<b>3%</b></span></div><div class="kbar"><i style="width:3.3%;background:#e0a63a"></i></div></div><div class="kband"><div class="kbrow"><span class="kbl">Sprinting<em>20 km/h and up</em></span><span class="kbv">8 m<b>0%</b></span></div><div class="kbar"><i style="width:0.5%;background:#e8842a"></i></div></div>
     <div class="qnote">Every metre you covered on the pitch, split by how fast you were moving &mdash; so the five bars add up to your whole distance. The bottom two are the ones that cost you. <b>On this file the bottom two bars are a floor, not a measurement</b> &mdash; a position every 2 seconds loses the turns between the dots, so the fast-running and sprinting metres are understated. See the note at the top.</div>
   </div>
@@ -250,7 +255,7 @@
   </div>
 
   <div class="board">
-    <h2>How the distance splits by speed</h2>
+    <h2>Speed bands by quarter</h2>
     <div class="headline"><b>61 of your 1,615 metres</b> (4%) were run above 15 km/h &mdash; the part of the distance that actually costs you.</div>
     <div class="tscroll"><table>
       <tr><th>Speed band</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Whole game</th><th>Share</th></tr>
@@ -339,13 +344,50 @@ function zoneShares(grid, NX, NY){
 // Redraw everything registered here on resize, so line widths track the CSS size.
 window.__redraw = window.__redraw || [];
 let __rt; window.addEventListener('resize', () => { clearTimeout(__rt); __rt = setTimeout(() => window.__redraw.forEach(f => f()), 120); });
+// PORTRAIT on phones (6 Sep 2026). A landscape pitch on a 390px screen is about 207px
+// tall; turned upright it is ~573px — roughly three times the area, which is the whole
+// point. The pitch is drawn LANDSCAPE into an offscreen canvas and the finished bitmap
+// is turned a quarter turn, so every bit of geometry stays exactly as verified; only the
+// zone-share labels are drawn afterwards, upright, so they do not end up on their side.
+// Attack points UP the screen and own goal sits at the BOTTOM. The flank convention is
+// preserved: landscape bottom lane (the player's right when attacking rightward) maps to
+// the right-hand side of the portrait pitch.
+// PILOT, 6 Sep 2026: portrait is switched on per page by --portrait-maps, and only
+// game 6 vs Lodras has it, so Colin can compare it against the landscape pages before
+// it goes everywhere ("in case i prefer the landscape version"). false is the
+// literal true/false the builder writes in.
+const PORTRAIT_MAPS = false;
+const PORTRAIT_MAX_W = 620;
+const isPortrait = () => PORTRAIT_MAPS && window.matchMedia(`(max-width:${PORTRAIT_MAX_W}px)`).matches;
+
 function drawMap(cv, grid, mx, opts){
   opts = opts || {};
+  if (opts.portrait){
+    const PW = cv.width, PH = cv.height;
+    const off = document.createElement('canvas');
+    off.width = PH; off.height = PW;                       // landscape twin
+    drawMap(off, grid, mx, Object.assign({}, opts, {
+      portrait: false, zoneLabels: false,
+      // the offscreen is not in the DOM, so it cannot measure itself: hand it the CSS
+      // length its WIDTH will occupy once rotated, which is the visible canvas's HEIGHT
+      cssW: cv.getBoundingClientRect().height || PH}));
+    const c = cv.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, PW, PH);
+    c.save(); c.translate(0, PH); c.rotate(-Math.PI/2); c.drawImage(off, 0, 0); c.restore();
+    if (opts.zones){
+      const kk = PH / (cv.getBoundingClientRect().height || PH);
+      const M = Math.round(PH*0.022);
+      // landscape (x,y) -> portrait (y, PH - x), the same map the rotation applies
+      drawZoneLabels(c, zoneShares(grid, DATA.nx, DATA.ny),
+                     {M: M, fw: PH-2*M, fh: PW-2*M}, kk, (x, y) => [y, PH - x]);
+    }
+    return;
+  }
   const ctx = cv.getContext('2d');
   const W = cv.width, H = cv.height, NX = DATA.nx, NY = DATA.ny;
   // bitmap px per CSS px — pitch lines are set in CSS px so a 150px-wide map
   // still shows its 23m lines (they were 0.1px on the old 63px thumbnails)
-  const cssW = cv.getBoundingClientRect().width || W, k = W / cssW;
+  const cssW = opts.cssW || cv.getBoundingClientRect().width || W, k = W / cssW;
   const M = Math.round(W*0.022);
   const fw = W-2*M, fh = H-2*M;
   ctx.fillStyle = css('--pitch-edge'); ctx.fillRect(0,0,W,H);
@@ -411,20 +453,34 @@ function drawMap(cv, grid, mx, opts){
     for(let c=1;c<4;c++){ if(c===2) continue; ctx.beginPath(); ctx.moveTo(M+c*zw,M); ctx.lineTo(M+c*zw,M+fh); ctx.stroke(); }
     for(let l=1;l<3;l++){ ctx.beginPath(); ctx.moveTo(M,M+l*zh); ctx.lineTo(M+fw,M+l*zh); ctx.stroke(); }
     ctx.setLineDash([]);
-    const fs = Math.max(11*k, fw*0.034);
-    ctx.font = `700 ${fs}px "Segoe UI",system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-    for(let l=0;l<3;l++) for(let c=0;c<4;c++){
-      const p = zs.pct[l][c]; if (p < 0.5) continue;
-      const label = Math.round(p) + '%';
-      const cx = M + c*zw + zw/2, cy = M + l*zh + zh/2;
-      const tw = ctx.measureText(label).width, pw = tw + fs*0.9, ph = fs*1.5, r = fs*0.35;
-      ctx.fillStyle = 'rgba(16,22,29,.72)';
-      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx-pw/2, cy-ph/2, pw, ph, r) : ctx.rect(cx-pw/2, cy-ph/2, pw, ph); ctx.fill();
-      ctx.fillStyle = p >= 15 ? '#ffd9b8' : '#e8edf2';
-      ctx.fillText(label, cx, cy + fs*0.04);
-    }
     ctx.restore();
+    // Labels are skipped when this is the offscreen twin of a portrait map — the caller
+    // draws them upright afterwards, otherwise the rotation would tip them on their side.
+    if (opts.zoneLabels !== false) drawZoneLabels(ctx, zs, {M: M, fw: fw, fh: fh}, k, null);
   }
+}
+
+// The zone-share "%" pills. Split out of drawMap so a portrait map can draw its pitch
+// rotated and its text upright. `map` converts a landscape point to wherever it has
+// ended up on the visible canvas; null means the two frames are the same.
+function drawZoneLabels(ctx, zs, geom, k, map){
+  const M = geom.M, fw = geom.fw, fh = geom.fh, zw = fw/4, zh = fh/3;
+  const fs = Math.max(11*k, fw*0.034);
+  ctx.save();
+  ctx.font = `700 ${fs}px "Segoe UI",system-ui,sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for(let l=0;l<3;l++) for(let c=0;c<4;c++){
+    const p = zs.pct[l][c]; if (p < 0.5) continue;
+    const label = Math.round(p) + '%';
+    let cx = M + c*zw + zw/2, cy = M + l*zh + zh/2;
+    if (map){ const q = map(cx, cy); cx = q[0]; cy = q[1]; }
+    const tw = ctx.measureText(label).width, pw = tw + fs*0.9, ph = fs*1.5, r = fs*0.35;
+    ctx.fillStyle = 'rgba(16,22,29,.72)';
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx-pw/2, cy-ph/2, pw, ph, r) : ctx.rect(cx-pw/2, cy-ph/2, pw, ph); ctx.fill();
+    ctx.fillStyle = p >= 15 ? '#ffd9b8' : '#e8edf2';
+    ctx.fillText(label, cx, cy + fs*0.04);
+  }
+  ctx.restore();
 }
 // ---------------------------------------------------------------- share card
 // ONE implementation, used by the season page AND every game page. It knows
@@ -490,17 +546,39 @@ function sharePNG(buildOpts, name, title, H){
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }, 'image/png');
 }
-drawMap(document.getElementById('pitch'), DATA.grid, gridMax(DATA.grid));
-if (DATA.qgrids) {
-  const qmax = Math.max(...DATA.qgrids.map(gridMax));
-  document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, DATA.qgrids[+cv.dataset.q], qmax));
+// ===== END OF SHARED SCRIPT =====
+// overall_report.py extracts everything ABOVE this line and reuses it verbatim, so the
+// two page types share one drawMap, one drawShare and one set of constants. Everything
+// BELOW is game-page-only. This is an explicit sentinel on purpose: it used to cut on
+// the text of the first drawMap() call, which silently stopped matching the moment that
+// call was refactored (6 Sep 2026) and took the season build down with it.
+
+// The MAIN map turns portrait on a phone; the quarter maps stay landscape. Portrait
+// costs vertical space, and four upright quarter pitches stacked one per row would add
+// well over two screens of scrolling for maps whose job is a quick shape comparison —
+// they are already full width. The big map is where the extra area actually pays.
+function paintMaps(){
+  const p = isPortrait();
+  const main = document.getElementById('pitch');
+  if (p){ main.width = 722; main.height = 1200; } else { main.width = 1200; main.height = 722; }
+  drawMap(main, DATA.grid, gridMax(DATA.grid), {portrait: p});
+  const dir = document.querySelector('.dir');
+  if (dir) dir.innerHTML = p
+    ? '<span>&#9650; Direction of attack</span><span>Own goal at the bottom</span>'
+    : '<span>&#9664; Own goal</span><span>Direction of attack &#9654;</span>';
+  if (DATA.qgrids){
+    const qmax = Math.max(...DATA.qgrids.map(gridMax));
+    document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, DATA.qgrids[+cv.dataset.q], qmax));
+  }
 }
+window.__redraw.push(paintMaps);
+paintMaps();
 
 // ------------------------------------------------- this game's share card
 // Everything below is GAME-PAGE ONLY: it sits after the drawMap() call, which is
 // where overall_report.py stops extracting the shared script, so the season page
 // keeps its own stat set and picker wiring and only shares drawShare/sharePNG.
-const SHARE = {"subject": "KS", "eyebrow": "BARKERITES \u00b7 MHL 5 \u00b7 GAME 1 \u00b7 D 1-1", "subtitle": "vs Old Rafflesians Assoc-C \u00b7 Sun 5 Jul 2026 \u00b7 29 min on pitch", "top": 22.3, "sprints": 1, "dist": 1614, "mpm": 55.4, "fast": 61, "hr": 156, "own": 82, "min": 29, "trackMax": null, "filename": "ks-game1.png"};
+const SHARE = {"subject": "KS", "eyebrow": "BARKERITES \u00b7 MHL 5 \u00b7 GAME 1 \u00b7 D 1-1", "subtitle": "vs Old Rafflesians Assoc-C \u00b7 Sun 5 Jul 2026", "top": 22.3, "sprints": 1, "dist": 1614, "mpm": 55.4, "fast": 61, "hr": 156, "own": 82, "min": 29, "trackMax": null, "filename": "ks-game1.png"};
 const fmt = n => Math.round(n).toLocaleString('en-GB');
 // Personal best = the fastest this player has EVER been measured, track OR match.
 // A game page cannot see the other games, so the reference is the larger of the
@@ -530,7 +608,7 @@ const STATS = {
   fast:    { label:'Fast running',       big:() => [fmt(SHARE.fast), 'm'],               small:() => 'fast running · above 15 km/h' },
   hr:      { label:'Average heart rate', big:() => [Math.round(SHARE.hr), 'bpm'],        small:() => 'average heart rate on the pitch' },
   own:     { label:'Defensive half',     big:() => [Math.round(SHARE.own), '%'],         small:() => 'of the time in the defensive half' },
-  min:     { label:'Minutes on pitch',   big:() => [fmt(SHARE.min), 'min'],              small:() => 'on the pitch this game' },
+  // "Minutes on pitch" removed as a pickable stat, 6 Sep 2026 — Colin: redundant.
 };
 if (!SHARE.hr) delete STATS.hr;
 if (!SHARE.fast) delete STATS.fast;

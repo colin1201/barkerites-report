@@ -79,7 +79,9 @@
   .card .val{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
   .card .val .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:2px; }
   .card .sub{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
-  .cards.hero{ margin-bottom:2px; }
+  /* the scorecards now sit INSIDE the key-match-stats board, under the speed bars
+     and their glossary line, so they need separating space above rather than below */
+  .cards.hero{ margin:18px 0 2px; }
   .card .cs b{ color:var(--ink); font-weight:650; }
   .card.up .cs b.d{ color:#7fd6a0; } .card.down .cs b.d{ color:#f0a25e; }
   /* tables become one card per row on a phone — no sideways scrolling */
@@ -212,6 +214,17 @@
     <div class="qgrid" id="gmaps"><div><canvas class='gmap' data-g='0' width='600' height='361'></canvas><div class='qcap'>G1 · Old Rafflesians Assoc-C · 29 min</div></div><div><canvas class='gmap' data-g='1' width='600' height='361'></canvas><div class='qcap'>G2 · Hypernovas · 53 min</div></div><div><canvas class='gmap' data-g='2' width='600' height='361'></canvas><div class='qcap'>G3 · Eagles · 46 min</div></div><div><canvas class='gmap' data-g='3' width='600' height='361'></canvas><div class='qcap'>G4 · Tannibellies · 84 min</div></div><div><canvas class='gmap' data-g='4' width='600' height='361'></canvas><div class='qcap'>G5 · Tornados · 54 min</div></div><div><canvas class='gmap' data-g='5' width='600' height='361'></canvas><div class='qcap'>G6 · Lodras HC · 54 min</div></div></div>
   </div>
 
+  <!-- Key match stats + scorecards. Colin, 6 Sep 2026: scorecards "before the game by
+       game area, after the heat maps", and "add the colour climb walk too on the overall
+       match reports". Both are rebuilt on every render() so they follow the position
+       filter — a chip that changes the maps and the table must change these too. -->
+  <div class="board">
+    <h2 id="key-h2">Distance by speed</h2>
+    <div id="kbands"></div>
+    <div class="qnote">Every metre covered on the pitch, split by how fast he was moving &mdash; so the five bars add up to the whole distance. The bottom two are the ones that cost him.</div>
+    <div class="cards hero" id="scards"></div>
+  </div>
+
   <div class="board">
     <h2 id="table-h2">Game by game</h2>
     <div class="headline" id="game-head"></div>
@@ -243,7 +256,7 @@
     <details class="coach">
   <summary><span class="ctag">Coach's data</span> the load numbers used to build KS's training weeks &mdash; nothing here needs a decision from the reader</summary>
   <div class="board">
-    <h2>How the season's distance splits by speed</h2>
+    <h2>Speed bands game by game</h2>
     <div class="headline"><b>570 of 16,292 season metres</b> (3%) were run above 15 km/h. The hardest-running game was <b>G3 vs Eagles</b> at 4.6 m of it per minute on the pitch.</div>
     <div class="tscroll"><table>
       <tr class="thead"><th>Speed band</th><th>G1</th><th>G2</th><th>G3</th><th>G4</th><th>G5</th><th>G6</th><th>Season</th></tr>
@@ -283,13 +296,50 @@ function zoneShares(grid, NX, NY){
 // Redraw everything registered here on resize, so line widths track the CSS size.
 window.__redraw = window.__redraw || [];
 let __rt; window.addEventListener('resize', () => { clearTimeout(__rt); __rt = setTimeout(() => window.__redraw.forEach(f => f()), 120); });
+// PORTRAIT on phones (6 Sep 2026). A landscape pitch on a 390px screen is about 207px
+// tall; turned upright it is ~573px — roughly three times the area, which is the whole
+// point. The pitch is drawn LANDSCAPE into an offscreen canvas and the finished bitmap
+// is turned a quarter turn, so every bit of geometry stays exactly as verified; only the
+// zone-share labels are drawn afterwards, upright, so they do not end up on their side.
+// Attack points UP the screen and own goal sits at the BOTTOM. The flank convention is
+// preserved: landscape bottom lane (the player's right when attacking rightward) maps to
+// the right-hand side of the portrait pitch.
+// PILOT, 6 Sep 2026: portrait is switched on per page by --portrait-maps, and only
+// game 6 vs Lodras has it, so Colin can compare it against the landscape pages before
+// it goes everywhere ("in case i prefer the landscape version"). false is the
+// literal true/false the builder writes in.
+const PORTRAIT_MAPS = false;
+const PORTRAIT_MAX_W = 620;
+const isPortrait = () => PORTRAIT_MAPS && window.matchMedia(`(max-width:${PORTRAIT_MAX_W}px)`).matches;
+
 function drawMap(cv, grid, mx, opts){
   opts = opts || {};
+  if (opts.portrait){
+    const PW = cv.width, PH = cv.height;
+    const off = document.createElement('canvas');
+    off.width = PH; off.height = PW;                       // landscape twin
+    drawMap(off, grid, mx, Object.assign({}, opts, {
+      portrait: false, zoneLabels: false,
+      // the offscreen is not in the DOM, so it cannot measure itself: hand it the CSS
+      // length its WIDTH will occupy once rotated, which is the visible canvas's HEIGHT
+      cssW: cv.getBoundingClientRect().height || PH}));
+    const c = cv.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, PW, PH);
+    c.save(); c.translate(0, PH); c.rotate(-Math.PI/2); c.drawImage(off, 0, 0); c.restore();
+    if (opts.zones){
+      const kk = PH / (cv.getBoundingClientRect().height || PH);
+      const M = Math.round(PH*0.022);
+      // landscape (x,y) -> portrait (y, PH - x), the same map the rotation applies
+      drawZoneLabels(c, zoneShares(grid, DATA.nx, DATA.ny),
+                     {M: M, fw: PH-2*M, fh: PW-2*M}, kk, (x, y) => [y, PH - x]);
+    }
+    return;
+  }
   const ctx = cv.getContext('2d');
   const W = cv.width, H = cv.height, NX = DATA.nx, NY = DATA.ny;
   // bitmap px per CSS px — pitch lines are set in CSS px so a 150px-wide map
   // still shows its 23m lines (they were 0.1px on the old 63px thumbnails)
-  const cssW = cv.getBoundingClientRect().width || W, k = W / cssW;
+  const cssW = opts.cssW || cv.getBoundingClientRect().width || W, k = W / cssW;
   const M = Math.round(W*0.022);
   const fw = W-2*M, fh = H-2*M;
   ctx.fillStyle = css('--pitch-edge'); ctx.fillRect(0,0,W,H);
@@ -355,20 +405,34 @@ function drawMap(cv, grid, mx, opts){
     for(let c=1;c<4;c++){ if(c===2) continue; ctx.beginPath(); ctx.moveTo(M+c*zw,M); ctx.lineTo(M+c*zw,M+fh); ctx.stroke(); }
     for(let l=1;l<3;l++){ ctx.beginPath(); ctx.moveTo(M,M+l*zh); ctx.lineTo(M+fw,M+l*zh); ctx.stroke(); }
     ctx.setLineDash([]);
-    const fs = Math.max(11*k, fw*0.034);
-    ctx.font = `700 ${fs}px "Segoe UI",system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-    for(let l=0;l<3;l++) for(let c=0;c<4;c++){
-      const p = zs.pct[l][c]; if (p < 0.5) continue;
-      const label = Math.round(p) + '%';
-      const cx = M + c*zw + zw/2, cy = M + l*zh + zh/2;
-      const tw = ctx.measureText(label).width, pw = tw + fs*0.9, ph = fs*1.5, r = fs*0.35;
-      ctx.fillStyle = 'rgba(16,22,29,.72)';
-      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx-pw/2, cy-ph/2, pw, ph, r) : ctx.rect(cx-pw/2, cy-ph/2, pw, ph); ctx.fill();
-      ctx.fillStyle = p >= 15 ? '#ffd9b8' : '#e8edf2';
-      ctx.fillText(label, cx, cy + fs*0.04);
-    }
     ctx.restore();
+    // Labels are skipped when this is the offscreen twin of a portrait map — the caller
+    // draws them upright afterwards, otherwise the rotation would tip them on their side.
+    if (opts.zoneLabels !== false) drawZoneLabels(ctx, zs, {M: M, fw: fw, fh: fh}, k, null);
   }
+}
+
+// The zone-share "%" pills. Split out of drawMap so a portrait map can draw its pitch
+// rotated and its text upright. `map` converts a landscape point to wherever it has
+// ended up on the visible canvas; null means the two frames are the same.
+function drawZoneLabels(ctx, zs, geom, k, map){
+  const M = geom.M, fw = geom.fw, fh = geom.fh, zw = fw/4, zh = fh/3;
+  const fs = Math.max(11*k, fw*0.034);
+  ctx.save();
+  ctx.font = `700 ${fs}px "Segoe UI",system-ui,sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for(let l=0;l<3;l++) for(let c=0;c<4;c++){
+    const p = zs.pct[l][c]; if (p < 0.5) continue;
+    const label = Math.round(p) + '%';
+    let cx = M + c*zw + zw/2, cy = M + l*zh + zh/2;
+    if (map){ const q = map(cx, cy); cx = q[0]; cy = q[1]; }
+    const tw = ctx.measureText(label).width, pw = tw + fs*0.9, ph = fs*1.5, r = fs*0.35;
+    ctx.fillStyle = 'rgba(16,22,29,.72)';
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx-pw/2, cy-ph/2, pw, ph, r) : ctx.rect(cx-pw/2, cy-ph/2, pw, ph); ctx.fill();
+    ctx.fillStyle = p >= 15 ? '#ffd9b8' : '#e8edf2';
+    ctx.fillText(label, cx, cy + fs*0.04);
+  }
+  ctx.restore();
 }
 // ---------------------------------------------------------------- share card
 // ONE implementation, used by the season page AND every game page. It knows
@@ -442,6 +506,17 @@ const TRACK_MAX = null;   // km/h personal best, or null
 const CHIP_KEYS = {"right back": "Right back"};
 const NX = DATA.nx, NY = DATA.ny;
 const fmt = n => Math.round(n).toLocaleString('en-GB');
+// Speed bands for the key-match-stats panel. Labels, ranges and colours must match
+// game_report.py's KBAND dict exactly — the same five bars appear on the game pages and
+// a reader moves between the two. Change one, change both.
+// NOTE the keys: parse_report() reads the bands off the published page's TABLE, so they
+// are keyed by the printed LABEL ("Fast running"), not by the engine's short code
+// ("fast"). Using the short codes here silently produced five 0 m / 0% bars.
+const KBANDS = [['Walking','Walking','under 6 km/h','#3b5566'],
+                ['Jogging','Jogging','6–11 km/h','#2f8f9d'],
+                ['Running','Running','11–15 km/h','#4faa5a'],
+                ['Fast running','Fast running','15–20 km/h','#e0a63a'],
+                ['Sprinting','Sprinting','20 km/h and up','#e8842a']];
 let chip = 'all', zonesOn = false;
 
 // Personal best = the fastest he has EVER been measured, track OR match. A
@@ -464,7 +539,7 @@ const STATS = {
   fast:    { label: 'Fast running',       big: t => [fmt(t.fast), 'm'],                    small: t => `fast running · above 15 km/h` },
   hr:      { label: 'Average heart rate', big: t => [Math.round(t.hr), 'bpm'],             small: t => 'average heart rate on the pitch' },
   own:     { label: 'Defensive half',     big: t => [Math.round(t.own), '%'],              small: t => 'of the time in the defensive half' },
-  min:     { label: 'Minutes on pitch',   big: t => [fmt(t.min), 'min'],                   small: t => `on the pitch · ${t.n} game${t.n!==1?'s':''}` },
+  // "Minutes on pitch" removed as a pickable stat, 6 Sep 2026 — Colin: redundant.
 };
 const picks = ['top', 'sprints', 'dist'];        // starting choice — change any of them
 function fillPickers(){
@@ -504,6 +579,9 @@ function render(){
   // main map + by-game maps
   // jet (red->orange->yellow->green->blue) is now the renderer's default —
   // Colin saw it on this map first and approved it (6 Sep 2026)
+  // Season map stays LANDSCAPE for now. Portrait is being piloted on one game page
+  // first (game 6 vs Lodras) — Colin, 6 Sep 2026: "in case i prefer the landscape
+  // version". The renderer supports it; this call opts out until he has decided.
   drawMap(document.getElementById('pitch'), grid, gridMax(grid), {zones: zonesOn});
   // Each per-game map is scaled to ITS OWN busiest spot. A shared scale made every
   // midfield game top out at yellow (Colin, 6 Sep 2026: "why is my g6 lodras heat
@@ -523,10 +601,32 @@ function render(){
     ? `As <b>${label.toLowerCase()}</b>, ${SUBJECT} spent <b>${own}%</b> of the time in the defensive half across ${t.n} game${t.n!==1?'s':''} (season: ${Math.round(ALL.own)}%).`
     : `${SUBJECT} spent <b>${own}%</b> of the season in the defensive half — red is where he spent the most time, blue the least.`;
 
-  // No scorecards on the SEASON page — Colin (6 Sep 2026) prefers the game-by-game
-  // table here: "its easier to compare the performance of each match that way".
-  // Scorecards belong on the individual game pages (round 2). The board heading
-  // still follows the filter so a subset never sits under a "Season" label.
+  // Key match stats + scorecards, added 6 Sep 2026 on Colin's instruction (they were
+  // deliberately absent before — he has now asked for both here). Everything is derived
+  // from the FILTERED totals, so a position chip moves these exactly as it moves the
+  // maps and the table; nothing here may be computed from ALL when a filter is on.
+  // No distance / top speed / sprints headline row — the scorecards below carry them
+  // (Colin, 6 Sep 2026: "already in the score cards. just keep the bars").
+  document.getElementById('key-h2').textContent = filtered ? `${label} · distance by speed` : 'Distance by speed';
+  document.getElementById('kbands').innerHTML = KBANDS.map(([k, name, rng, col]) => {
+    const m = t.bands[k] || 0, pct = t.dist ? m/t.dist*100 : 0;
+    return `<div class="kband"><div class="kbrow">` +
+           `<span class="kbl">${name}<em>${rng}</em></span>` +
+           `<span class="kbv">${fmt(m)} m<b>${pct.toFixed(0)}%</b></span></div>` +
+           `<div class="kbar"><i style="width:${pct.toFixed(1)}%;background:${col}"></i></div></div>`;
+  }).join('');
+  const card = (lbl, val, unit, sub) =>
+    `<div class="card"><div class="lbl">${lbl}</div><div class="val">${val}` +
+    (unit ? ` <span class="unit">${unit}</span>` : '') + `</div><div class="sub">${sub}</div></div>`;
+  const per = t.n ? ` · ${(t.dist/t.n/1000).toFixed(1)} km a game` : '';
+  document.getElementById('scards').innerHTML =
+    card('Own half', Math.round(t.own), '%', 'of time on the pitch') +
+    card('Distance', (t.dist/1000).toFixed(1), 'km', `${fmt(t.min)} min on the pitch${per}`) +
+    card('Top speed', t.top.toFixed(1), 'km/h', bestTxt(t.top, '')) +
+    card('Sprint efforts', fmt(t.sprints), '', t.n ? `${(t.sprints/t.n).toFixed(1)} a game` : '&mdash;') +
+    card('Work rate', t.mpm.toFixed(0), 'm/min', 'metres per minute on the pitch') +
+    card('Avg HR', Math.round(t.hr), 'bpm', `across ${t.n} game${t.n!==1?'s':''}`);
+
   document.getElementById('map-h2').textContent = filtered ? `${label} heat map` : 'Season heat map';
   document.getElementById('table-h2').textContent = filtered ? `${label} · game by game` : 'Game by game';
 
@@ -556,7 +656,8 @@ function shareOpts(H){
   const label = chip === 'all' ? '' : ` · ${CHIP_KEYS[chip].toLowerCase()}`;
   return { H, grid: combine(gs), zones: zonesOn,
            eyebrow: 'BARKERITES · MHL 5 · 2026 SEASON', title: SUBJECT,
-           subtitle: `${t.n} game${t.n!==1?'s':''}${label} · ${fmt(t.min)} min on the pitch`,
+           // No minutes on the card — Colin, 6 Sep 2026: "its a redundant stat for me".
+           subtitle: `${t.n} game${t.n!==1?'s':''}${label}`,
            hero: { num: hn, unit: hu, small: h1.small(t) },
            support: [{ big: `${b2} ${u2}`, small: h2.small(t) },
                      { big: `${b3} ${u3}`, small: h3.small(t) }] };
