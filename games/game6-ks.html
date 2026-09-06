@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- REBUILD: py game_report.py --gpx &quot;C:/Users/colin/Downloads/activity_24246947958.gpx&quot; --clip-start &quot;0.43&quot; --clip-end &quot;82.2&quot; --halftime &quot;35.6-42.0&quot; --bench &quot;42.0-58.0&quot; --breaks &quot;15.0-17.8,59.0-61.6&quot; --venue &quot;sengkang-p1&quot; --position &quot;centre back / right back&quot; (engine build 2026-08-25, Tier-1 metrics) -->
+<!-- REBUILD: py game_report.py --gpx "C:/Users/colin/Downloads/activity_24246947958.gpx" --clip-start "0.43" --clip-end "82.2" --halftime "35.6-42.0" --bench "42.0-58.0" --breaks "15.0-17.8,59.0-61.6" --venue "sengkang-p1" --position "centre back / right back" (engine build 2026-08-25, Tier-1 metrics) -->
 <title>Game 6 vs Lodras HC</title>
 <style>
   :root{ --ground:#10161d; --card:#171f28; --ink:#e8edf2; --ink-2:#a7b4c0; --ink-3:#6b7a88;
@@ -562,9 +562,17 @@ function drawShareMap(cv, o){
   x.fillStyle = ACC;  x.font = F('600 34px'); x.fillText(o.eyebrow, 70, y);
   y += 74; x.fillStyle = INK;  x.font = F('700 66px'); x.fillText(o.title, 70, y);
   y += 48; x.fillStyle = INK2; x.font = F('400 36px'); x.fillText(o.subtitle, 70, y);
-  // the pitch, as large as the safe zone allows, keeping its 722:1200 upright shape
-  y += 50;
-  const footerH = 84, availH = bottom - footerH - y, availW = W - 120;
+  // What the numbers mean goes ABOVE the pitch, in the header block. Putting it at the
+  // foot alongside the direction label made the two overlap — the labels below the map
+  // are for direction only, and each sits on the side of the pitch it describes.
+  y += 40;
+  x.fillStyle = INK3; x.font = F('500 26px');
+  x.fillText('% = share of time on the pitch spent in that zone', 70, y);
+  y += 36;
+  x.textAlign = 'center'; x.fillText('▲ attacking this way', W/2, y); x.textAlign = 'left';
+  // the pitch, as large as what is left of the safe zone allows, keeping its 722:1200 shape
+  y += 18;
+  const belowH = 88, availH = bottom - belowH - y, availW = W - 120;
   let mh = availH, mw = Math.round(mh * 722 / 1200);
   if (mw > availW){ mw = availW; mh = Math.round(mw * 1200 / 722); }
   const mx0 = Math.round((W - mw) / 2);
@@ -575,11 +583,9 @@ function drawShareMap(cv, o){
   x.roundRect ? x.roundRect(mx0, y, mw, mh, 22) : x.rect(mx0, y, mw, mh);
   x.clip(); x.drawImage(off, mx0, y, mw, mh); x.restore();
   x.fillStyle = INK3; x.font = F('500 26px');
-  x.fillText('▲ attacking this way', mx0 + 2, y + mh + 36);
-  x.textAlign = 'right'; x.fillText('own goal ▼', mx0 + mw - 2, y + mh + 36); x.textAlign = 'left';
-  x.fillStyle = INK3; x.font = F('500 26px');
-  x.fillText('% = share of time on the pitch spent in that zone', 70, bottom - 46);
-  x.font = F('500 28px'); x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 8);
+  x.textAlign = 'center'; x.fillText('own goal ▼', W/2, y + mh + 34); x.textAlign = 'left';
+  x.font = F('500 28px');
+  x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 6);
 }
 // Save a card. On a phone this opens the share sheet; elsewhere it downloads.
 // buildOpts(H) returns the object the renderer takes, so the saved PNG comes from the
