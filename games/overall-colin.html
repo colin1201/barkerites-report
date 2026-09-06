@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- REBUILD: py overall_report.py --games ../barkerites-report/games/game1-colin.html,../barkerites-report/games/game2-colin.html,../barkerites-report/games/game3-colin.html,../barkerites-report/games/game5-colin.html,../barkerites-report/games/game6-colin.html --subject &quot;Colin&quot; --out C:/Users/colin/AppData/Local/Temp/claude/C--Users-colin-Colin-Claude-work/abfaf965-8e18-41c1-8121-71c784ee9660/scratchpad/overall-colin.html --back-href ../colin.html --back-label &quot;all my match reports&quot; --track-max 29.5 (redesign 2026-09-06) -->
+<!-- REBUILD: py overall_report.py --games ../barkerites-report/games/game1-colin.html,../barkerites-report/games/game2-colin.html,../barkerites-report/games/game3-colin.html,../barkerites-report/games/game5-colin.html,../barkerites-report/games/game6-colin.html --subject &quot;Colin&quot; --out ../barkerites-report/games/overall-colin.html --back-href ../colin.html --back-label &quot;all my match reports&quot; --track-max 29.5 (redesign 2026-09-06) -->
 <title>Colin — 5 games overall</title>
 <style>
   :root{ --ground:#10161d; --card:#171f28; --ink:#e8edf2; --ink-2:#a7b4c0; --ink-3:#6b7a88;
@@ -73,6 +73,13 @@
   .card .cv{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
   .card .cv .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:3px; }
   .card .cs{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
+  /* header scorecards on the game pages reuse the tile's lbl/val/sub inner
+     structure (the season builder reads those by label), styled as cards */
+  .card .lbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .card .val{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .card .val .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:2px; }
+  .card .sub{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
+  .cards.hero{ margin-bottom:2px; }
   .card .cs b{ color:var(--ink); font-weight:650; }
   .card.up .cs b.d{ color:#7fd6a0; } .card.down .cs b.d{ color:#f0a25e; }
   /* tables become one card per row on a phone — no sideways scrolling */
@@ -117,7 +124,7 @@
   .tiles-in .tile{ background:rgba(255,255,255,.03); }
   .split{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
   @media (max-width:620px){ .split{ grid-template-columns:1fr; } }
-  .sublbl{ font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  .sublbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-3); font-weight:600; margin-bottom:8px; }
   .kv{ display:flex; flex-direction:column; gap:7px; font-size:14px;
     font-variant-numeric:tabular-nums; }

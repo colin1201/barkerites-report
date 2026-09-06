@@ -19,6 +19,10 @@
   canvas{ width:100%; height:auto; display:block; border-radius:6px; }
   .dir{ display:flex; justify-content:space-between; font-size:12px; letter-spacing:.1em;
     text-transform:uppercase; color:var(--ink-3); margin-top:8px; }
+  /* colour legend for the multi-hue ('jet') heat palette */
+  .legend{ display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:8px; font-size:12px; color:var(--ink-2); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend span::before{ content:""; width:12px; height:12px; border-radius:3px; background:var(--c); display:inline-block; }
   .tiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
   .tile{ background:var(--card); border:1px solid var(--tile-border); border-radius:10px; padding:12px 14px; }
   .tile .lbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
@@ -69,6 +73,13 @@
   .card .cv{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
   .card .cv .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:3px; }
   .card .cs{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
+  /* header scorecards on the game pages reuse the tile's lbl/val/sub inner
+     structure (the season builder reads those by label), styled as cards */
+  .card .lbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .card .val{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .card .val .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:2px; }
+  .card .sub{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
+  .cards.hero{ margin-bottom:2px; }
   .card .cs b{ color:var(--ink); font-weight:650; }
   .card.up .cs b.d{ color:#7fd6a0; } .card.down .cs b.d{ color:#f0a25e; }
   /* tables become one card per row on a phone — no sideways scrolling */
@@ -113,7 +124,7 @@
   .tiles-in .tile{ background:rgba(255,255,255,.03); }
   .split{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
   @media (max-width:620px){ .split{ grid-template-columns:1fr; } }
-  .sublbl{ font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  .sublbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-3); font-weight:600; margin-bottom:8px; }
   .kv{ display:flex; flex-direction:column; gap:7px; font-size:14px;
     font-variant-numeric:tabular-nums; }
@@ -164,18 +175,16 @@
 
   
 
-  <div class="tiles">
-    <div class="tile"><div class="lbl">Own half</div><div class="val">79%</div><div class="sub">of moving time</div></div>
-    <div class="tile"><div class="lbl">Distance</div><div class="val">4.3 <span style="font-size:13px;font-weight:500">km</span></div><div class="sub">82 min recorded</div></div>
-    <div class="tile"><div class="lbl">Top speed</div><div class="val">23.2 <span style="font-size:13px;font-weight:500">km/h</span></div><div class="sub">fastest burst</div></div>
-    <div class="tile"><div class="lbl">Sprint efforts</div><div class="val">10</div><div class="sub">bursts &ge; 20 km/h</div></div>
-    <div class="tile"><div class="lbl">Work rate</div><div class="val">62.7 <span class="unit">m/min</span></div><div class="sub">your midfield games run 64&ndash;100 m/min</div></div>
-    <div class="tile"><div class="lbl">Avg HR</div><div class="val">160 <span style="font-size:13px;font-weight:500">bpm</span></div><div class="sub">&asymp;87% of max</div></div>
-  </div>
-
-  <div class="board doing">
-    <h2>What to do with this</h2>
-    <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">Your engine is not the limiter in this role &mdash; reading the play is.</div><div class="why"><b>62.7 m/min</b> is normal for you at the back. your midfield games run 64&ndash;100, so if you get moved forward again it is a genuinely different week of legs, not just a different shirt. Here the ground you save by starting in the right place beats the ground you cover.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">No flat-out effort in this game.</div><div class="why">Top speed <b>23.2 km/h</b> is <b>79%</b> of your best. Nothing to fix &mdash; some games never ask the question. Worth noticing if it repeats in a role where it should be asked.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Your sprints were spread out, not bunched.</div><div class="why">All 10 sat more than a minute apart, typically 6 min 05 s. That is the pattern of picking your moments rather than chasing &mdash; the legs stay available for the last quarter.</div></div></div>
+  <!-- Scorecards (Colin, 6 Sep 2026: "for the individual games, use the scorecard
+       format"). Same six stats, same order, same .lbl/.val/.sub inner structure the
+       season builder and verify_reports.py read by LABEL - only the shell changed. -->
+  <div class="cards hero">
+    <div class="card"><div class="lbl">Own half</div><div class="val">79 <span class="unit">%</span></div><div class="sub">of time on the pitch</div></div>
+    <div class="card"><div class="lbl">Distance</div><div class="val">4.3 <span class="unit">km</span></div><div class="sub">82 min recorded</div></div>
+    <div class="card"><div class="lbl">Top speed</div><div class="val">23.2 <span class="unit">km/h</span></div><div class="sub">79% of your flat-out best</div></div>
+    <div class="card"><div class="lbl">Sprint efforts</div><div class="val">10</div><div class="sub">bursts of 20 km/h or more</div></div>
+    <div class="card"><div class="lbl">Work rate</div><div class="val">62.7 <span class="unit">m/min</span></div><div class="sub">your midfield games run 64&ndash;100 m/min</div></div>
+    <div class="card"><div class="lbl">Avg HR</div><div class="val">160 <span class="unit">bpm</span></div><div class="sub">&asymp;87% of max</div></div>
   </div>
 
   <div class="board">
@@ -246,6 +255,11 @@
     <div class="zl"><span>Z1 1m</span><span>Z2 3m</span><span>Z3 6m</span><span>Z4 37m</span><span>Z5 14m</span></div>
   </div>
 
+  <div class="board doing">
+    <h2>What to do with this</h2>
+    <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">Your engine is not the limiter in this role &mdash; reading the play is.</div><div class="why"><b>62.7 m/min</b> is normal for you at the back. your midfield games run 64&ndash;100, so if you get moved forward again it is a genuinely different week of legs, not just a different shirt. Here the ground you save by starting in the right place beats the ground you cover.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">No flat-out effort in this game.</div><div class="why">Top speed <b>23.2 km/h</b> is <b>79%</b> of your best. Nothing to fix &mdash; some games never ask the question. Worth noticing if it repeats in a role where it should be asked.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Your sprints were spread out, not bunched.</div><div class="why">All 10 sat more than a minute apart, typically 6 min 05 s. That is the pattern of picking your moments rather than chasing &mdash; the legs stay available for the last quarter.</div></div></div>
+  </div>
+
   <div class="board">
     <h2>Game notes</h2>
     <div class="notes">Benched 19:04-19:16 (late Q3 to early Q4), Q4 played at midfield. Work rate held flat into Q3 — no fade, and sprints were there when he went for them. The Q4 midfield stint was his biggest per-minute output of the game, helped by the bench rest and the role. The cost came on the ball: first touch and side-to-side transfer broke down under pressure, and one goal came directly from a failed trap off the right back&#x27;s pass. Left knee stiff post-game, second game running.</div>
@@ -309,12 +323,27 @@ function drawMap(cv, grid, mx, opts){
   const ux = up.getContext('2d'); ux.imageSmoothingEnabled = true; ux.imageSmoothingQuality = 'high';
   ux.drawImage(g,0,0,fw,fh);
   const pix = ux.getImageData(0,0,fw,fh);
+  // Two palettes. 'orange' = the original single hue (density -> alpha).
+  // 'jet' = the football-broadcast convention Colin asked to see (6 Sep 2026):
+  // blue (least time) -> green -> yellow -> orange -> red (most time), with the
+  // faintest cells fading out so the pitch stays readable. Stops in [0,1] of
+  // the normalised density; linear blend between neighbouring stops.
+  const JET = [[0.00,[ 40,110,220]],[0.25,[ 40,190,120]],[0.50,[235,215, 60]],[0.72,[240,140, 40]],[1.00,[225, 45, 35]]];
+  const jet = a => { let i=1; while(i<JET.length-1 && JET[i][0]<a) i++;
+    const [a0,c0]=JET[i-1],[a1,c1]=JET[i], f=Math.max(0,Math.min(1,(a-a0)/(a1-a0)));
+    return c0.map((v,k)=>Math.round(v+(c1[k]-v)*f)); };
   for(let p=0;p<pix.data.length;p+=4){
     const a = pix.data[p+3]/255;
-    pix.data[p]   = Math.round(255 - 23*a);
-    pix.data[p+1] = Math.round(214 - 100*a);
-    pix.data[p+2] = Math.round(120 - 90*a);
-    pix.data[p+3] = Math.round(255*Math.min(0.92, a*1.15));
+    if ((opts.palette || 'jet') === 'jet'){   // jet is the DEFAULT since 6 Sep 2026 (Colin approved it on the season map); pass palette:'orange' to opt out
+      const [r,g,b] = jet(a);
+      pix.data[p]=r; pix.data[p+1]=g; pix.data[p+2]=b;
+      pix.data[p+3] = Math.round(255*Math.min(0.94, a < 0.04 ? a*8 : 0.32 + a*0.68));
+    } else {
+      pix.data[p]   = Math.round(255 - 23*a);
+      pix.data[p+1] = Math.round(214 - 100*a);
+      pix.data[p+2] = Math.round(120 - 90*a);
+      pix.data[p+3] = Math.round(255*Math.min(0.92, a*1.15));
+    }
   }
   ux.putImageData(pix,0,0);
   ctx.drawImage(up,M,M);
