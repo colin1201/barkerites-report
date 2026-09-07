@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- REBUILD: py game_report.py --gpx "C:/Users/colin/Downloads/activity_23651832200.gpx" --clip-start "0.98" --clip-end "88.01" --halftime "42.7-48" --bench "70-76.2" --breaks "17-22,32-34.5,56.6-57.0,66.4-70" --venue "sengkang-p2" --flip-lateral --position "left mid" (engine build 2026-08-25, Tier-1 metrics) -->
 <title>Game 3 vs Eagles</title>
 <style>
   :root{ --ground:#10161d; --card:#171f28; --ink:#e8edf2; --ink-2:#a7b4c0; --ink-3:#6b7a88;
@@ -10,21 +11,25 @@
     font-family:"Segoe UI",system-ui,-apple-system,sans-serif; margin:0; padding:24px 16px 40px; }
   .wrap{ max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
   a.back{ color:var(--ink-3); font-size:13px; text-decoration:none; }
-  .eyebrow{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  .eyebrow{ font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600; }
   h1{ font-size:24px; margin:2px 0 0; font-weight:650; }
   .meta{ color:var(--ink-2); font-size:14px; margin-top:4px; }
   .board{ background:var(--card); border:1px solid var(--tile-border); border-radius:10px; padding:16px; }
   h2{ font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); margin:0 0 10px; font-weight:600; }
   canvas{ width:100%; height:auto; display:block; border-radius:6px; }
-  .dir{ display:flex; justify-content:space-between; font-size:11px; letter-spacing:.1em;
+  .dir{ display:flex; justify-content:space-between; font-size:12px; letter-spacing:.1em;
     text-transform:uppercase; color:var(--ink-3); margin-top:8px; }
+  /* colour legend for the multi-hue ('jet') heat palette */
+  .legend{ display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:8px; font-size:12px; color:var(--ink-2); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend span::before{ content:""; width:12px; height:12px; border-radius:3px; background:var(--c); display:inline-block; }
   .tiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
   .tile{ background:var(--card); border:1px solid var(--tile-border); border-radius:10px; padding:12px 14px; }
-  .tile .lbl{ font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .tile .lbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
   .tile .val{ font-size:24px; font-weight:650; margin-top:3px; font-variant-numeric:tabular-nums; }
   .tile .sub{ font-size:12px; color:var(--ink-2); margin-top:2px; }
   table{ width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; }
-  th{ text-align:left; color:var(--ink-3); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  th{ text-align:left; color:var(--ink-3); font-size:12px; letter-spacing:.08em; text-transform:uppercase;
     padding:6px 8px; border-bottom:1px solid var(--tile-border); }
   td{ padding:7px 8px; border-bottom:1px solid var(--tile-border); }
   tr:last-child td{ border-bottom:none; }
@@ -38,70 +43,366 @@
     font-variant-numeric:tabular-nums; }
   .notes{ font-size:14px; color:var(--ink-2); line-height:1.6; white-space:pre-line; }
   .foot{ font-size:12px; color:var(--ink-3); line-height:1.5; max-width:70ch; }
-  .qgrid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  /* clear:both — the map-heading's float:right caption used to swallow this
+     grid's width on phones (per-game maps rendered 63px wide, 6 Sep 2026 audit) */
+  .qgrid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; clear:both; }
   @media (max-width:560px){ .qgrid{ grid-template-columns:1fr; } }
   .qcap{ font-size:12px; color:var(--ink-2); margin-top:5px; text-align:center;
     font-variant-numeric:tabular-nums; }
+  /* ---- redesign, 6 Sep 2026 (season page first; game pages inherit on rebuild) ---- */
+  /* heading + right-hand caption as flex, so the caption can never eat the row below */
+  .h2row{ display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px 12px; }
+  .h2row .h2sub{ font-weight:500; text-transform:none; letter-spacing:0; color:var(--ink-2); font-size:12.5px; }
+  .controls{ display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; margin:2px 0 12px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{ border:1px solid var(--tile-border); background:rgba(255,255,255,.03); color:var(--ink-2);
+    border-radius:20px; padding:5px 12px; font-size:13px; cursor:pointer; user-select:none; line-height:1.2; }
+  .chip:hover{ border-color:var(--ink-3); }
+  .chip.on{ background:var(--accent); color:#12181f; border-color:var(--accent); font-weight:650; }
+  .tog{ display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); cursor:pointer;
+    user-select:none; margin-left:auto; }
+  .tog input{ accent-color:var(--accent); width:17px; height:17px; margin:0; }
+  /* scorecards: one stat each — value, plain-words label, comparison line, colour band */
+  /* fixed 3-up / 2-up so six cards always fill their rows (auto-fit gave 5+1 on desktop) */
+  .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  @media (max-width:600px){ .cards{ grid-template-columns:repeat(2,1fr); } }
+  .card{ background:var(--card); border:1px solid var(--tile-border); border-radius:12px; padding:13px 14px 12px;
+    border-top:3px solid var(--tile-border); }
+  .card.up{ border-top-color:#48bb78; } .card.down{ border-top-color:var(--accent); } .card.flat{ border-top-color:#5b6b7a; }
+  .card .cl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .card .cv{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .card .cv .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:3px; }
+  .card .cs{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
+  /* header scorecards on the game pages reuse the tile's lbl/val/sub inner
+     structure (the season builder reads those by label), styled as cards */
+  .card .lbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .card .val{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .card .val .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:2px; }
+  .card .sub{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
+  /* the scorecards now sit INSIDE the key-match-stats board, under the speed bars
+     and their glossary line, so they need separating space above rather than below */
+  .cards.hero{ margin:18px 0 2px; }
+  .card .cs b{ color:var(--ink); font-weight:650; }
+  .card.up .cs b.d{ color:#7fd6a0; } .card.down .cs b.d{ color:#f0a25e; }
+  /* tables become one card per row on a phone — no sideways scrolling */
+  @media (max-width:600px){
+    .tscroll table.cardify{ min-width:0; }
+    table.cardify, table.cardify tbody, table.cardify tr, table.cardify td{ display:block; }
+    table.cardify thead, table.cardify tr.thead{ display:none; }
+    table.cardify tr{ border:1px solid var(--tile-border); border-radius:10px; padding:8px 11px 6px; margin-bottom:9px;
+      background:rgba(255,255,255,.02); }
+    table.cardify td{ display:flex; justify-content:space-between; gap:12px; padding:5px 0;
+      border-bottom:1px dashed var(--tile-border); font-size:14px; }
+    table.cardify td:last-child{ border-bottom:none; }
+    table.cardify td::before{ content:attr(data-label); color:var(--ink-3); font-size:12px;
+      text-transform:uppercase; letter-spacing:.08em; flex:0 0 auto; }
+    table.cardify td.rowhead{ display:block; font-weight:650; font-size:15px; border-bottom:1px solid var(--tile-border);
+      padding-bottom:7px; margin-bottom:3px; }
+    table.cardify td.rowhead::before{ content:none; }
+    table.cardify tr.total td.rowhead{ color:var(--accent); }
+  }
+  /* share card: the on-page preview IS the canvas the button saves */
+  .share{ display:grid; grid-template-columns:minmax(220px,330px) 1fr; gap:20px; align-items:start; }
+  @media (max-width:640px){ .share{ grid-template-columns:1fr; } .share .preview{ max-width:330px; margin:0 auto; } }
+  .share canvas{ width:100%; height:auto; border-radius:16px; border:1px solid var(--tile-border); display:block; }
+  .share .how{ font-size:14px; color:var(--ink-2); line-height:1.6; }
+  .share .how b{ color:var(--ink); }
+  .picks{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+  @media (max-width:640px){ .picks{ grid-template-columns:1fr; } }
+  .picks label{ display:flex; flex-direction:column; gap:5px; font-size:12px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .picks select{ background:var(--card); color:var(--ink); border:1px solid var(--tile-border); border-radius:8px;
+    padding:9px 10px; font-size:14px; font-family:inherit; }
+  .btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+  .btn{ background:var(--accent); color:#12181f; border:0; border-radius:10px; padding:11px 16px; font-size:14px;
+    font-weight:650; cursor:pointer; }
+  .btn.ghost{ background:transparent; color:var(--ink); border:1px solid var(--tile-border); }
+  .btn:active{ transform:translateY(1px); }
+  .fmt{ font-size:12px; color:var(--ink-3); margin-top:8px; }
+  /* two share cards in one board: a rule between them so the second reads as a second
+     offer, not as more controls for the first */
+  .sharelbl{ font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px; }
+  .share2{ margin-top:22px; padding-top:22px; border-top:1px solid var(--tile-border); }
+
+  /* Key match stats — the Sofascore "Run tab" panel (Colin, 6 Sep 2026: the three
+     headline numbers, then every speed band as metres AND share of the distance).
+     GAME PAGES ONLY, and it sits between the movement map and the quarter maps.
+     Bars are proportional to share, so the eye reads the split before the digits. */
+  .kstop{ display:flex; flex-wrap:wrap; gap:10px 34px; margin-bottom:18px; }
+  .kstop div{ display:flex; align-items:baseline; gap:6px; }
+  .kstop .kv{ font-size:30px; font-weight:800; letter-spacing:-.02em; color:var(--ink); }
+  .kstop .ku{ font-size:14px; font-weight:600; color:var(--ink-2); }
+  .kstop .kl{ font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); margin-left:2px; }
+  .kband{ margin-bottom:11px; }
+  .kbrow{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:5px; }
+  .kbl{ font-size:13.5px; color:var(--ink); }
+  .kbl em{ font-style:normal; color:var(--ink-3); font-size:12px; margin-left:5px; }
+  .kbv{ font-size:13.5px; color:var(--ink-2); white-space:nowrap; }
+  .kbv b{ color:var(--ink); margin-left:6px; }
+  .kbar{ height:8px; border-radius:5px; background:rgba(255,255,255,.06); overflow:hidden; }
+  .kbar i{ display:block; height:100%; border-radius:5px; }
+  @media (max-width:420px){
+    .kstop{ gap:10px 22px; } .kstop .kv{ font-size:26px; }
+    .kbl{ font-size:13px; } .kbl em{ display:block; margin:1px 0 0; } .kbv{ font-size:13px; }
+  }
+  /* Tier-1 pro metrics */
+  .headline{ font-size:15px; line-height:1.5; color:var(--ink); font-weight:600;
+    margin:-2px 0 12px; }
+  .tiles-in{ margin-bottom:10px; }
+  .tiles-in .tile{ background:rgba(255,255,255,.03); }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:620px){ .split{ grid-template-columns:1fr; } }
+  .sublbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:600; margin-bottom:8px; }
+  .kv{ display:flex; flex-direction:column; gap:7px; font-size:14px;
+    font-variant-numeric:tabular-nums; }
+  .kv .r{ display:flex; justify-content:space-between; gap:14px;
+    border-bottom:1px solid var(--tile-border); padding-bottom:6px; }
+  .kv .r:last-child{ border-bottom:none; }
+  .kv .k{ color:var(--ink-2); }
+  .kv .v{ font-weight:650; text-align:right; }
+  .na{ color:var(--ink-3); font-weight:500; font-style:italic; }
+  .flag{ display:inline-block; padding:1px 8px; border-radius:20px; font-size:12px;
+    font-weight:650; letter-spacing:.02em; }
+  .flag.safe{ background:rgba(72,187,120,.16); color:#7fd6a0; }
+  .flag.spike{ background:rgba(232,132,42,.18); color:#f0a25e; }
+  .flag.low{ background:rgba(120,160,200,.16); color:#9dbede; }
+  .tile .val .unit{ font-size:13px; font-weight:500; }
+  .board.doing{ border-color:rgba(232,132,42,.32); background:linear-gradient(180deg,rgba(232,132,42,.055),transparent 70%),var(--card); }
+  .takeaway{ display:flex; gap:13px; padding:13px 0; border-bottom:1px solid var(--tile-border); }
+  .takeaway:last-child{ border-bottom:none; padding-bottom:2px; }
+  .takeaway:first-of-type{ padding-top:2px; }
+  .tnum{ flex:0 0 25px; height:25px; border-radius:50%; background:var(--accent); color:#12181f;
+    font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .tbody{ flex:1; min-width:0; }
+  .tbody .lead{ font-size:15px; font-weight:650; line-height:1.45; }
+  .tbody .why{ font-size:13.5px; color:var(--ink-2); line-height:1.55; margin-top:5px; }
+  details.coach{ border:1px dashed var(--tile-border); border-radius:10px; padding:0 14px; }
+  details.coach > summary{ cursor:pointer; list-style:none; padding:13px 0; font-size:13px;
+    color:var(--ink-3); line-height:1.5; }
+  details.coach > summary::-webkit-details-marker{ display:none; }
+  details.coach > summary::before{ content:"▸"; color:var(--accent); margin-right:8px; display:inline-block; }
+  details.coach[open] > summary::before{ transform:rotate(90deg); }
+  details.coach > summary::after{ content:""; }
+  details.coach[open]{ padding-bottom:14px; }
+  details.coach .board{ margin-bottom:12px; }
+  details.coach .board:last-of-type{ margin-bottom:0; }
+  .ctag{ display:inline-block; background:rgba(232,132,42,.16); color:var(--accent); font-weight:650;
+    padding:1px 8px; border-radius:20px; margin-right:7px; font-size:12px; }
+  .ratewarn{ background:rgba(232,132,42,.10); border:1px solid rgba(232,132,42,.42);
+    border-radius:10px; padding:13px 15px; font-size:13.5px; line-height:1.55; color:var(--ink); }
+  .ratewarn b{ color:var(--accent); }
 </style></head><body>
 <div class="wrap">
   <a class="back" href="../index.html">&larr; back to dashboard</a>
   <header>
     <div class="eyebrow">Barkerites · MHL 5 · Game 3 · D 2-2</div>
     <h1>vs Eagles</h1>
-    <div class="meta">19 Jul 2026 · Nat · left mid · 4.8 km · 87 min recorded</div>
+    <div class="meta">19 Jul 2026 · left mid · 4.5 km · 64 min on the pitch</div>
   </header>
 
-  <div class="tiles">
-    <div class="tile"><div class="lbl">Own half</div><div class="val">55%</div><div class="sub">of moving time</div></div>
-    <div class="tile"><div class="lbl">Distance</div><div class="val">4.8 <span style="font-size:13px;font-weight:500">km</span></div><div class="sub">87 min recorded</div></div>
-    <div class="tile"><div class="lbl">Top speed</div><div class="val">27.0 <span style="font-size:13px;font-weight:500">km/h</span></div><div class="sub">fastest burst</div></div>
-    <div class="tile"><div class="lbl">Sprint efforts</div><div class="val">10</div><div class="sub">bursts &ge; 20 km/h</div></div>
-    <div class="tile"><div class="lbl">Avg HR</div><div class="val">167 <span style="font-size:13px;font-weight:500">bpm</span></div><div class="sub">&asymp;91% of max</div></div>
+  <div class="ratewarn"><b>Read these numbers as a floor, not a measurement.</b> This watch stored a position every 2 seconds and the exported file carries no distance of its own, so the distance is worked out from the dots &mdash; and every turn between them is lost. Testing a known full-rate game thinned to this same rate: distance and work rate came out <b>20% low</b>, sprinting metres <b>64% low</b>, and repeat-sprint clusters went to <b>zero</b>. The real figures are higher, by an amount nobody can recover from this file. <b>Do not compare them with a report recorded every second</b> &mdash; the gap would be the watch, not the player. Switching that watch to 1-second recording fixes future games.</div>
+
+  <!-- Scorecards (Colin, 6 Sep 2026: "for the individual games, use the scorecard
+       format"). Same six stats, same order, same .lbl/.val/.sub inner structure the
+       season builder and verify_reports.py read by LABEL - only the shell changed. -->
+  <!-- Scorecards are the FIRST thing on an individual match report, above the heat map.
+       Briefly moved under the speed bars on 6 Sep 2026 and moved straight back — Colin:
+       "i want this scorecards at the top. it should be the first thing." On the SEASON
+       page they sit after the heat maps instead; that difference is deliberate. -->
+  <div class="cards hero">
+    <div class="card"><div class="lbl">Own half</div><div class="val">56 <span class="unit">%</span></div><div class="sub">of time on the pitch</div></div>
+    <div class="card"><div class="lbl">Distance</div><div class="val">4.5 <span class="unit">km</span></div><div class="sub">64 min on the pitch</div></div>
+    <div class="card"><div class="lbl">Top speed</div><div class="val">27.0 <span class="unit">km/h</span></div><div class="sub">fastest burst of the game</div></div>
+    <div class="card"><div class="lbl">Sprint efforts</div><div class="val">10</div><div class="sub">bursts of 20 km/h or more</div></div>
+    <div class="card"><div class="lbl">Work rate</div><div class="val">69.8 <span class="unit">m/min</span></div><div class="sub">metres per minute on the pitch</div></div>
+    <div class="card"><div class="lbl">Avg HR</div><div class="val">167 <span class="unit">bpm</span></div><div class="sub">no max HR on file for this player</div></div>
   </div>
 
   <div class="board">
-    <h2>Movement heat map <span style="float:right;font-weight:500;text-transform:none;letter-spacing:0">att 25% · mid 48% · def 28%</span></h2>
+    <h2>Movement heat map <span style="float:right;font-weight:500;text-transform:none;letter-spacing:0">att 24% · mid 48% · def 28%</span></h2>
+    <div class="controls"><label class="tog"><input type="checkbox" id="zones"> Show % of time in each zone</label></div>
     <canvas id="pitch" width="1200" height="722"></canvas>
     <div class="dir"><span>&#9664; Own goal</span><span>Direction of attack &#9654;</span></div>
   </div>
 
   <div class="board">
+    <h2>Distance by speed</h2>
+    <div class="kband"><div class="kbrow"><span class="kbl">Walking<em>under 6 km/h</em></span><span class="kbv">2,585 m<b>58%</b></span></div><div class="kbar"><i style="width:57.9%;background:#3b5566"></i></div></div><div class="kband"><div class="kbrow"><span class="kbl">Jogging<em>6&ndash;11 km/h</em></span><span class="kbv">965 m<b>22%</b></span></div><div class="kbar"><i style="width:21.6%;background:#2f8f9d"></i></div></div><div class="kband"><div class="kbrow"><span class="kbl">Running<em>11&ndash;15 km/h</em></span><span class="kbv">530 m<b>12%</b></span></div><div class="kbar"><i style="width:11.9%;background:#4faa5a"></i></div></div><div class="kband"><div class="kbrow"><span class="kbl">Fast running<em>15&ndash;20 km/h</em></span><span class="kbv">275 m<b>6%</b></span></div><div class="kbar"><i style="width:6.2%;background:#e0a63a"></i></div></div><div class="kband"><div class="kbrow"><span class="kbl">Sprinting<em>20 km/h and up</em></span><span class="kbv">108 m<b>2%</b></span></div><div class="kbar"><i style="width:2.4%;background:#e8842a"></i></div></div>
+    <div class="qnote">Every metre you covered on the pitch, split by how fast you were moving &mdash; so the five bars add up to your whole distance. The bottom two are the ones that cost you. <b>On this file the bottom two bars are a floor, not a measurement</b> &mdash; a position every 2 seconds loses the turns between the dots, so the fast-running and sprinting metres are understated. See the note at the top.</div>
+  </div>
+
+  <div class="board">
     <h2>Heat map by quarter <span style="float:right;font-weight:500;text-transform:none;letter-spacing:0">same brightness scale across all four</span></h2>
     <div class="qgrid">
-      <div><canvas class="qmap" data-q="0" width="600" height="361"></canvas><div class="qcap">Q1 · 1167m</div></div>
-      <div><canvas class="qmap" data-q="1" width="600" height="361"></canvas><div class="qcap">Q2 · 1235m</div></div>
-      <div><canvas class="qmap" data-q="2" width="600" height="361"></canvas><div class="qcap">Q3 · 1157m</div></div>
-      <div><canvas class="qmap" data-q="3" width="600" height="361"></canvas><div class="qcap">Q4 · 790m</div></div>
+      <div><canvas class="qmap" data-q="0" width="600" height="361"></canvas><div class="qcap">Q1 · 1247m</div></div>
+      <div><canvas class="qmap" data-q="1" width="600" height="361"></canvas><div class="qcap">Q2 · 1279m</div></div>
+      <div><canvas class="qmap" data-q="2" width="600" height="361"></canvas><div class="qcap">Q3 · 1209m</div></div>
+      <div><canvas class="qmap" data-q="3" width="600" height="361"></canvas><div class="qcap">Q4 · 729m</div></div>
     </div>
   </div>
 
   <div class="board">
     <h2>By quarter (split around halftime)</h2>
-    <div class="tscroll"><table><tr><th></th><th>On pitch</th><th>Distance</th><th>Fast run</th><th>Sprints</th><th>Top speed</th><th>Avg HR</th></tr><tr><td>Q1</td><td>16 min</td><td>1167m</td><td>79m</td><td>3</td><td>25.7 km/h</td><td>165</td></tr><tr><td>Q2</td><td>18 min</td><td>1235m</td><td>139m</td><td>4</td><td>27.0 km/h</td><td>166</td></tr><tr><td>Q3</td><td>17 min</td><td>1157m</td><td>101m</td><td>3</td><td>25.3 km/h</td><td>170</td></tr><tr><td>Q4</td><td>12 min</td><td>790m</td><td>52m</td><td>0</td><td>18.9 km/h</td><td>166</td></tr></table></div>
-    <div class="qnote fade">Late-game read — Q4 vs Q1, per minute on pitch: total distance −7%, fast running −10%.</div>
+    <div class="tscroll"><table><tr><th></th><th>On pitch</th><th>Distance</th><th>Fast run</th><th>Sprints</th><th>Top speed</th><th>Avg HR</th></tr><tr><td>Q1</td><td>17 min</td><td>1247m</td><td>87m</td><td>3</td><td>25.7 km/h</td><td>164</td></tr><tr><td>Q2</td><td>18 min</td><td>1279m</td><td>143m</td><td>4</td><td>27.0 km/h</td><td>166</td></tr><tr><td>Q3</td><td>18 min</td><td>1209m</td><td>101m</td><td>3</td><td>25.3 km/h</td><td>170</td></tr><tr><td>Q4</td><td>11 min</td><td>729m</td><td>52m</td><td>0</td><td>18.9 km/h</td><td>167</td></tr></table></div>
+    <div class="qnote fade">Late-game read — Q4 vs Q1, per minute on pitch: total distance −7%, fast running −5%.</div>
     <div class="qnote">On pitch = wall-clock minutes excluding halftime, bench and still time 60s+ &mdash; a 15-min quarter runs ~18-19 real minutes because the game clock stops and the watch doesn't. Fast run = metres covered above 15 km/h &mdash; the number to watch for late-game fade. Sprints = bursts &ge; 20 km/h.</div>
   </div>
 
+  <details class="coach">
+  <summary><span class="ctag">Coach's data</span> the load numbers I use to build your week &mdash; nothing here needs a decision from you</summary>
+
+  <div class="board">
+    <h2>Physical output</h2>
+    <div class="headline">You covered <b>69.8 metres per minute</b> on the pitch.</div>
+    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">1.6</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val"><span class="na">not measurable</span></div><div class="sub">no flat-out reference on file for this player</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">2s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">2s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div></div>
+    <div class="qnote"><b>The acceleration counts are deliberately blank for this game, not zero.</b> The watch stored 2s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated, and at that spacing a real hard burst is averaged away before it reaches the file &mdash; the same 17 minutes measured every second showed 43 accelerations and, sampled every 2 seconds, showed 6. A number here would describe the watch's recording setting, not the game. Everything else on this page is unaffected.</div>
+  </div>
+
+  <div class="board">
+    <h2>Speed bands by quarter</h2>
+    <div class="headline"><b>383 of your 4,463 metres</b> (9%) were run above 15 km/h &mdash; the part of the distance that actually costs you.</div>
+    <div class="tscroll"><table>
+      <tr><th>Speed band</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Whole game</th><th>Share</th></tr>
+      <tr><td>Walking (under 6 km/h)</td><td>682m</td><td>770m</td><td>690m</td><td>443m</td><td>2,585m</td><td>58%</td></tr><tr><td>Jogging (6&ndash;11 km/h)</td><td>333m</td><td>224m</td><td>249m</td><td>159m</td><td>965m</td><td>22%</td></tr><tr><td>Running (11&ndash;15 km/h)</td><td>146m</td><td>141m</td><td>169m</td><td>74m</td><td>530m</td><td>12%</td></tr><tr style="font-weight:650"><td>Fast running (15&ndash;20 km/h)</td><td>64m</td><td>113m</td><td>46m</td><td>52m</td><td>275m</td><td>6%</td></tr><tr style="font-weight:650"><td>Sprinting (20 km/h and up)</td><td>23m</td><td>30m</td><td>55m</td><td>0m</td><td>108m</td><td>2%</td></tr>
+    </table></div>
+    <div class="qnote">Every figure is metres covered while travelling in that speed range, so the five rows add up to the game's total distance. Walking and jogging are the bulk of any hockey game &mdash; the two bottom rows are the ones that cost you.</div>
+  </div>
+
+  <div class="board">
+    <h2>Repeat sprints &amp; training load</h2>
+    <div class="headline"><b>2 of your 10 sprints</b> came in 1 back-to-back cluster with under a minute between them.</div>
+    <div class="split">
+      <div>
+        <div class="sublbl">Repeat-sprint profile</div>
+        <div class="kv"><div class="r"><span class="k">Sprint efforts</span><span class="v">10</span></div><div class="r"><span class="k">Back-to-back clusters</span><span class="v">1</span></div><div class="r"><span class="k">Sprints inside a cluster</span><span class="v">2</span></div><div class="r"><span class="k">Longest cluster</span><span class="v">2 sprints</span></div><div class="r"><span class="k">Typical recovery (median)</span><span class="v">2 min 48 s</span></div><div class="r"><span class="k">Tightest turnaround</span><span class="v">8 s</span></div></div>
+        <div class="qnote">A <b>cluster</b> is two or more sprints with less than 60 seconds of recovery between them &mdash; the pattern that empties the legs fastest. Recovery time spent on the bench or at a break is not counted as recovery between sprints.</div>
+      </div>
+      <div>
+        <div class="sublbl">Training load, the 7 days up to this game</div>
+        <div class="kv"><div class="r"><span class="k">Training load</span><span class="v"><span class="na">not requested</span></span></div></div>
+        <div class="qnote">Load here is total training minutes, compared with the average week over the previous four weeks. Under 0.8 = detraining, 0.8&ndash;1.3 = safe, above 1.3 = injury risk.</div>
+      </div>
+    </div>
+  </div>
+
+  </details>
+
   <div class="board">
     <h2>Heart-rate zones (minutes)</h2>
-    <div class="zbar"><div style="flex:0.01;opacity:0.18"></div><div style="flex:0.01;opacity:0.35"></div><div style="flex:6;opacity:0.55"></div><div style="flex:31;opacity:0.78"></div><div style="flex:28;opacity:1"></div></div>
-    <div class="zl"><span>Z1 0m</span><span>Z2 0m</span><span>Z3 6m</span><span>Z4 31m</span><span>Z5 28m</span></div>
+    <div class="zbar"><div style="flex:0.01;opacity:0.18"></div><div style="flex:0.01;opacity:0.35"></div><div style="flex:6;opacity:0.55"></div><div style="flex:28;opacity:0.78"></div><div style="flex:29;opacity:1"></div></div>
+    <div class="zl"><span>Z1 0m</span><span>Z2 0m</span><span>Z3 6m</span><span>Z4 28m</span><span>Z5 29m</span></div>
+  </div>
+
+  <div class="board doing">
+    <h2>What to do with this</h2>
+    <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">You covered 69.8 m/min on the pitch.</div><div class="why">10 sprints in 64 minutes. No measured norm for &ldquo;left mid&rdquo; yet &mdash; a couple more games in this role and there will be one to judge it against.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">Top speed <b>27.0 km/h</b> &mdash; no flat-out reference on file for this player.</div><div class="why">The warm-up read on these pages compares a game's top speed with the player's own measured maximum. None has been measured for this player, so the speed is reported as-is rather than as a share of someone else's best. A track max, once measured, goes in as <code>--track-max</code>.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Look at where your sprints bunched &mdash; the map knows where, you know why.</div><div class="why"><b>2 of your 10 sprints</b> came in 1 bunches less than a minute apart, the longest <b>2 back-to-back</b>, typically 2 min 48 s between efforts. Bunching is exactly what pressing looks like, so this is not a fault &mdash; it is a question: were those the press, or chasing balls that were gone? You will remember. The quarter maps below show which part of the pitch they happened in.</div></div></div>
+  </div>
+
+  <div class="board">
+    <div class="h2row"><h2>Share it</h2><span class="h2sub">two cards &mdash; your numbers, and the map</span></div>
+    <div class="share">
+      <div class="preview"><canvas id="share" width="1080" height="1920"></canvas></div>
+      <div>
+        <div class="sharelbl">Card 1 &middot; your three numbers</div>
+        <div class="how">Pick the <b>three numbers</b> you want on the card &mdash; the first is the big one.</div>
+        <div class="picks">
+          <label><span>1st (big)</span><select id="s1"></select></label>
+          <label><span>2nd</span><select id="s2"></select></label>
+          <label><span>3rd</span><select id="s3"></select></label>
+        </div>
+        <div class="btns"><button class="btn" id="dl">Download as image</button></div>
+        <div class="fmt">Saves a 1080 &times; 1920 image &mdash; sized for a phone story, and it posts fine anywhere else. On a phone the button opens the share sheet directly. A plain screenshot of the card also works.</div>
+      </div>
+    </div>
+    <div class="share share2">
+      <div class="preview"><canvas id="share2" width="1080" height="1920"></canvas></div>
+      <div>
+        <div class="sharelbl">Card 2 &middot; the heat map, upright</div>
+        <div class="how">Just the pitch, turned upright so it fills a phone screen, with the <b>share of time in each zone</b> printed on it. No stats &mdash; it reads on its own.</div>
+        <div class="btns"><button class="btn ghost" id="dl2">Download heat map</button></div>
+        <div class="fmt">Same 1080 &times; 1920 size as card 1. The zone percentages are the share of your time on the pitch, so the twelve of them add up to 100%.</div>
+      </div>
+    </div>
   </div>
 
   <div class="board">
     <h2>Game notes</h2>
-    <div class="notes">Nat (left mid) on Colin&#x27;s confirmed G3 frame (SK2; Nat&#x27;s watch started 2m13s before push-back, aligned by wall-clock). Played most of the game, one spell off early Q4 (~min 66-75).</div>
+    <div class="notes">Nat (left mid) on Colin&#x27;s confirmed G3 frame (SK2; Nat&#x27;s first GPS fix 59 s before push-back, aligned by wall-clock). Played most of the game, one spell off at the start of Q4 (~min 70-76, GPS-verified at the bench spot).</div>
   </div>
 
-  <p class="foot">Heat map: moving time only, both halves rotated onto one attacking direction, wrist-GPS ~3s samples — shapes honest, edges approximate. Orientation assumes more time spent defending than attacking (dense end = own goal). HR from wrist optical: treat in-game values as a trend, not gospel. Pitch frame: surveyed Sengkang Hockey Stadium Pitch 2 corners. halftime 43-48 min + bench 68-75 min + quarter breaks excluded from maps and stats.</p>
+  <p class="foot">Heat map: moving time only, both halves rotated onto one attacking direction, wrist GPS at 2s sampling of an exported file with no distance channel — shapes honest, edges approximate. Orientation assumes more time spent defending than attacking (dense end = own goal). HR from wrist optical: treat in-game values as a trend, not gospel. Pitch frame: surveyed Sengkang Hockey Stadium Pitch 2 corners. halftime 43-48 min + bench 70-76 min + quarter breaks excluded from maps and stats.</p>
 </div>
 <script>
-const DATA = {"grid": [[0, 0, 2, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 3, 0, 3, 0, 0, 0, 2, 3, 0, 4, 4, 4, 2, 0, 4, 2, 4, 1, 2, 3, 0, 1, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 2, 0, 0, 1, 0, 1, 1, 5, 1, 4, 2, 6, 6, 9, 10, 8, 6, 2, 3, 1, 1, 2, 4, 2, 1, 2, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2, 1, 2, 0, 2, 6, 4, 5, 5, 5, 7, 5, 8, 6, 6, 3, 4, 2, 5, 0, 2, 5, 5, 2, 2, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 3, 1, 2, 1, 3, 2, 3, 4, 4, 3, 6, 5, 2, 2, 7, 4, 2, 6, 1, 5, 4, 4, 3, 4, 3, 1, 1, 1, 0, 1, 0, 0, 0], [0, 0, 0, 2, 0, 1, 1, 0, 0, 0, 0, 1, 3, 1, 0, 8, 4, 5, 5, 5, 3, 4, 3, 5, 1, 9, 4, 6, 4, 2, 4, 4, 5, 1, 3, 3, 2, 1, 4, 3, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 3, 3, 2, 6, 4, 6, 5, 3, 1, 7, 4, 4, 3, 2, 6, 3, 3, 3, 6, 5, 3, 2, 1, 3, 5, 3, 0, 0, 0, 1, 0, 0, 0], [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 2, 1, 1, 8, 4, 3, 1, 3, 3, 3, 2, 5, 3, 10, 4, 8, 3, 7, 5, 5, 2, 4, 5, 4, 6, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 2, 4, 6, 5, 1, 3, 5, 4, 3, 5, 9, 6, 3, 4, 2, 2, 2, 3, 6, 6, 2, 0, 1, 1, 2, 3, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 3, 2, 2, 4, 4, 4, 3, 0, 1, 2, 1, 0, 2, 5, 1, 4, 1, 3, 0, 0, 2, 1, 1, 7, 4, 3, 2, 5, 0, 1, 1, 1, 1, 2, 1, 2, 0, 0, 0], [0, 0, 1, 1, 1, 2, 0, 0, 3, 1, 6, 2, 2, 4, 3, 1, 1, 5, 2, 3, 3, 1, 1, 4, 2, 1, 1, 2, 2, 4, 2, 4, 1, 2, 3, 1, 1, 3, 1, 0, 1, 2, 0, 0, 0, 0], [0, 0, 0, 1, 1, 2, 4, 3, 4, 2, 4, 3, 3, 2, 3, 3, 1, 0, 4, 2, 1, 2, 2, 6, 3, 3, 2, 1, 2, 0, 1, 0, 0, 2, 1, 2, 3, 2, 0, 0, 2, 1, 1, 0, 0, 0], [0, 0, 5, 2, 1, 6, 3, 2, 1, 2, 7, 3, 3, 0, 1, 2, 0, 0, 1, 1, 1, 1, 4, 1, 1, 4, 1, 1, 1, 1, 0, 1, 2, 1, 0, 2, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 7, 7, 3, 6, 4, 3, 3, 3, 1, 0, 1, 2, 0, 0, 0, 0, 3, 1, 0, 2, 2, 1, 0, 1, 1, 0, 3, 0, 1, 6, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 3, 3, 2, 1, 4, 5, 6, 2, 0, 1, 0, 0, 0, 1, 3, 1, 0, 1, 1, 0, 0, 0, 1, 1, 2, 0, 0, 0, 2, 2, 1, 4, 2, 0, 1, 0, 0, 0, 1, 3, 3, 0, 0], [0, 0, 0, 0, 2, 1, 1, 7, 8, 2, 5, 1, 1, 1, 2, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 3, 0, 0, 0, 0, 0, 2, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 1, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], "nx": 46, "ny": 28, "total": 1254, "qgrids": [[[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 3, 3, 7, 5, 5, 3, 2, 2, 0, 1, 1, 3, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3, 3, 4, 5, 3, 5, 1, 3, 1, 2, 1, 4, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 2, 2, 2, 3, 2, 0, 0, 4, 2, 2, 3, 1, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 2, 2, 0, 2, 1, 2, 1, 2, 1, 3, 0, 0, 2, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 1, 2, 1, 1, 0, 2, 1, 1, 1, 4, 2, 2, 3, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 2, 1, 1, 1, 1, 1, 0, 0, 1, 2, 0, 5, 2, 1, 3, 4, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 4, 0, 0, 3, 1, 1, 4, 5, 3, 0, 1, 0, 1, 0, 0, 2, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 3, 1, 0, 0, 0, 1, 0, 1, 4, 0, 0, 0, 1, 0, 0, 0, 0, 1, 2, 2, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 2, 2, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 2, 2, 0, 0, 1, 2, 0, 0, 0, 2, 1, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 2, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 1, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 2, 3, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 1, 1, 2, 3, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 3, 3, 1, 2, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 2, 2, 2, 0, 3, 1, 0, 1, 0, 3, 3, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 2, 0, 5, 2, 0, 3, 1, 1, 3, 4, 1, 3, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 2, 1, 0, 1, 1, 0, 0, 5, 4, 1, 0, 1, 1, 3, 3, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 2, 0, 1, 1, 1, 2, 2, 0, 6, 3, 2, 0, 4, 1, 1, 1, 4, 3, 3, 4, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 1, 1, 1, 1, 1, 2, 0, 0, 1, 1, 2, 0, 1, 0, 0, 2, 2, 2, 0, 0, 0, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 2, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 3, 1, 2, 2, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 2, 2, 2, 0, 0, 2, 1, 1, 0, 0, 0], [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 2, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 3, 3, 0, 0], [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 2, 0, 2, 1, 3, 1, 0, 0, 1, 3, 1, 2, 3, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 1, 1, 1, 1, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 2, 3, 1, 1, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 2, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 2, 2, 2, 2, 1, 1, 0, 1, 1, 2, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 2, 1, 1, 3, 0, 0, 5, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 5, 1, 0, 0, 1, 1, 1, 0, 2, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 2, 1, 0, 2, 1, 2, 0, 0, 2, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 2, 1, 2, 0, 0, 1, 0, 0, 2, 2, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 3, 0, 1, 2, 0, 0, 0, 0, 0, 3, 0, 0, 0, 2, 1, 1, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 1, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 2, 1, 1, 0, 1, 1, 1, 2, 2, 1, 0, 0, 2, 0, 0, 0, 0, 1, 3, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 3, 2, 0, 5, 2, 0, 0, 2, 6, 2, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 2, 1, 0, 3, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 6, 4, 2, 4, 3, 1, 3, 2, 0, 0, 1, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 3, 1, 0, 3, 2, 0, 0, 0, 0, 0, 0, 0, 1, 3, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 3, 3, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 2, 1, 1, 0, 0, 3, 1, 0, 2, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 1, 3, 2, 1, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 3, 1, 0, 6, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3, 0, 1, 0, 3, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 3, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 2, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 2, 0, 3, 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 2, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 2, 2, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]]};
+const DATA = {"grid": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 3, 0, 1, 1, 1, 0, 4, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 3, 2, 1, 7, 8, 2, 5, 1, 1, 1, 2, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 3, 3, 3, 1, 4, 5, 7, 2, 0, 1, 0, 0, 0, 1, 3, 1, 0, 1, 1, 0, 0, 0, 0, 1, 2, 0, 0, 0, 2, 2, 1, 4, 2, 0, 1, 1, 0, 0, 1, 3, 3, 0, 0], [0, 0, 0, 1, 0, 1, 7, 7, 3, 6, 4, 3, 3, 3, 1, 0, 1, 2, 0, 0, 0, 0, 3, 1, 0, 1, 2, 1, 0, 1, 1, 0, 3, 0, 1, 6, 1, 0, 0, 2, 1, 0, 0, 0, 0, 0], [0, 0, 5, 2, 1, 6, 3, 2, 1, 2, 7, 3, 3, 0, 1, 2, 0, 0, 1, 1, 1, 1, 4, 1, 1, 4, 1, 1, 1, 1, 0, 1, 2, 2, 0, 2, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 2, 4, 3, 4, 2, 4, 2, 3, 2, 3, 2, 1, 0, 4, 2, 1, 2, 2, 5, 3, 2, 2, 1, 2, 0, 1, 1, 0, 2, 1, 2, 3, 3, 0, 0, 2, 2, 1, 0, 0, 0], [0, 0, 1, 1, 1, 2, 0, 0, 3, 1, 6, 1, 2, 4, 3, 1, 1, 4, 1, 3, 2, 1, 1, 4, 2, 1, 0, 2, 2, 4, 2, 4, 1, 2, 4, 1, 1, 3, 2, 1, 1, 3, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 3, 2, 2, 4, 3, 4, 3, 0, 1, 1, 1, 0, 1, 4, 0, 1, 1, 3, 0, 0, 1, 1, 2, 7, 5, 3, 2, 5, 0, 1, 1, 1, 1, 3, 1, 2, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 4, 8, 7, 4, 3, 7, 4, 3, 5, 8, 6, 3, 4, 3, 3, 3, 3, 6, 7, 2, 1, 1, 1, 2, 3, 1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 2, 1, 2, 9, 4, 3, 2, 4, 3, 3, 4, 5, 3, 10, 4, 7, 8, 7, 8, 7, 3, 4, 5, 4, 6, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 2, 3, 3, 6, 4, 7, 5, 3, 1, 7, 5, 4, 3, 3, 8, 4, 4, 3, 6, 5, 4, 2, 1, 3, 5, 3, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 2, 0, 1, 1, 0, 0, 1, 1, 1, 4, 1, 0, 7, 4, 5, 6, 5, 3, 4, 3, 5, 3, 10, 5, 8, 4, 2, 5, 6, 6, 1, 3, 3, 2, 1, 4, 3, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 2, 1, 2, 1, 3, 3, 4, 4, 5, 3, 6, 5, 3, 2, 8, 4, 3, 7, 2, 5, 4, 4, 3, 4, 3, 1, 1, 1, 0, 1, 0, 0, 0], [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 2, 1, 2, 0, 2, 6, 4, 5, 7, 5, 8, 7, 9, 6, 7, 3, 4, 2, 5, 0, 2, 5, 5, 2, 2, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 2, 1, 5, 1, 5, 3, 7, 6, 10, 11, 8, 6, 2, 3, 1, 1, 2, 4, 2, 1, 2, 1, 0, 0, 0, 0], [0, 0, 2, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 2, 1, 2, 1, 2, 1, 4, 0, 3, 1, 2, 0, 2, 3, 0, 5, 5, 4, 2, 0, 4, 2, 4, 1, 2, 3, 0, 1, 0, 0, 0, 0, 0]], "nx": 46, "ny": 28, "total": 1322, "qgrids": [[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 2, 3, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 1, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 3, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 2, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 2, 2, 0, 0, 1, 2, 0, 0, 0, 2, 1, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 2, 2, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 3, 1, 0, 0, 0, 1, 0, 1, 4, 0, 0, 0, 1, 0, 0, 0, 0, 2, 2, 3, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 4, 0, 0, 4, 1, 1, 4, 5, 3, 0, 1, 1, 3, 1, 0, 2, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 2, 1, 1, 1, 1, 1, 1, 0, 1, 2, 1, 5, 7, 1, 6, 6, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 1, 2, 1, 1, 0, 2, 1, 1, 1, 6, 3, 2, 3, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 2, 2, 0, 2, 1, 2, 1, 2, 1, 3, 0, 0, 2, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 2, 2, 2, 3, 2, 0, 0, 4, 2, 2, 3, 1, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3, 3, 4, 5, 3, 5, 1, 3, 1, 2, 1, 4, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 3, 3, 7, 5, 5, 3, 2, 2, 0, 1, 1, 3, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 3, 3, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 2, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 2, 2, 2, 0, 0, 2, 1, 1, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 3, 1, 2, 2, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 2, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 3, 2, 3, 1, 2, 2, 0, 0, 1, 1, 2, 0, 1, 0, 0, 2, 2, 3, 0, 1, 0, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 2, 0, 1, 1, 1, 3, 2, 0, 6, 3, 2, 1, 4, 1, 1, 1, 4, 3, 3, 4, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 2, 2, 1, 1, 1, 1, 1, 0, 5, 4, 2, 0, 1, 1, 3, 3, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 2, 1, 6, 3, 1, 3, 1, 1, 3, 5, 1, 3, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 2, 2, 3, 0, 4, 1, 0, 1, 1, 3, 3, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 2, 0, 2, 2, 4, 3, 2, 2, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 1, 2, 1, 2, 3, 3, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 0, 2, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 2, 2, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 1, 1, 0, 4, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 2, 0, 3, 3, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 3, 2, 0, 3, 2, 1, 0, 0, 0, 0, 0, 0, 1, 3, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 6, 4, 2, 4, 3, 1, 3, 2, 0, 0, 1, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 3, 2, 0, 5, 2, 0, 0, 2, 6, 2, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 2, 1, 0, 3, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 2, 1, 1, 0, 1, 0, 1, 2, 2, 0, 0, 0, 2, 0, 0, 0, 0, 1, 3, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 3, 0, 1, 1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 2, 1, 1, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 1, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 1, 0, 0, 2, 2, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 1, 0, 2, 1, 2, 0, 0, 2, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 6, 1, 0, 1, 2, 1, 1, 0, 2, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 2, 2, 1, 2, 3, 0, 0, 5, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 3, 2, 2, 2, 1, 1, 1, 1, 1, 3, 1, 1, 1, 2, 1, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2, 0, 1, 0, 1, 2, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 3, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 0, 0, 0, 0, 0, 0, 2, 3, 1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 1, 2, 1, 1, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 2, 2, 0, 2, 1, 3, 1, 0, 0, 1, 3, 1, 2, 3, 0, 1, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 2, 2, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 2, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 2, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 1, 0, 2, 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 3, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3, 0, 1, 0, 3, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 3, 1, 0, 5, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 1, 3, 2, 1, 0, 1, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 0, 0, 3, 1, 0, 2, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 3, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]]};
 const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
 function gridMax(grid){ let m=0; for(const row of grid) for(const v of row) m=Math.max(m,v); return m; }
-function drawMap(cv, grid, mx){
+// 12 zones = the four 23m quarters of the pitch x three lanes, in DISPLAY
+// orientation (own goal on the left, as drawn). Share of the grid's total, so on
+// a per-minute-normalised grid it is share of TIME. 46 columns / 4 = 11.5, so the
+// straddling column is split half-half; 28 rows -> lanes of 9/10/9.
+function zoneShares(grid, NX, NY){
+  const z = [[0,0,0,0],[0,0,0,0],[0,0,0,0]]; let tot = 0;
+  for(let j=0;j<NY;j++){
+    const lane = j < 9 ? 0 : (j < 19 ? 1 : 2);
+    for(let i=0;i<NX;i++){
+      const v = grid[NY-1-j][NX-1-i]; if(!v) continue;   // same 180° rotation as the heat (see drawMap)
+      tot += v;
+      const x0 = i/(NX/4), x1 = (i+1)/(NX/4);       // in zone-column units
+      const c0 = Math.floor(x0), c1 = Math.min(3, Math.floor(x1 - 1e-9));
+      if (c0 === c1) z[lane][c0] += v;
+      else { const f = (c1 - x0); z[lane][c0] += v*f; z[lane][c1] += v*(1-f); }
+    }
+  }
+  return { tot, pct: z.map(r => r.map(v => tot ? v/tot*100 : 0)) };
+}
+// Redraw everything registered here on resize, so line widths track the CSS size.
+window.__redraw = window.__redraw || [];
+let __rt; window.addEventListener('resize', () => { clearTimeout(__rt); __rt = setTimeout(() => window.__redraw.forEach(f => f()), 120); });
+// PORTRAIT on phones (6 Sep 2026). A landscape pitch on a 390px screen is about 207px
+// tall; turned upright it is ~573px — roughly three times the area, which is the whole
+// point. The pitch is drawn LANDSCAPE into an offscreen canvas and the finished bitmap
+// is turned a quarter turn, so every bit of geometry stays exactly as verified; only the
+// zone-share labels are drawn afterwards, upright, so they do not end up on their side.
+// Attack points UP the screen and own goal sits at the BOTTOM. The flank convention is
+// preserved: landscape bottom lane (the player's right when attacking rightward) maps to
+// the right-hand side of the portrait pitch.
+// PILOT, 6 Sep 2026: portrait is switched on per page by --portrait-maps, and only
+// game 6 vs Lodras has it, so Colin can compare it against the landscape pages before
+// it goes everywhere ("in case i prefer the landscape version"). false is the
+// literal true/false the builder writes in.
+const PORTRAIT_MAPS = false;
+const PORTRAIT_MAX_W = 620;
+const isPortrait = () => PORTRAIT_MAPS && window.matchMedia(`(max-width:${PORTRAIT_MAX_W}px)`).matches;
+
+function drawMap(cv, grid, mx, opts){
+  opts = opts || {};
+  if (opts.portrait){
+    const PW = cv.width, PH = cv.height;
+    const off = document.createElement('canvas');
+    off.width = PH; off.height = PW;                       // landscape twin
+    drawMap(off, grid, mx, Object.assign({}, opts, {
+      portrait: false, zoneLabels: false,
+      // the offscreen is not in the DOM, so it cannot measure itself: hand it the CSS
+      // length its WIDTH will occupy once rotated, which is the visible canvas's HEIGHT
+      cssW: cv.getBoundingClientRect().height || PH}));
+    const c = cv.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, PW, PH);
+    c.save(); c.translate(0, PH); c.rotate(-Math.PI/2); c.drawImage(off, 0, 0); c.restore();
+    if (opts.zones){
+      const kk = PH / (cv.getBoundingClientRect().height || PH);
+      const M = Math.round(PH*0.022);
+      // landscape (x,y) -> portrait (y, PH - x), the same map the rotation applies
+      drawZoneLabels(c, zoneShares(grid, DATA.nx, DATA.ny),
+                     {M: M, fw: PH-2*M, fh: PW-2*M}, kk, (x, y) => [y, PH - x]);
+    }
+    return;
+  }
   const ctx = cv.getContext('2d');
   const W = cv.width, H = cv.height, NX = DATA.nx, NY = DATA.ny;
+  // bitmap px per CSS px — pitch lines are set in CSS px so a 150px-wide map
+  // still shows its 23m lines (they were 0.1px on the old 63px thumbnails)
+  const cssW = opts.cssW || cv.getBoundingClientRect().width || W, k = W / cssW;
   const M = Math.round(W*0.022);
   const fw = W-2*M, fh = H-2*M;
   ctx.fillStyle = css('--pitch-edge'); ctx.fillRect(0,0,W,H);
@@ -109,6 +410,13 @@ function drawMap(cv, grid, mx){
   const g = document.createElement('canvas'); g.width = NX; g.height = NY;
   const gx = g.getContext('2d'); const im = gx.createImageData(NX,NY);
   for(let j=0;j<NY;j++) for(let i=0;i<NX;i++){
+    // 180° ROTATION of the stored grid, not a one-axis flip. The stored frame has the
+    // own goal at high x; to draw it on the LEFT we reverse x — but reversing ONE axis
+    // is a reflection, and until 6 Sep 2026 that is what this did: every map was a
+    // MIRROR image of the pitch (a right mid drew in the top lane, the east bench at the
+    // bottom; a true top-down view with own goal-north on the left puts east at the TOP).
+    // Colin caught it on G6: "its still showing me on the left". Reversing BOTH axes
+    // keeps handedness, so a player's right is the bottom lane when attacking rightward.
     const v = grid[NY-1-j][NX-1-i]/mx;
     const k = (j*NX+i)*4;
     im.data[k]=255; im.data[k+1]=255; im.data[k+2]=255; im.data[k+3]=Math.round(255*Math.pow(Math.min(1,v),0.62));
@@ -118,29 +426,289 @@ function drawMap(cv, grid, mx){
   const ux = up.getContext('2d'); ux.imageSmoothingEnabled = true; ux.imageSmoothingQuality = 'high';
   ux.drawImage(g,0,0,fw,fh);
   const pix = ux.getImageData(0,0,fw,fh);
+  // Two palettes. 'orange' = the original single hue (density -> alpha).
+  // 'jet' = the football-broadcast convention Colin asked to see (6 Sep 2026):
+  // blue (least time) -> green -> yellow -> orange -> red (most time), with the
+  // faintest cells fading out so the pitch stays readable. Stops in [0,1] of
+  // the normalised density; linear blend between neighbouring stops.
+  const JET = [[0.00,[ 40,110,220]],[0.25,[ 40,190,120]],[0.50,[235,215, 60]],[0.72,[240,140, 40]],[1.00,[225, 45, 35]]];
+  const jet = a => { let i=1; while(i<JET.length-1 && JET[i][0]<a) i++;
+    const [a0,c0]=JET[i-1],[a1,c1]=JET[i], f=Math.max(0,Math.min(1,(a-a0)/(a1-a0)));
+    return c0.map((v,k)=>Math.round(v+(c1[k]-v)*f)); };
   for(let p=0;p<pix.data.length;p+=4){
     const a = pix.data[p+3]/255;
-    pix.data[p]   = Math.round(255 - 23*a);
-    pix.data[p+1] = Math.round(214 - 100*a);
-    pix.data[p+2] = Math.round(120 - 90*a);
-    pix.data[p+3] = Math.round(255*Math.min(0.92, a*1.15));
+    if ((opts.palette || 'jet') === 'jet'){   // jet is the DEFAULT since 6 Sep 2026 (Colin approved it on the season map); pass palette:'orange' to opt out
+      const [r,g,b] = jet(a);
+      pix.data[p]=r; pix.data[p+1]=g; pix.data[p+2]=b;
+      pix.data[p+3] = Math.round(255*Math.min(0.94, a < 0.04 ? a*8 : 0.32 + a*0.68));
+    } else {
+      pix.data[p]   = Math.round(255 - 23*a);
+      pix.data[p+1] = Math.round(214 - 100*a);
+      pix.data[p+2] = Math.round(120 - 90*a);
+      pix.data[p+3] = Math.round(255*Math.min(0.92, a*1.15));
+    }
   }
   ux.putImageData(pix,0,0);
   ctx.drawImage(up,M,M);
   const sx = fw/91.4, sy = fh/55;
-  ctx.strokeStyle = css('--line'); ctx.lineWidth = Math.max(1, Math.round(W/600));
+  ctx.strokeStyle = css('--line'); ctx.lineWidth = Math.max(1, 1.2*k);
   ctx.strokeRect(M,M,fw,fh);
   [45.7,22.9,91.4-22.9].forEach(xm => { ctx.beginPath(); ctx.moveTo(M+xm*sx,M); ctx.lineTo(M+xm*sx,M+fh); ctx.stroke(); });
   ctx.beginPath(); ctx.arc(M, M+fh/2, 14.63*sx, -Math.PI/2, Math.PI/2); ctx.stroke();
   ctx.beginPath(); ctx.arc(M+fw, M+fh/2, 14.63*sx, Math.PI/2, 3*Math.PI/2); ctx.stroke();
-  ctx.lineWidth = Math.max(3, Math.round(W/240)); const gw = 3.66*sy;
+  ctx.lineWidth = Math.max(3, 3*k); const gw = 3.66*sy;
   ctx.beginPath(); ctx.moveTo(M-2,M+fh/2-gw/2); ctx.lineTo(M-2,M+fh/2+gw/2); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(M+fw+2,M+fh/2-gw/2); ctx.lineTo(M+fw+2,M+fh/2+gw/2); ctx.stroke();
+  // Optional zone-share overlay (the tick box). Empty zones stay BLANK, not "0%".
+  if (opts.zones){
+    const zs = zoneShares(grid, NX, NY);
+    const zw = fw/4, zh = fh/3;
+    ctx.save();
+    ctx.setLineDash([4*k, 5*k]); ctx.lineWidth = Math.max(1, 1*k); ctx.strokeStyle = 'rgba(255,255,255,.30)';
+    for(let c=1;c<4;c++){ if(c===2) continue; ctx.beginPath(); ctx.moveTo(M+c*zw,M); ctx.lineTo(M+c*zw,M+fh); ctx.stroke(); }
+    for(let l=1;l<3;l++){ ctx.beginPath(); ctx.moveTo(M,M+l*zh); ctx.lineTo(M+fw,M+l*zh); ctx.stroke(); }
+    ctx.setLineDash([]);
+    ctx.restore();
+    // Labels are skipped when this is the offscreen twin of a portrait map — the caller
+    // draws them upright afterwards, otherwise the rotation would tip them on their side.
+    if (opts.zoneLabels !== false) drawZoneLabels(ctx, zs, {M: M, fw: fw, fh: fh}, k, null);
+  }
 }
-drawMap(document.getElementById('pitch'), DATA.grid, gridMax(DATA.grid));
-if (DATA.qgrids) {
-  const qmax = Math.max(...DATA.qgrids.map(gridMax));
-  document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, DATA.qgrids[+cv.dataset.q], qmax));
+
+// The zone-share "%" pills. Split out of drawMap so a portrait map can draw its pitch
+// rotated and its text upright. `map` converts a landscape point to wherever it has
+// ended up on the visible canvas; null means the two frames are the same.
+function drawZoneLabels(ctx, zs, geom, k, map){
+  const M = geom.M, fw = geom.fw, fh = geom.fh, zw = fw/4, zh = fh/3;
+  const fs = Math.max(11*k, fw*0.034);
+  ctx.save();
+  ctx.font = `700 ${fs}px "Segoe UI",system-ui,sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for(let l=0;l<3;l++) for(let c=0;c<4;c++){
+    const p = zs.pct[l][c]; if (p < 0.5) continue;
+    const label = Math.round(p) + '%';
+    let cx = M + c*zw + zw/2, cy = M + l*zh + zh/2;
+    if (map){ const q = map(cx, cy); cx = q[0]; cy = q[1]; }
+    const tw = ctx.measureText(label).width, pw = tw + fs*0.9, ph = fs*1.5, r = fs*0.35;
+    ctx.fillStyle = 'rgba(16,22,29,.72)';
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx-pw/2, cy-ph/2, pw, ph, r) : ctx.rect(cx-pw/2, cy-ph/2, pw, ph); ctx.fill();
+    ctx.fillStyle = p >= 15 ? '#ffd9b8' : '#e8edf2';
+    ctx.fillText(label, cx, cy + fs*0.04);
+  }
+  ctx.restore();
 }
+// ---------------------------------------------------------------- share card
+// ONE implementation, used by the season page AND every game page. It knows
+// nothing about seasons or games: the caller hands it three text lines and three
+// stats, so the two cards cannot drift apart in layout, safe zones or type sizes
+// the way two copies would. It lives ABOVE the drawMap() call because
+// overall_report.py extracts everything up to that line as its shared script.
+// Instagram's own UI covers the top 250px and bottom 340px of a 1080x1920 story,
+// so nothing is drawn outside that band.
+function drawShare(cv, o){
+  const W = 1080, H = o.H || 1920; cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  const story = H > 1400;                       // 9:16 vs 4:5
+  const top = story ? 250 : 60, bottom = story ? H - 340 : H - 60;
+  x.fillStyle = '#10161d'; x.fillRect(0,0,W,H);
+  const ACC = '#e8842a', INK = '#e8edf2', INK2 = '#a7b4c0', INK3 = '#6b7a88';
+  const F = w => `${w} "Segoe UI",system-ui,-apple-system,sans-serif`;
+  x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+  let y = top + 60;
+  x.fillStyle = ACC;  x.font = F('600 34px'); x.fillText(o.eyebrow, 70, y);
+  y += 74; x.fillStyle = INK;  x.font = F('700 66px'); x.fillText(o.title, 70, y);
+  y += 48; x.fillStyle = INK2; x.font = F('400 36px'); x.fillText(o.subtitle, 70, y);
+  // hero: the FIRST chosen stat
+  y += story ? 250 : 190;
+  const heroPx = o.hero.num.length > 4 ? (story ? 190 : 150) : (story ? 250 : 190);
+  x.fillStyle = ACC; x.font = F('800 ' + heroPx + 'px'); x.fillText(o.hero.num, 60, y);
+  const hw = x.measureText(o.hero.num).width;
+  x.fillStyle = INK;  x.font = F('600 48px'); x.fillText(o.hero.unit, 60 + hw + 24, y - 10);
+  x.fillStyle = INK2; x.font = F('400 34px'); x.fillText(o.hero.small, 66, y + 46);
+  // heat map, drawn by the same renderer (and default jet ramp) as the page
+  y += story ? 60 : 40;
+  const mw = W - 120, mh = Math.round(mw * 0.6);
+  const off = document.createElement('canvas'); off.width = 1200; off.height = 722;
+  drawMap(off, o.grid, gridMax(o.grid), {zones: !!o.zones, k: 3});
+  x.save(); x.beginPath(); x.roundRect ? x.roundRect(60, y, mw, mh, 22) : x.rect(60, y, mw, mh); x.clip();
+  x.drawImage(off, 60, y, mw, mh); x.restore();
+  x.fillStyle = INK3; x.font = F('500 26px'); x.fillText('◀ own goal', 66, y + mh + 36);
+  x.textAlign = 'right'; x.fillText('attack ▶', 60 + mw - 6, y + mh + 36); x.textAlign = 'left';
+  // two supporting stats, centred in whatever room is left between map and footer
+  const statsH = 140, footerH = 60;
+  y = y + mh + 40 + Math.max(0, (bottom - footerH - (y + mh + 40) - statsH) / 2);
+  const stat = (x0, big, small) => {
+    x.fillStyle = INK;  x.font = F('800 84px'); x.fillText(big, x0, y + 84);
+    x.fillStyle = INK2; x.font = F('500 34px'); x.fillText(small, x0, y + 130);
+  };
+  stat(70,       o.support[0].big, o.support[0].small);
+  stat(W/2 + 40, o.support[1].big, o.support[1].small);
+  x.fillStyle = INK3; x.font = F('500 28px');
+  x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 12);
+}
+// SECOND SHARE CARD (Colin, 6 Sep 2026): "a portrait version of just the heat map, with
+// the percentage of time in each zone". No stats, no bars — the pitch turned upright and
+// filling the safe zone, with the 12 zone shares on it. The upright renderer stays alive
+// only for this; every ON-PAGE map is landscape, decided the same day.
+function drawShareMap(cv, o){
+  const W = 1080, H = o.H || 1920; cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  const top = 250, bottom = H - 340;              // Instagram's own UI bands
+  x.fillStyle = '#10161d'; x.fillRect(0, 0, W, H);
+  const ACC = '#e8842a', INK = '#e8edf2', INK2 = '#a7b4c0', INK3 = '#6b7a88';
+  const F = w => `${w} "Segoe UI",system-ui,-apple-system,sans-serif`;
+  x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+  let y = top + 60;
+  x.fillStyle = ACC;  x.font = F('600 34px'); x.fillText(o.eyebrow, 70, y);
+  y += 74; x.fillStyle = INK;  x.font = F('700 66px'); x.fillText(o.title, 70, y);
+  y += 48; x.fillStyle = INK2; x.font = F('400 36px'); x.fillText(o.subtitle, 70, y);
+  // What the numbers mean goes ABOVE the pitch, in the header block. Putting it at the
+  // foot alongside the direction label made the two overlap — the labels below the map
+  // are for direction only, and each sits on the side of the pitch it describes.
+  y += 40;
+  x.fillStyle = INK3; x.font = F('500 26px');
+  x.fillText('% = share of time on the pitch spent in that zone', 70, y);
+  y += 36;
+  x.textAlign = 'center'; x.fillText('▲ attacking this way', W/2, y); x.textAlign = 'left';
+  // the pitch, as large as what is left of the safe zone allows, keeping its 722:1200 shape
+  y += 18;
+  const belowH = 88, availH = bottom - belowH - y, availW = W - 120;
+  let mh = availH, mw = Math.round(mh * 722 / 1200);
+  if (mw > availW){ mw = availW; mh = Math.round(mw * 1200 / 722); }
+  const mx0 = Math.round((W - mw) / 2);
+  const off = document.createElement('canvas');
+  off.width = 722; off.height = 1200;
+  drawMap(off, o.grid, gridMax(o.grid), {portrait: true, zones: true});
+  x.save(); x.beginPath();
+  x.roundRect ? x.roundRect(mx0, y, mw, mh, 22) : x.rect(mx0, y, mw, mh);
+  x.clip(); x.drawImage(off, mx0, y, mw, mh); x.restore();
+  x.fillStyle = INK3; x.font = F('500 26px');
+  x.textAlign = 'center'; x.fillText('own goal ▼', W/2, y + mh + 34); x.textAlign = 'left';
+  x.font = F('500 28px');
+  x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 6);
+}
+// Save a card. On a phone this opens the share sheet; elsewhere it downloads.
+// buildOpts(H) returns the object the renderer takes, so the saved PNG comes from the
+// SAME code as the on-page preview and cannot disagree with it. `draw` picks which card.
+function sharePNG(buildOpts, name, title, H, draw){
+  const cv = document.createElement('canvas');
+  (draw || drawShare)(cv, buildOpts(H || 1920));
+  cv.toBlob(async b => {
+    const file = new File([b], name, {type:'image/png'});
+    if (navigator.canShare && navigator.canShare({files:[file]})) {
+      try { await navigator.share({files:[file], title}); return; } catch(e) {}
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }, 'image/png');
+}
+// ===== END OF SHARED SCRIPT =====
+// overall_report.py extracts everything ABOVE this line and reuses it verbatim, so the
+// two page types share one drawMap, one drawShare and one set of constants. Everything
+// BELOW is game-page-only. This is an explicit sentinel on purpose: it used to cut on
+// the text of the first drawMap() call, which silently stopped matching the moment that
+// call was refactored (6 Sep 2026) and took the season build down with it.
+
+// The MAIN map turns portrait on a phone; the quarter maps stay landscape. Portrait
+// costs vertical space, and four upright quarter pitches stacked one per row would add
+// well over two screens of scrolling for maps whose job is a quick shape comparison —
+// they are already full width. The big map is where the extra area actually pays.
+let zonesOn = false;
+function paintMaps(){
+  const main = document.getElementById('pitch');
+  main.width = 1200; main.height = 722;
+  drawMap(main, DATA.grid, gridMax(DATA.grid), {zones: zonesOn});
+  if (DATA.qgrids){
+    const qmax = Math.max(...DATA.qgrids.map(gridMax));
+    document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, DATA.qgrids[+cv.dataset.q], qmax));
+  }
+}
+window.__redraw.push(paintMaps);
+paintMaps();
+// The zone tick box, same control the season page has had (Colin, 6 Sep 2026: "i want to
+// add the show % of time in each zone for each indv match"). Four 23m quarters x three
+// lanes = 12 zones, share of TIME on the pitch; an empty zone stays blank, never "0%".
+document.getElementById('zones').addEventListener('change', e => {
+  zonesOn = e.target.checked; paintMaps(); renderShare();
+});
+
+// ------------------------------------------------- this game's share card
+// Everything below is GAME-PAGE ONLY: it sits after the drawMap() call, which is
+// where overall_report.py stops extracting the shared script, so the season page
+// keeps its own stat set and picker wiring and only shares drawShare/sharePNG.
+const SHARE = {"subject": "Nat", "eyebrow": "BARKERITES \u00b7 MHL 5 \u00b7 GAME 3 \u00b7 D 2-2", "subtitle": "vs Eagles \u00b7 19 Jul 2026", "top": 27.0, "sprints": 10, "dist": 4464, "mpm": 69.8, "fast": 383, "hr": 167, "own": 56, "min": 64, "trackMax": null, "filename": "nat-game3.png"};
+const fmt = n => Math.round(n).toLocaleString('en-GB');
+// Personal best = the fastest this player has EVER been measured, track OR match.
+// A game page cannot see the other games, so the reference is the larger of the
+// recorded track max and THIS game's own top speed. That is what stops the card
+// ever reading "102% of my best" (Colin, 6 Sep 2026, after G6's 29.5 beat the
+// 28.9 track figure) — with no track max on file it simply reads personal best.
+const PB = Math.max(SHARE.trackMax || 0, SHARE.top);
+function bestTxt(){
+  // No measured maximum on file for this player (every teammate build): there is
+  // nothing to compare against, so the card states the fact and claims nothing.
+  // Without this guard PB collapses to the game's own top and EVERY card reads
+  // "personal best" — KS's 20.2 km/h game included, against a real best of 27.0.
+  if (!SHARE.trackMax) return 'fastest burst of the game';
+  if (SHARE.top >= PB - 0.05) return 'top speed · personal best';
+  return `top speed · ${Math.round(SHARE.top/PB*100)}% of ${SHARE.subject}'s best (${PB.toFixed(1)} km/h)`;
+}
+// Colin's list, in the order given. A stat whose value this file cannot
+// support is dropped from the menu entirely rather than offered as a zero.
+// (Wording note: verify_reports.py reads script text too, so avoid third-person
+// pronouns even in a comment — the page's voice check cannot tell them apart.)
+const STATS = {
+  top:     { label:'Top speed',          big:() => [SHARE.top.toFixed(1), 'km/h'],       small:bestTxt },
+  sprints: { label:'Sprints',            big:() => [fmt(SHARE.sprints), SHARE.sprints === 1 ? 'sprint' : 'sprints'],
+                                                                                          small:() => 'bursts of 20 km/h or more' },
+  dist:    { label:'Distance',           big:() => [(SHARE.dist/1000).toFixed(1), 'km'], small:() => 'covered on the pitch' },
+  mpm:     { label:'Work rate',          big:() => [SHARE.mpm.toFixed(0), 'm/min'],      small:() => 'metres per minute on the pitch' },
+  fast:    { label:'Fast running',       big:() => [fmt(SHARE.fast), 'm'],               small:() => 'fast running · above 15 km/h' },
+  hr:      { label:'Average heart rate', big:() => [Math.round(SHARE.hr), 'bpm'],        small:() => 'average heart rate on the pitch' },
+  own:     { label:'Defensive half',     big:() => [Math.round(SHARE.own), '%'],         small:() => 'of the time in the defensive half' },
+  // "Minutes on pitch" removed as a pickable stat, 6 Sep 2026 — Colin: redundant.
+};
+if (!SHARE.hr) delete STATS.hr;
+if (!SHARE.fast) delete STATS.fast;
+const picks = ['top', 'sprints', 'dist'].filter(k => STATS[k]);
+function shareOpts(H){
+  const [h1, h2, h3] = picks.map(k => STATS[k]);
+  const [hn, hu] = h1.big(), [b2, u2] = h2.big(), [b3, u3] = h3.big();
+  return { H, grid: DATA.grid, eyebrow: SHARE.eyebrow, title: SHARE.subject, subtitle: SHARE.subtitle,
+           hero: { num: hn, unit: hu, small: h1.small() },
+           support: [{ big: `${b2} ${u2}`, small: h2.small() },
+                     { big: `${b3} ${u3}`, small: h3.small() }] };
+}
+function fillPickers(){
+  ['s1','s2','s3'].forEach((id, i) => {
+    const sel = document.getElementById(id); sel.innerHTML = '';
+    Object.entries(STATS).forEach(([k, s]) => {
+      if (picks.indexOf(k) !== -1 && picks[i] !== k) return;   // no stat twice
+      const o = document.createElement('option');
+      o.value = k; o.textContent = s.label; o.selected = picks[i] === k;
+      sel.appendChild(o);
+    });
+  });
+}
+// Card 2 carries no stats, so it needs only the three text lines and the grid. Its zone
+// percentages are always shown — that is the whole point of the card — regardless of the
+// page's tick box, which only governs the on-page map.
+function shareMapOpts(H){
+  return { H, grid: DATA.grid, eyebrow: SHARE.eyebrow,
+           title: SHARE.subject, subtitle: SHARE.subtitle };
+}
+function renderShare(){
+  drawShare(document.getElementById('share'), shareOpts(1920));
+  drawShareMap(document.getElementById('share2'), shareMapOpts(1920));
+}
+['s1','s2','s3'].forEach((id, i) => document.getElementById(id).addEventListener('change', e => {
+  picks[i] = e.target.value; fillPickers(); renderShare();
+}));
+fillPickers(); renderShare();
+document.getElementById('dl').onclick =
+  () => sharePNG(shareOpts, SHARE.filename, `${SHARE.subject} — ${SHARE.eyebrow}`, 1920);
+document.getElementById('dl2').onclick =
+  () => sharePNG(shareMapOpts, SHARE.filename.replace(/\.png$/, '-heatmap.png'),
+                 `${SHARE.subject} — heat map`, 1920, drawShareMap);
 </script>
 </body></html>
