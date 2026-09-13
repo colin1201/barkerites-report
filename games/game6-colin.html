@@ -249,13 +249,23 @@
     <div class="qnote">On pitch = wall-clock minutes excluding halftime, bench and still time 60s+ &mdash; a 15-min quarter runs ~18-19 real minutes because the game clock stops and the watch doesn't. Fast run = metres covered above 15 km/h &mdash; the number to watch for late-game fade. Sprints = bursts &ge; 20 km/h.</div>
   </div>
 
+  <div class="board">
+    <div class="h2row"><h2>How the game went</h2><span class="h2sub">rolling 5-minute work rate, on-pitch minutes</span></div>
+    <div class="headline">Your busiest five minutes were on-pitch minutes <b>26&ndash;30</b> at <b>136 m/min</b>, 33% above your game average of 101.9. Your last 15 on-pitch minutes ran at <b>105 m/min</b> against 95 in your first 15 &mdash; 11% up.</div>
+    <canvas id="tl" width="1200" height="520"></canvas>
+    <div class="legend"><span style="--c:#e8842a">work rate, rolling 5 min (m/min)</span><span style="--c:#4fb3a0">fast running, rolling 5 min (m/min at 15+ km/h)</span><span style="--c:#3a4a5c">each single minute</span><span style="--c:#a7b4c0">game average 101.9 m/min</span></div>
+    <canvas id="tlhr" width="1200" height="260"></canvas>
+    <div class="legend"><span style="--c:#d9534f">heart rate, 1-minute average (bpm)</span></div>
+    <div class="qnote">Bold line = your work rate averaged over the previous five on-pitch minutes; faint bars = single minutes; shaded = your busiest five. Halftime, bench, quarter breaks and stops of a minute or more are cut out, so minute 30 is your 30th minute of play. A late drop can be pacing or a quiet spell in the game as much as tired legs &mdash; the chart knows when, you know why.</div>
+  </div>
+
   <details class="coach">
   <summary><span class="ctag">Coach's data</span> the load numbers I use to build your week &mdash; nothing here needs a decision from you</summary>
 
   <div class="board">
     <h2>Physical output</h2>
     <div class="headline">You covered <b>101.9 metres per minute</b> on the pitch &mdash; against 61&ndash;63 in your last-man games, and touched <b>100%</b> of your flat-out best speed, with <b>166 hard accelerations and stops</b>.</div>
-    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">3.8</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val">33 <span class='unit'>m</span></div><div class="sub">run above 85% of your 29.5 km/h best</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val">91</div><div class="sub">hard ones (2 m/s&sup2;+), 19 of them very hard</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val">75</div><div class="sub">hard stops, 14 of them very hard</div></div></div>
+    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">3.8</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val">33 <span class='unit'>m</span></div><div class="sub">run above 85% of your 29.5 km/h best</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val">91</div><div class="sub">hard ones (2 m/s&sup2;+), 19 of them very hard</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val">75</div><div class="sub">hard stops, 14 of them very hard</div></div><div class="tile"><div class="lbl">Busiest 5 min</div><div class="val">136 <span class='unit'>m/min</span></div><div class="sub">on-pitch minutes 26&ndash;30; game average 101.9</div></div></div>
     <div class="qnote">Acceleration and deceleration counts come from 1s sampling. An <b>acceleration</b> is a burst where you gained speed at 2 m/s&sup2; or more (roughly: 0 to 7 km/h in a second); very hard is 3 m/s&sup2;. You ran <b>33 m</b> above 85% of your best speed and <b>14 m</b> above 95%.</div>
   </div>
 
@@ -631,6 +641,78 @@ paintMaps();
 document.getElementById('zones').addEventListener('change', e => {
   zonesOn = e.target.checked; paintMaps(); renderShare();
 });
+
+// ------------------------------------------------- how the game went (13 Sep 2026)
+// Rolling 5-minute work rate over ON-PITCH minutes, game-page only. Line widths and
+// type are in CSS px via k = W/cssW (drawMap's trick) so the phone gets 12px labels;
+// a narrow screen also gets a taller canvas. All figures come from TL, computed in
+// Python — the headline above the chart and the shaded peak are the same numbers.
+const TL = {"mpm": [110, 101, 137, 141, 105, 95, 26, 92, 117, 63, 39, 79, 110, 89, 119, 108, 85, 69, 117, 144, 99, 114, 89, 143, 75, 154, 143, 113, 122, 149, 69, 106, 45, 132, 131, 127, 100, 80, 53, 87, 120, 109, 65, 95, 138, 74, 137, 111, 106, 129, 93, 101, 131, 121, 103, 91, 149, 63, 22, 67, 153], "hsr": [0, 7, 55, 31, 3, 23, 0, 5, 33, 13, 9, 4, 35, 0, 33, 16, 10, 0, 24, 30, 6, 35, 15, 60, 7, 66, 30, 8, 45, 33, 3, 24, 7, 16, 33, 14, 7, 15, 0, 21, 21, 33, 20, 0, 50, 0, 47, 6, 22, 39, 29, 4, 18, 39, 15, 10, 60, 28, 0, 0, 27], "hr": [125, 154, 157, 157, 162, 176, 164, 150, 171, 168, 160, 161, 168, 178, 174, 158, 169, 160, 167, 172, 175, 177, 177, 132, 152, 152, 145, 170, 168, 179, 179, 162, 165, 167, 171, 174, 176, 174, 158, 171, 152, 161, 158, 156, 169, 168, 171, 179, 174, 171, 173, 166, 166, 166, 171, 169, 168, 171, 153, 146, 160], "roll5": [null, null, null, null, 119, 116, 101, 92, 87, 79, 67, 78, 82, 76, 87, 101, 102, 94, 100, 105, 103, 109, 113, 118, 104, 115, 121, 126, 121, 136, 119, 112, 98, 100, 97, 108, 107, 114, 98, 89, 88, 90, 87, 95, 105, 96, 102, 111, 113, 111, 115, 108, 112, 115, 110, 109, 119, 105, 86, 78, 91], "hroll5": [null, null, null, null, 19, 24, 22, 12, 13, 15, 12, 13, 19, 12, 16, 18, 19, 12, 17, 16, 14, 19, 22, 29, 25, 37, 36, 34, 31, 36, 24, 23, 22, 17, 17, 19, 15, 17, 14, 11, 13, 18, 19, 19, 25, 21, 23, 21, 25, 23, 29, 20, 22, 26, 21, 17, 28, 30, 23, 20, 23], "qmarks": [14.98, 23.42, 40.38], "peak": {"mpm": 136, "a": 26, "b": 30}, "first15": 95, "last15": 105, "minutes": 61, "avg": 101.9};
+function tlFrame(cv, hFull, hPhone){
+  const cssW = cv.getBoundingClientRect().width || cv.width;
+  cv.width = 1200; cv.height = cssW < 600 ? hPhone : hFull;
+  return {c: cv.getContext('2d'), W: cv.width, H: cv.height, k: cv.width / cssW};
+}
+const tlFont = (px, k) => Math.round(px*k) + 'px "Segoe UI",system-ui,sans-serif';
+function tlLine(c, arr, xf, yf, col, w){
+  c.strokeStyle = col; c.lineWidth = w; c.lineJoin = 'round'; c.beginPath(); let on = false;
+  arr.forEach((v, i) => { if (v == null){ on = false; return; }
+    on ? c.lineTo(xf(i), yf(v)) : c.moveTo(xf(i), yf(v)); on = true; });
+  c.stroke();
+}
+function tlQuarterMarks(c, n, padL, pw, padT, ph, k){
+  c.save(); c.strokeStyle = 'rgba(167,180,192,.45)'; c.setLineDash([3*k, 4*k]); c.lineWidth = k;
+  c.font = tlFont(12, k); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = css('--ink-3');
+  TL.qmarks.forEach((m, i) => { const xx = padL + (m / n) * pw;
+    c.beginPath(); c.moveTo(xx, padT); c.lineTo(xx, padT + ph); c.stroke(); c.fillText('Q' + (i + 2), xx + 4*k, padT); });
+  c.restore();
+}
+function drawTimeline(cv){
+  const n = TL.mpm.length; if (!n) return;
+  const {c, W, H, k} = tlFrame(cv, 520, 760);
+  c.clearRect(0, 0, W, H);
+  const padL = 44*k, padR = 14*k, padT = 16*k, padB = 34*k, pw = W - padL - padR, ph = H - padT - padB;
+  const ymax = Math.max(TL.avg, ...TL.mpm) * 1.1, bw = pw / n;
+  const x = i => padL + (i / n) * pw, y = v => padT + ph - (v / ymax) * ph;
+  c.font = tlFont(12, k); c.fillStyle = css('--ink-3'); c.textAlign = 'right'; c.textBaseline = 'middle';
+  c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = k;
+  const step = ymax > 160 ? 50 : 25;
+  for (let v = 0; v <= ymax; v += step){ c.beginPath(); c.moveTo(padL, y(v)); c.lineTo(W - padR, y(v)); c.stroke(); c.fillText(v, padL - 6*k, y(v)); }
+  if (TL.peak){ c.fillStyle = 'rgba(232,132,42,.16)'; c.fillRect(x(TL.peak.a - 1), padT, bw*5, ph); }
+  tlQuarterMarks(c, n, padL, pw, padT, ph, k);
+  c.fillStyle = '#3a4a5c';
+  TL.mpm.forEach((v, i) => c.fillRect(x(i) + bw*0.08, y(v), bw*0.84, padT + ph - y(v)));
+  c.strokeStyle = '#a7b4c0'; c.setLineDash([6*k, 5*k]); c.lineWidth = 1.2*k;
+  c.beginPath(); c.moveTo(padL, y(TL.avg)); c.lineTo(W - padR, y(TL.avg)); c.stroke(); c.setLineDash([]);
+  const xc = i => x(i) + bw/2;
+  tlLine(c, TL.hroll5, xc, y, '#4fb3a0', 2*k);
+  tlLine(c, TL.roll5, xc, y, '#e8842a', 2.6*k);
+  // The average's VALUE lives in the legend (same row as its swatch), and the peak label
+  // sits on the second text row so it never collides with a quarter marker — both
+  // collided on a 390px screen when drawn beside the line (pilot render, 13 Sep 2026).
+  if (TL.peak){ c.fillStyle = '#e8842a'; c.font = tlFont(12, k); c.textAlign = 'center'; c.textBaseline = 'top';
+    c.fillText('busiest 5 min: ' + TL.peak.mpm + ' m/min', Math.min(W - padR - 70*k, Math.max(padL + 70*k, x(TL.peak.a - 1) + bw*2.5)), padT + 16*k); }
+  c.fillStyle = css('--ink-3'); c.font = tlFont(12, k); c.textAlign = 'center'; c.textBaseline = 'top';
+  for (let m = 10; m <= n; m += 10) c.fillText(m, xc(m - 1), padT + ph + 6*k);
+  c.textAlign = 'left'; c.fillText('on-pitch minute', padL, padT + ph + 20*k);
+}
+function drawHR(cv){
+  const hr = TL.hr, n = hr.length, vals = hr.filter(v => v != null);
+  if (vals.length < 5){ cv.hidden = true; cv.nextElementSibling.hidden = true; return; }
+  const {c, W, H, k} = tlFrame(cv, 260, 380);
+  c.clearRect(0, 0, W, H);
+  const padL = 44*k, padR = 14*k, padT = 16*k, padB = 12*k, pw = W - padL - padR, ph = H - padT - padB;
+  const lo = Math.floor((Math.min(...vals) - 5) / 10) * 10, hi = Math.ceil((Math.max(...vals) + 5) / 10) * 10, bw = pw / n;
+  const x = i => padL + (i / n) * pw + bw/2, y = v => padT + ph - ((v - lo) / (hi - lo)) * ph;
+  c.font = tlFont(12, k); c.fillStyle = css('--ink-3'); c.textAlign = 'right'; c.textBaseline = 'middle';
+  c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = k;
+  for (let v = lo; v <= hi; v += 20){ c.beginPath(); c.moveTo(padL, y(v)); c.lineTo(W - padR, y(v)); c.stroke(); c.fillText(v, padL - 6*k, y(v)); }
+  tlQuarterMarks(c, n, padL, pw, padT, ph, k);
+  tlLine(c, hr, x, y, '#d9534f', 1.8*k);
+}
+function paintTimeline(){ drawTimeline(document.getElementById('tl')); drawHR(document.getElementById('tlhr')); }
+window.__redraw.push(paintTimeline);
+paintTimeline();
 
 // ------------------------------------------------- this game's share card
 // Everything below is GAME-PAGE ONLY: it sits after the drawMap() call, which is
