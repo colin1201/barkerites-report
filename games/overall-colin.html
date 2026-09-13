@@ -830,7 +830,7 @@ function drawQP(){
   // hover
   if (qpHover){ const gm = GAMES[qpHover.g], v = M.val(gm.q[qpHover.q]);
     if (v != null && gs.includes(gm)){ c.fillStyle = '#fff'; c.beginPath(); c.arc(x(qpHover.q), y(v), 5*k, 0, 7); c.fill();
-      const lines = ['G' + gm.game_no + ' vs ' + gm.opponent + ' · Q' + (qpHover.q + 1) + ': ' + Math.round(v) + ' ' + M.unit, gm.q[qpHover.q][0] + ' min on the pitch that quarter · ' + gm.position];
+      const lines = ['G' + gm.game_no + ' vs ' + gm.opponent + ' · Q' + (qpHover.q + 1) + ': ' + (v < 10 ? v.toFixed(1) : Math.round(v)) + ' ' + M.unit, gm.q[qpHover.q][0] + ' min on the pitch that quarter · ' + gm.position];
       c.font = qpFont(12, k); const pad = 8*k, lh = 17*k, w = Math.max(...lines.map(t => c.measureText(t).width)) + 2*pad, h = lines.length * lh + pad;
       let bx = x(qpHover.q) + 12*k; if (bx + w > g.padL + g.pw) bx = x(qpHover.q) - 12*k - w; let by = y(v) - h - 10*k; if (by < g.padT) by = y(v) + 10*k;
       c.fillStyle = 'rgba(16,22,29,.94)'; c.strokeStyle = 'rgba(167,180,192,.5)'; c.lineWidth = k; c.beginPath(); c.roundRect ? c.roundRect(bx, by, w, h, 6*k) : c.rect(bx, by, w, h); c.fill(); c.stroke();
@@ -839,7 +839,11 @@ function drawQP(){
   document.getElementById('qplegend').innerHTML = groups.map(gr => `<span style="--c:${gr.col}">${gr.label} average (${gr.games.length} game${gr.games.length !== 1 ? 's' : ''}), games faint</span>`).join('') + '<span style="--c:#e8842a">half time</span>';
   const sent = groups.filter(gr => gr.games.length >= 1).map(gr => { const a = qpAvg(gr.games, M), idx = [0, 1, 2, 3].filter(i => a[i] != null); if (idx.length < 2) return '';
     const hiQ = idx.reduce((p, q) => a[q] > a[p] ? q : p), loQ = idx.reduce((p, q) => a[q] < a[p] ? q : p);
-    return `${gr.label} (${gr.games.length} game${gr.games.length !== 1 ? 's' : ''}): ${M.label} highest in <b>Q${hiQ + 1}</b> at ${Math.round(a[hiQ])} ${M.unit}, lowest in <b>Q${loQ + 1}</b> at ${Math.round(a[loQ])}.`; }).filter(Boolean);
+    // small rates (a defender's fast running at 1-2 m/min) get a decimal; if the highest and
+    // lowest quarter still read the same, say "level" instead of "highest 1, lowest 1"
+    const f = v => v < 10 ? v.toFixed(1) : String(Math.round(v)), lbl = `${gr.label} (${gr.games.length} game${gr.games.length !== 1 ? 's' : ''})`;
+    if (f(a[hiQ]) === f(a[loQ])) return `${lbl}: ${M.label} roughly level across the quarters at ${f(a[hiQ])} ${M.unit}.`;
+    return `${lbl}: ${M.label} highest in <b>Q${hiQ + 1}</b> at ${f(a[hiQ])} ${M.unit}, lowest in <b>Q${loQ + 1}</b> at ${f(a[loQ])}.`; }).filter(Boolean);
   document.getElementById('qp-h2').textContent = chip === 'all' ? 'Quarter by quarter, every game' : `${CHIP_KEYS[chip]} · quarter by quarter`;
   document.getElementById('qp-head').innerHTML = sent.join(' ') + (chip === 'all' && groups.length > 1 ? ' Pick a position above to compare like with like.' : '');
 }
