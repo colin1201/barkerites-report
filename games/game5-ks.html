@@ -109,6 +109,8 @@
   .share .how b{ color:var(--ink); }
   .picks{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
   @media (max-width:640px){ .picks{ grid-template-columns:1fr; } }
+  .picks.one{ grid-template-columns:minmax(0,340px); margin:6px 0 10px; }
+  canvas.hover{ cursor:crosshair; touch-action:pan-y; }
   .picks label{ display:flex; flex-direction:column; gap:5px; font-size:12px; letter-spacing:.08em;
     text-transform:uppercase; color:var(--ink-3); font-weight:600; }
   .picks select{ background:var(--card); color:var(--ink); border:1px solid var(--tile-border); border-radius:8px;
@@ -249,13 +251,34 @@
     <div class="qnote">On pitch = wall-clock minutes excluding halftime, bench and still time 60s+ &mdash; a 15-min quarter runs ~18-19 real minutes because the game clock stops and the watch doesn't. Fast run = metres covered above 15 km/h &mdash; the number to watch for late-game fade. Sprints = bursts &ge; 20 km/h.</div>
   </div>
 
+  <div class="board">
+    <div class="h2row"><h2>How the game went</h2><span class="h2sub">how it changed as the game went on</span></div>
+    <div class="headline">Your busiest five minutes were <b>Q2, minutes 5&ndash;9</b> at <b>60 m/min</b>, 35% above your game average of 44.5. Your last 15 minutes on the pitch ran at <b>38 m/min</b> against 46 in your first 15 &mdash; 17% down.</div>
+    <div class="picks one"><label><span>Show</span><select id="tlsel">
+      <option value="mpm">Work rate (metres per minute)</option>
+      <option value="hsr">Fast running (metres per minute at 15+ km/h)</option>
+      <option value="hr">Heart rate (bpm)</option>
+    </select></label></div>
+    <canvas id="tl" class="hover" width="1200" height="520"></canvas>
+    <div class="legend" id="tllegend"></div>
+    <div class="h2row" style="margin-top:18px"><h2>Adding up over the game</h2><span class="h2sub">running total across the match</span></div>
+    <div class="picks one"><label><span>Show</span><select id="tlcum">
+      <option value="mpm">Distance (metres)</option>
+      <option value="hsr">Fast-running metres (15+ km/h)</option>
+      <option value="spr">Sprint efforts</option>
+    </select></label></div>
+    <canvas id="tlc" class="hover" width="1200" height="400"></canvas>
+    <div class="legend" id="tlclegend"></div>
+    <div class="qnote">Pick one measure from the drop-down; hover or tap any minute for its number. The four quarters are drawn the same width whatever they ran to on the clock, with the minutes of each quarter along the bottom; the quarter breaks and halftime sit on the dividers, and a grey band means you were not playing (bench or a stoppage). The line is that measure averaged over the previous five minutes you were on, so it shows the trend rather than every twitch; the orange block is your busiest five. A late drop can be pacing or a quiet spell in the game as much as tired legs &mdash; the chart knows when, you know why.</div>
+  </div>
+
   <details class="coach">
   <summary><span class="ctag">Coach's data</span> the load numbers I use to build your week &mdash; nothing here needs a decision from you</summary>
 
   <div class="board">
     <h2>Physical output</h2>
     <div class="headline">You covered <b>44.5 metres per minute</b> on the pitch.</div>
-    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">0.6</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val"><span class="na">not measurable</span></div><div class="sub">no flat-out reference on file for this player</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">3s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">3s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div></div>
+    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">0.6</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val"><span class="na">not measurable</span></div><div class="sub">no flat-out reference on file for this player</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">3s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">3s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div><div class="tile"><div class="lbl">Busiest 5 min</div><div class="val">60 <span class='unit'>m/min</span></div><div class="sub">Q2, minutes 5&ndash;9; game average 44.5</div></div></div>
     <div class="qnote"><b>The acceleration counts are deliberately blank for this game, not zero.</b> The watch stored 3s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated, and at that spacing a real hard burst is averaged away before it reaches the file &mdash; the same 17 minutes measured every second showed 43 accelerations and, sampled every 2 seconds, showed 6. A number here would describe the watch's recording setting, not the game. Everything else on this page is unaffected.</div>
   </div>
 
@@ -631,6 +654,227 @@ paintMaps();
 document.getElementById('zones').addEventListener('change', e => {
   zonesOn = e.target.checked; paintMaps(); renderShare();
 });
+
+// ------------------------------------------------- how the game went (13 Sep 2026)
+// Rolling 5-minute work rate over ON-PITCH minutes, game-page only. Line widths and
+// type are in CSS px via k = W/cssW (drawMap's trick) so the phone gets 12px labels;
+// a narrow screen also gets a taller canvas. All figures come from TL, computed in
+// Python — the headline above the chart and the shaded peak are the same numbers.
+const TL = {"q": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3], "m": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], "on": [true, true, true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, false, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false, false, true], "qlens": [22, 22, 20, 19], "breaks_hr": [{"kind": "Q1/Q2 break", "nodata": true}, {"kind": "half time", "mins": 9, "from": 147, "low": 137, "end": 145}, {"kind": "Q3/Q4 break", "nodata": true}], "mpm": [22, 41, 60, 70, 47, 34, 45, 41, 48, 40, 45, 92, null, null, null, null, null, null, 47, 46, 15, null, 9, 11, 28, 51, 50, 81, 68, 33, 66, 47, 59, 62, 37, 38, 95, 43, 31, 18, 6, 10, 21, null, null, null, null, null, null, null, null, null, null, null, null, 62, 92, 68, 45, 13, 6, 8, 32, null, 40, 60, 34, 15, 58, 47, 40, 58, 57, null, null, null, null, null, null, null, null, null, 56], "hsr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, null, null, null, null, null, null, 0, 0, 0, null, 0, 0, 0, 0, 0, 27, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, null, null, null, null, null, null, null, null, null, null, 0, 14, 0, 0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, null, null, null, null, null, null, null, 0], "hr": [141, 139, 145, 152, 154, 151, 149, 161, 151, 144, 148, 157, 158, 151, 139, 140, 139, 141, 152, 159, 150, 143, 141, 144, 145, 146, 159, 157, 170, 161, 160, 165, 164, 166, 161, 157, 163, 156, 152, 150, 148, 144, 142, 142, 149, 150, 143, 145, 144, 141, 143, 148, 154, 152, 155, 153, 161, 162, 159, 150, 148, 144, 142, 142, 148, 150, 155, 154, 152, 157, 158, 160, 162, 153, 150, 144, 141, 144, 148, 154, 149, 146, 145], "top": [5.2, 7.8, 9.8, 11.0, 8.5, 6.3, 10.7, 4.9, 7.1, 8.4, 7.5, 23.4, null, null, null, null, null, null, 7.2, 5.7, 5.7, null, 2.7, 2.1, 7.8, 11.0, 6.3, 21.9, 12.7, 8.1, 16.1, 6.8, 12.4, 8.4, 6.6, 7.1, 14.7, 5.5, 6.3, 3.1, 0.8, 3.0, 4.2, null, null, null, null, null, null, null, null, null, null, null, null, 9.1, 24.2, 9.9, 7.1, 5.2, 4.0, 2.0, 8.1, null, 5.8, 7.8, 13.3, 4.4, 7.6, 8.3, 10.3, 10.8, 12.2, null, null, null, null, null, null, null, null, null, 10.8], "spr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "dm": [22, 42, 58, 75, 44, 33, 45, 41, 48, 40, 48, 81, 0, 0, 0, 0, 0, 0, 47, 45, 16, 3, 10, 10, 28, 51, 51, 77, 68, 33, 68, 49, 55, 62, 40, 35, 97, 43, 31, 18, 6, 10, 18, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 58, 91, 69, 44, 13, 6, 8, 32, 11, 40, 63, 36, 13, 58, 47, 41, 58, 57, 31, 0, 0, 0, 0, 0, 0, 0, 11, 55], "hm": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 26, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "roll5": [null, 32, 41, 48, 48, 50, 51, 47, 43, 42, 44, 53, null, null, null, null, null, null, null, 46, 36, null, null, 10, 16, 25, 30, 44, 56, 57, 60, 59, 55, 53, 54, 49, 58, 55, 49, 45, 39, 22, 17, null, null, null, null, null, null, null, null, null, null, null, null, null, 77, 74, 67, 56, 45, 28, 21, null, null, 50, 45, 37, 41, 43, 39, 44, 52, null, null, null, null, null, null, null, null, null, null], "hroll5": [null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, null, null, null, null, null, null, null, 0, 0, null, null, 0, 0, 0, 0, 5, 5, 5, 7, 7, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, null, null, null, null, null, null, null, null, null, null, null, null, null, 7, 5, 4, 3, 3, 0, 0, null, null, 0, 0, 0, 0, 0, 0, 0, 0, null, null, null, null, null, null, null, null, null, null], "rollw": [null, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, null, null, null, null, null, null, null, 2, 3, null, null, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, null, null, null, null, null, null, null, null, null, null, null, null, 2, 3, 4, 5, 5, 5, 5, null, null, 2, 3, 4, 5, 5, 5, 5, 5, null, null, null, null, null, null, null, null, null, null], "halftime_min": 9, "peak": {"mpm": 60, "k0": 26, "k1": 30, "label": "Q2, minutes 5&ndash;9"}, "first15": 46, "last15": 38, "minutes": 54, "avg": 44.5, "avghr": 153, "gametop": 24.2};
+// One metric at a time (Colin, 13 Sep 2026: "having work rate, distance run etc is too
+// confusing. i need to hv a drop down"). Each entry: the per-minute series, its unit, an
+// optional rolling-5 line, an optional dashed reference, and whether it draws as bars or
+// as a line (heart rate is a level, not an amount, so it is a line).
+const tlMean = arr => { const v = arr.filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+const tlRoll = (arr, w) => arr.map((_, i) => i < w - 1 || arr.slice(i - w + 1, i + 1).some(v => v == null) ? null
+  : Math.round(arr.slice(i - w + 1, i + 1).reduce((a, b) => a + b, 0) / w));
+// ONE line per measure, nothing layered on it (Colin, 13 Sep 2026, on the bars-plus-line
+// version: "having the bar and the charts is quite confusing... one look at the charts
+// and it should tell the story quickly"). Work rate and fast running draw their rolling
+// 5-minute line; the single-minute value is only in the tooltip. Heart rate is already a
+// level, so it draws as its 1-minute line.
+const METRICS = {
+  mpm: {label: 'work rate', unit: 'm/min', arr: TL.mpm, roll: TL.roll5, ref: TL.avg, refLabel: 'your average', peak: TL.peak, col: '#e8842a'},
+  hsr: {label: 'fast running', unit: 'm/min', arr: TL.hsr, roll: TL.hroll5, ref: tlMean(TL.hsr), refLabel: 'your average', col: '#4fb3a0'},
+  hr:  {label: 'heart rate', unit: 'bpm', arr: TL.hr, ref: TL.avghr || null, refLabel: 'your average', col: '#d9534f', floor: true},
+};
+const CUMS = {
+  mpm: {label: 'distance', unit: 'm', arr: TL.dm, col: '#e8842a'},
+  hsr: {label: 'fast-running metres', unit: 'm', arr: TL.hm, col: '#4fb3a0'},
+  spr: {label: 'sprint efforts', unit: '', arr: TL.spr, col: '#f0c419', integer: true},
+};
+function tlFrame(cv, hFull, hPhone){
+  const cssW = cv.getBoundingClientRect().width || cv.width;
+  cv.width = 1200; cv.height = cssW < 600 ? hPhone : hFull;
+  return {c: cv.getContext('2d'), W: cv.width, H: cv.height, k: cv.width / cssW};
+}
+const tlFont = (px, k, bold) => (bold ? '600 ' : '') + Math.round(px*k) + 'px "Segoe UI",system-ui,sans-serif';
+function tlLine(c, arr, xf, yf, col, w){
+  c.strokeStyle = col; c.lineWidth = w; c.lineJoin = 'round'; c.beginPath(); let on = false;
+  arr.forEach((v, i) => { if (v == null){ on = false; return; }
+    on ? c.lineTo(xf(i), yf(v)) : c.moveTo(xf(i), yf(v)); on = true; });
+  c.stroke();
+}
+// GEOMETRY: the four quarters are EQUAL columns whatever their real length (Colin, 13 Sep
+// 2026: "the 4 columns shd be equal distance. doesnt matter if i took a break or not").
+// Inside a quarter its wall-clock minutes are spread evenly. Record k lives in quarter
+// TL.q[k] at minute TL.m[k]; `edge` 0/.5/1 = its left edge / centre / right edge.
+const tlQoff = (() => { const o = [0]; TL.qlens.forEach(l => o.push(o[o.length - 1] + l)); return o; })();
+function tlX(g, k, edge){ const q = TL.q[k]; return g.padL + (q / 4 + ((TL.m[k] + edge) / TL.qlens[q]) / 4) * g.pw; }
+function tlIdxAt(g, xx){
+  const f = (xx - g.padL) / g.pw; if (f < 0 || f >= 1) return null;
+  const q = Math.min(3, Math.floor(f * 4)), m = Math.floor((f * 4 - q) * TL.qlens[q]), k = tlQoff[q] + m;
+  return k < TL.q.length && TL.q[k] === q ? k : null;
+}
+// Quarter names over each column, alternate columns faintly shaded, half time as an orange
+// divider between Q2 and Q3, and every stretch with no play (a bench spell, a stoppage)
+// as a grey band inside its quarter — the "different colour" that says there was a break.
+function tlAxes(c, g, k){
+  const {padL, pw, padT, ph} = g, xq = q => padL + (q / 4) * pw;
+  for (let q = 0; q < 4; q++){
+    if (q % 2){ c.fillStyle = 'rgba(255,255,255,.035)'; c.fillRect(xq(q), padT, pw / 4, ph); }
+    c.font = tlFont(12, k, true); c.fillStyle = css('--ink-2'); c.textAlign = 'center'; c.textBaseline = 'top';
+    c.fillText('Q' + (q + 1), xq(q + 0.5), padT + 2*k);
+  }
+  // gap bands: runs of minutes with no play, inside one quarter
+  let k0 = null;
+  const band = (a, b) => { const x0 = tlX(g, a, 0), x1 = tlX(g, b, 1);
+    c.fillStyle = 'rgba(167,180,192,.16)'; c.fillRect(x0, padT, x1 - x0, ph);
+    if (x1 - x0 > 46*k){ c.font = tlFont(11, k); c.fillStyle = css('--ink-2'); c.textAlign = 'center'; c.textBaseline = 'bottom'; c.fillText('not playing', (x0 + x1) / 2, padT + ph - 6*k); } };
+  TL.on.forEach((v, i) => {
+    if (!v && k0 == null) k0 = i;
+    const end = v || i === TL.on.length - 1 || TL.q[i + 1] !== TL.q[i];
+    if (k0 != null && end){ band(k0, v ? i - 1 : i); k0 = null; }
+  });
+  for (let q = 1; q < 4; q++){
+    const half = q === 2, xx = xq(q);
+    c.save(); c.strokeStyle = half ? 'rgba(232,132,42,.8)' : 'rgba(167,180,192,.45)'; c.setLineDash(half ? [8*k, 4*k] : [3*k, 4*k]); c.lineWidth = half ? 2*k : k;
+    c.beginPath(); c.moveTo(xx, padT); c.lineTo(xx, padT + ph); c.stroke(); c.restore();
+    // on a phone the orange divider + legend carry "half time"; the words collided with the Q labels
+    if (half && pw / k >= 560){ c.font = tlFont(11, k, true); c.fillStyle = '#e8842a'; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText('half time' + (TL.halftime_min ? ' ' + TL.halftime_min + ' min' : ''), xx, padT + 18*k); }
+  }
+  // minute ticks inside each quarter (5, 10, 15 ...), so "minute 12 of Q3" can be read off
+  c.fillStyle = css('--ink-3'); c.font = tlFont(12, k); c.textAlign = 'center'; c.textBaseline = 'top';
+  for (let q = 0; q < 4; q++){
+    const every = (pw / 4) / TL.qlens[q] * 5 < 30*k ? 10 : 5;     // a phone column fits fewer labels
+    for (let t = every; t < TL.qlens[q]; t += every) c.fillText(t, padL + (q / 4 + (t / TL.qlens[q]) / 4) * pw, padT + ph + 6*k);
+  }
+  c.textAlign = 'left'; c.fillText('minutes into each quarter', padL, padT + ph + 20*k);
+}
+function tlGrid(c, g, lo, hi, step, k, fmt){
+  c.font = tlFont(12, k); c.fillStyle = css('--ink-3'); c.textAlign = 'right'; c.textBaseline = 'middle';
+  c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = k;
+  for (let v = lo; v <= hi + 1e-9; v += step){ const yy = g.y(v); c.beginPath(); c.moveTo(g.padL, yy); c.lineTo(g.padL + g.pw, yy); c.stroke(); c.fillText(fmt ? fmt(v) : v, g.padL - 6*k, yy); }
+}
+const niceStep = range => { const raw = range / 5, p = Math.pow(10, Math.floor(Math.log10(raw))); return [1, 2, 2.5, 5, 10].map(m => m * p).find(s => s >= raw) || p * 10; };
+function tlTip(c, g, k, xx, lines){
+  c.font = tlFont(12, k); const pad = 8*k, lh = 17*k;
+  const w = Math.max(...lines.map(t => c.measureText(t).width)) + 2*pad, h = lines.length * lh + pad;
+  let bx = xx + 10*k; if (bx + w > g.padL + g.pw) bx = xx - 10*k - w;
+  const by = g.padT + 52*k;   // below the quarter row and both marker rows
+  c.fillStyle = 'rgba(16,22,29,.94)'; c.strokeStyle = 'rgba(167,180,192,.5)'; c.lineWidth = k;
+  c.beginPath(); c.roundRect ? c.roundRect(bx, by, w, h, 6*k) : c.rect(bx, by, w, h); c.fill(); c.stroke();
+  c.textAlign = 'left'; c.textBaseline = 'top';
+  lines.forEach((t, i) => { c.fillStyle = i ? css('--ink-2') : css('--ink'); c.font = tlFont(12, k, !i); c.fillText(t, bx + pad, by + pad/2 + i*lh); });
+}
+// A small label with its own dark backing, so words written ON the chart stay readable
+// where they cross the line ("your average 102 m/min", "6,180 m by the end").
+function tlPill(c, k, xx, yy, text, col, align){
+  c.font = tlFont(11, k, true); const w = c.measureText(text).width + 10*k, h = 16*k;
+  const bx = align === 'right' ? xx - w : xx;
+  c.fillStyle = 'rgba(16,22,29,.85)'; c.beginPath(); c.roundRect ? c.roundRect(bx, yy - h, w, h, 4*k) : c.rect(bx, yy - h, w, h); c.fill();
+  c.fillStyle = col; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(text, bx + 5*k, yy - h/2);
+}
+let tlHover = null, tlcHover = null;
+function drawTimeline(cv){
+  const sel = document.getElementById('tlsel').value, M = METRICS[sel], n = TL.mpm.length; if (!n) return;
+  const {c, W, H, k} = tlFrame(cv, 520, 760); c.clearRect(0, 0, W, H);
+  const g = {padL: 62*k, padR: 14*k, padT: 16*k, padB: 34*k}; g.pw = W - g.padL - g.padR; g.ph = H - g.padT - g.padB;
+  const shown = M.roll || M.arr, vals = shown.filter(v => v != null);
+  if (!vals.length){   // e.g. a teammate file with no heart-rate channel: say so, never a blank box
+    c.font = tlFont(13, k); c.fillStyle = css('--ink-3'); c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('no ' + M.label + ' recorded in this game', W / 2, H / 2);
+    document.getElementById('tllegend').innerHTML = `<span style="--c:${M.col}">${M.label}: nothing recorded</span>`; return;
+  }
+  // The axis starts a little under the lowest point rather than at zero: a trend line
+  // pinned to a zero axis sits in the top half of the box and its movement flattens out.
+  let hi = Math.max(M.ref || 0, ...vals) * 1.12 || 1, lo = Math.min(M.ref || hi, ...vals);
+  lo = Math.max(0, lo - (hi - lo) * 0.25);
+  let step = niceStep(hi - lo); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  if (M.floor){ lo = Math.floor((Math.min(...vals) - 5) / 10) * 10; hi = Math.ceil((Math.max(...vals) + 5) / 10) * 10; step = niceStep(hi - lo); }
+  const x = i => tlX(g, i, 0), xc = i => tlX(g, i, .5), xr = i => tlX(g, i, 1);
+  g.y = v => g.padT + g.ph - ((v - lo) / (hi - lo)) * g.ph;
+  tlGrid(c, g, lo, hi, step, k);
+  if (M.peak){ const x0 = x(M.peak.k0), x1 = xr(M.peak.k1);
+    c.fillStyle = 'rgba(232,132,42,.16)'; c.fillRect(x0, g.padT, x1 - x0, g.ph);
+    // top row 3: the bottom row belongs to the "not playing" labels, which sat right next to it in G5
+    c.fillStyle = '#e8842a'; c.font = tlFont(11, k, true); c.textAlign = 'center'; c.textBaseline = 'top';
+    c.fillText('busiest 5 min', (x0 + x1) / 2, g.padT + 32*k); }
+  tlAxes(c, g, k);
+  // Heart rate only: what happened across the breaks that sit on the dividers. "176 → 131"
+  // = reading as the break started → lowest it fell to. A paused watch says so.
+  if (sel === 'hr' && TL.breaks_hr){
+    const narrow = g.pw / k < 560;      // phone: numbers only, and the middle one drops a row
+    TL.breaks_hr.forEach((bh, i) => { if (bh.nodata) return;
+      const xx = g.padL + ((i + 1) / 4) * g.pw, row = i === 1 ? 32 : 18;
+      c.font = tlFont(11, k); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = bh.paused ? css('--ink-3') : M.col;
+      const txt = bh.paused ? (narrow ? 'paused' : 'break: watch paused') : (narrow ? bh.from + '→' + bh.low : 'break: ' + bh.from + ' → ' + bh.low + ' bpm');
+      c.fillText(txt, xx, g.padT + row*k); });
+  }
+  if (M.ref != null){
+    c.strokeStyle = '#a7b4c0'; c.setLineDash([6*k, 5*k]); c.lineWidth = 1.2*k;
+    c.beginPath(); c.moveTo(g.padL, g.y(M.ref)); c.lineTo(g.padL + g.pw, g.y(M.ref)); c.stroke(); c.setLineDash([]);
+    // The average is named in the AXIS GUTTER, level with its dashed line, where the line can
+    // never cross it (two attempts at placing a pill on the chart both landed on the line).
+    // It covers whichever gridline number sits under it.
+    c.fillStyle = css('--card'); c.fillRect(0, g.y(M.ref) - 9*k, g.padL - 3*k, 18*k);
+    c.font = tlFont(11, k, true); c.fillStyle = '#a7b4c0'; c.textAlign = 'right'; c.textBaseline = 'middle';
+    c.fillText('avg ' + M.ref, g.padL - 6*k, g.y(M.ref));
+  }
+  tlLine(c, shown, xc, g.y, M.col, 3*k);
+  if (tlHover != null && tlHover < n && shown[tlHover] != null){
+    const i = tlHover; c.fillStyle = 'rgba(255,255,255,.10)'; c.fillRect(x(i), g.padT, xr(i) - x(i), g.ph);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(xc(i), g.y(shown[i]), 4.5*k, 0, 7); c.fill();
+    const u = M.unit ? ' ' + M.unit : '', where = 'Q' + (TL.q[i] + 1) + ', minute ' + (TL.m[i] + 1) + (TL.on[i] ? '' : ' (not playing)') + ': ';
+    const wl = TL.rollw ? TL.rollw[i] : 5;
+    const lines = M.roll ? [where + shown[i] + u + (wl === 5 ? ' (5-min average)' : ' (' + wl + '-min average, run just started)'), 'that minute alone: ' + (M.arr[i] == null ? '—' : M.arr[i] + u)]
+                         : [where + shown[i] + u];
+    if (M.ref != null) lines.push(M.refLabel + ': ' + M.ref + u);
+    tlTip(c, g, k, xc(i), lines);
+  }
+  const L = [`<span style="--c:${M.col}">${M.label}${M.roll ? ', averaged over the previous 5 minutes' : ''}${M.unit ? ' (' + M.unit + ')' : ''}</span>`];
+  if (M.ref != null) L.push(`<span style="--c:#a7b4c0">${M.refLabel} for the game</span>`);
+  if (sel === 'hr') L.push('<span style="--c:rgba(217,83,79,.35)">runs through bench spells too; on each divider, the reading as the break started → the lowest it fell to</span>');
+  if (M.peak) L.push(`<span style="--c:rgba(232,132,42,.4)">busiest 5 min: ${M.peak.mpm} m/min (${M.peak.label})</span>`);
+  L.push('<span style="--c:#e8842a">half time</span><span style="--c:rgba(167,180,192,.35)">not playing (bench or stoppage)</span>');
+  document.getElementById('tllegend').innerHTML = L.join('');
+}
+function drawCum(cv){
+  const C = CUMS[document.getElementById('tlcum').value], n = TL.mpm.length; if (!n) return;
+  const {c, W, H, k} = tlFrame(cv, 400, 760); c.clearRect(0, 0, W, H);
+  const g = {padL: 56*k, padR: 14*k, padT: 16*k, padB: 34*k}; g.pw = W - g.padL - g.padR; g.ph = H - g.padT - g.padB;
+  const cum = []; let s = 0; C.arr.forEach(v => { s += v || 0; cum.push(s); });
+  const total = cum[n - 1] || 1, hi = total * 1.06, step = C.integer ? Math.max(1, Math.ceil(total / 5)) : niceStep(hi);
+  const x = i => tlX(g, i, 1);       // the total AFTER minute i sits at the minute's right edge
+  g.y = v => g.padT + g.ph - (v / hi) * g.ph;
+  tlGrid(c, g, 0, hi, step, k, v => v >= 1000 ? (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : v);
+  tlAxes(c, g, k);
+  c.beginPath(); c.moveTo(g.padL, g.y(0)); cum.forEach((v, i) => c.lineTo(x(i), g.y(v))); c.lineTo(x(n - 1), g.y(0)); c.closePath();
+  c.fillStyle = 'rgba(255,255,255,.05)'; c.fill();
+  c.strokeStyle = C.col; c.lineWidth = 3*k; c.lineJoin = 'round'; c.beginPath(); c.moveTo(g.padL, g.y(0)); cum.forEach((v, i) => c.lineTo(x(i), g.y(v))); c.stroke();
+  const u = C.unit ? ' ' + C.unit : '';
+  // sits just under the line's end point, where the rising line leaves empty space (above it
+  // is the Q4 label)
+  tlPill(c, k, x(n - 1) - 2*k, g.y(total) + 26*k, total.toLocaleString('en-GB') + u + ' by the end', C.col, 'right');
+  if (tlcHover != null && tlcHover < n){
+    const i = tlcHover;
+    c.fillStyle = 'rgba(255,255,255,.10)'; c.fillRect(tlX(g, i, 0), g.padT, x(i) - tlX(g, i, 0), g.ph);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x(i), g.y(cum[i]), 4.5*k, 0, 7); c.fill();
+    tlTip(c, g, k, x(i), ['After Q' + (TL.q[i] + 1) + ' minute ' + (TL.m[i] + 1) + ': ' + cum[i].toLocaleString('en-GB') + u,
+      'that minute alone: ' + (TL.on[i] ? C.arr[i] + u : 'not playing')]);
+  }
+  document.getElementById('tlclegend').innerHTML =
+    `<span style="--c:${C.col}">${C.label} so far${C.unit ? ' (' + C.unit + ')' : ''}</span>` +
+    '<span style="--c:#e8842a">half time</span><span style="--c:rgba(167,180,192,.35)">not playing (bench or stoppage)</span>';
+}
+// Hover / tap: which on-pitch minute is under the pointer. Touch uses a tap (touchstart),
+// never touchmove, so the page still scrolls with a finger on the chart.
+function tlBind(cv, setter, paint, padLcss){
+  const idx = ev => { const r = cv.getBoundingClientRect(), p = ev.touches ? ev.touches[0] : ev;
+    const k = cv.width / r.width, padL = padLcss*k;
+    return tlIdxAt({padL, pw: cv.width - padL - 14*k}, (p.clientX - r.left) * k); };
+  cv.addEventListener('mousemove', ev => { setter(idx(ev)); paint(); });
+  cv.addEventListener('mouseleave', () => { setter(null); paint(); });
+  cv.addEventListener('touchstart', ev => { setter(idx(ev)); paint(); }, {passive: true});
+}
+const tlCv = document.getElementById('tl'), tlcCv = document.getElementById('tlc');
+function paintTimeline(){ drawTimeline(tlCv); drawCum(tlcCv); }
+tlBind(tlCv, i => { tlHover = i; }, () => drawTimeline(tlCv), 62);
+tlBind(tlcCv, i => { tlcHover = i; }, () => drawCum(tlcCv), 56);
+document.getElementById('tlsel').addEventListener('change', () => drawTimeline(tlCv));
+document.getElementById('tlcum').addEventListener('change', () => drawCum(tlcCv));
+window.__redraw.push(paintTimeline);
+paintTimeline();
 
 // ------------------------------------------------- this game's share card
 // Everything below is GAME-PAGE ONLY: it sits after the drawMap() call, which is
