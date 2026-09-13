@@ -109,6 +109,8 @@
   .share .how b{ color:var(--ink); }
   .picks{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
   @media (max-width:640px){ .picks{ grid-template-columns:1fr; } }
+  .picks.one{ grid-template-columns:minmax(0,340px); margin:6px 0 10px; }
+  canvas.hover{ cursor:crosshair; touch-action:pan-y; }
   .picks label{ display:flex; flex-direction:column; gap:5px; font-size:12px; letter-spacing:.08em;
     text-transform:uppercase; color:var(--ink-3); font-weight:600; }
   .picks select{ background:var(--card); color:var(--ink); border:1px solid var(--tile-border); border-radius:8px;
@@ -250,13 +252,26 @@
   </div>
 
   <div class="board">
-    <div class="h2row"><h2>How the game went</h2><span class="h2sub">rolling 5-minute work rate, on-pitch minutes</span></div>
+    <div class="h2row"><h2>How the game went</h2><span class="h2sub">minute by minute, on-pitch minutes only</span></div>
     <div class="headline">Your busiest five minutes were on-pitch minutes <b>26&ndash;30</b> at <b>136 m/min</b>, 33% above your game average of 101.9. Your last 15 on-pitch minutes ran at <b>105 m/min</b> against 95 in your first 15 &mdash; 11% up.</div>
-    <canvas id="tl" width="1200" height="520"></canvas>
-    <div class="legend"><span style="--c:#e8842a">work rate, rolling 5 min (m/min)</span><span style="--c:#4fb3a0">fast running, rolling 5 min (m/min at 15+ km/h)</span><span style="--c:#3a4a5c">each single minute</span><span style="--c:#a7b4c0">game average 101.9 m/min</span></div>
-    <canvas id="tlhr" width="1200" height="260"></canvas>
-    <div class="legend"><span style="--c:#d9534f">heart rate, 1-minute average (bpm)</span></div>
-    <div class="qnote">Bold line = your work rate averaged over the previous five on-pitch minutes; faint bars = single minutes; shaded = your busiest five. Halftime, bench, quarter breaks and stops of a minute or more are cut out, so minute 30 is your 30th minute of play. A late drop can be pacing or a quiet spell in the game as much as tired legs &mdash; the chart knows when, you know why.</div>
+    <div class="picks one"><label><span>Show</span><select id="tlsel">
+      <option value="mpm">Work rate (metres per minute)</option>
+      <option value="hsr">Fast running (metres per minute at 15+ km/h)</option>
+      <option value="hr">Heart rate (bpm)</option>
+      <option value="top">Top speed each minute (km/h)</option>
+      <option value="spr">Sprint efforts each minute</option>
+    </select></label></div>
+    <canvas id="tl" class="hover" width="1200" height="520"></canvas>
+    <div class="legend" id="tllegend"></div>
+    <div class="h2row" style="margin-top:18px"><h2>Adding up over the game</h2><span class="h2sub">running total, on-pitch minutes</span></div>
+    <div class="picks one"><label><span>Show</span><select id="tlcum">
+      <option value="mpm">Distance (metres)</option>
+      <option value="hsr">Fast-running metres (15+ km/h)</option>
+      <option value="spr">Sprint efforts</option>
+    </select></label></div>
+    <canvas id="tlc" class="hover" width="1200" height="400"></canvas>
+    <div class="legend" id="tlclegend"></div>
+    <div class="qnote">Pick one measure at a time from the drop-down; hover or tap a minute to read its exact number. Bars are single on-pitch minutes, the bold line is the same measure averaged over the previous five, the shaded block is your busiest five. Halftime, bench, quarter breaks and stops of a minute or more are cut out, so minute 30 is your 30th minute of play &mdash; the dotted markers show where each break fell. A late drop can be pacing or a quiet spell in the game as much as tired legs &mdash; the chart knows when, you know why.</div>
   </div>
 
   <details class="coach">
@@ -647,70 +662,160 @@ document.getElementById('zones').addEventListener('change', e => {
 // type are in CSS px via k = W/cssW (drawMap's trick) so the phone gets 12px labels;
 // a narrow screen also gets a taller canvas. All figures come from TL, computed in
 // Python — the headline above the chart and the shaded peak are the same numbers.
-const TL = {"mpm": [110, 101, 137, 141, 105, 95, 26, 92, 117, 63, 39, 79, 110, 89, 119, 108, 85, 69, 117, 144, 99, 114, 89, 143, 75, 154, 143, 113, 122, 149, 69, 106, 45, 132, 131, 127, 100, 80, 53, 87, 120, 109, 65, 95, 138, 74, 137, 111, 106, 129, 93, 101, 131, 121, 103, 91, 149, 63, 22, 67, 153], "hsr": [0, 7, 55, 31, 3, 23, 0, 5, 33, 13, 9, 4, 35, 0, 33, 16, 10, 0, 24, 30, 6, 35, 15, 60, 7, 66, 30, 8, 45, 33, 3, 24, 7, 16, 33, 14, 7, 15, 0, 21, 21, 33, 20, 0, 50, 0, 47, 6, 22, 39, 29, 4, 18, 39, 15, 10, 60, 28, 0, 0, 27], "hr": [125, 154, 157, 157, 162, 176, 164, 150, 171, 168, 160, 161, 168, 178, 174, 158, 169, 160, 167, 172, 175, 177, 177, 132, 152, 152, 145, 170, 168, 179, 179, 162, 165, 167, 171, 174, 176, 174, 158, 171, 152, 161, 158, 156, 169, 168, 171, 179, 174, 171, 173, 166, 166, 166, 171, 169, 168, 171, 153, 146, 160], "roll5": [null, null, null, null, 119, 116, 101, 92, 87, 79, 67, 78, 82, 76, 87, 101, 102, 94, 100, 105, 103, 109, 113, 118, 104, 115, 121, 126, 121, 136, 119, 112, 98, 100, 97, 108, 107, 114, 98, 89, 88, 90, 87, 95, 105, 96, 102, 111, 113, 111, 115, 108, 112, 115, 110, 109, 119, 105, 86, 78, 91], "hroll5": [null, null, null, null, 19, 24, 22, 12, 13, 15, 12, 13, 19, 12, 16, 18, 19, 12, 17, 16, 14, 19, 22, 29, 25, 37, 36, 34, 31, 36, 24, 23, 22, 17, 17, 19, 15, 17, 14, 11, 13, 18, 19, 19, 25, 21, 23, 21, 25, 23, 29, 20, 22, 26, 21, 17, 28, 30, 23, 20, 23], "qmarks": [14.98, 23.42, 40.38], "peak": {"mpm": 136, "a": 26, "b": 30}, "first15": 95, "last15": 105, "minutes": 61, "avg": 101.9};
+const TL = {"mpm": [110, 101, 137, 141, 105, 95, 26, 92, 117, 63, 39, 79, 110, 89, 119, 108, 85, 69, 117, 144, 99, 114, 89, 143, 75, 154, 143, 113, 122, 149, 69, 106, 45, 132, 131, 127, 100, 80, 53, 87, 120, 109, 65, 95, 138, 74, 137, 111, 106, 129, 93, 101, 131, 121, 103, 91, 149, 63, 22, 67, 153], "hsr": [0, 7, 55, 31, 3, 23, 0, 5, 33, 13, 9, 4, 35, 0, 33, 16, 10, 0, 24, 30, 6, 35, 15, 60, 7, 66, 30, 8, 45, 33, 3, 24, 7, 16, 33, 14, 7, 15, 0, 21, 21, 33, 20, 0, 50, 0, 47, 6, 22, 39, 29, 4, 18, 39, 15, 10, 60, 28, 0, 0, 27], "hr": [125, 154, 157, 157, 162, 176, 164, 150, 171, 168, 160, 161, 168, 178, 174, 158, 169, 160, 167, 172, 175, 177, 177, 132, 152, 152, 145, 170, 168, 179, 179, 162, 165, 167, 171, 174, 176, 174, 158, 171, 152, 161, 158, 156, 169, 168, 171, 179, 174, 171, 173, 166, 166, 166, 171, 169, 168, 171, 153, 146, 160], "top": [14.1, 18.8, 29.5, 22.2, 17.7, 19.8, 8.8, 16.6, 27.3, 19.9, 20.0, 21.6, 21.4, 13.3, 20.7, 17.8, 16.1, 13.2, 20.0, 21.1, 16.7, 17.6, 16.1, 29.4, 15.9, 25.3, 17.9, 17.2, 20.8, 20.0, 15.0, 19.4, 19.5, 18.3, 22.0, 19.6, 18.2, 22.0, 14.3, 19.1, 17.2, 18.0, 23.7, 14.4, 23.2, 15.0, 24.0, 17.0, 19.3, 23.2, 21.8, 16.0, 19.4, 22.8, 18.7, 17.4, 21.8, 18.1, 6.9, 11.5, 15.9], "spr": [0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 2, 1, 0, 0, 0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 2, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0], "dm": [110, 101, 137, 141, 105, 95, 26, 92, 117, 63, 39, 79, 110, 89, 119, 108, 85, 69, 117, 144, 99, 114, 89, 143, 75, 154, 143, 113, 122, 149, 69, 106, 45, 132, 131, 127, 100, 80, 53, 87, 120, 109, 65, 95, 138, 74, 137, 111, 106, 129, 109, 84, 131, 121, 103, 91, 149, 63, 22, 67, 79], "hm": [0, 7, 55, 31, 3, 23, 0, 5, 33, 13, 9, 4, 35, 0, 33, 16, 10, 0, 24, 30, 6, 35, 15, 60, 7, 66, 30, 8, 45, 33, 3, 24, 7, 16, 33, 14, 7, 15, 0, 21, 21, 33, 20, 0, 50, 0, 47, 6, 22, 39, 33, 3, 18, 39, 15, 10, 60, 28, 0, 0, 14], "roll5": [null, null, null, null, 119, 116, 101, 92, 87, 79, 67, 78, 82, 76, 87, 101, 102, 94, 100, 105, 103, 109, 113, 118, 104, 115, 121, 126, 121, 136, 119, 112, 98, 100, 97, 108, 107, 114, 98, 89, 88, 90, 87, 95, 105, 96, 102, 111, 113, 111, 115, 108, 112, 115, 110, 109, 119, 105, 86, 78, 91], "hroll5": [null, null, null, null, 19, 24, 22, 12, 13, 15, 12, 13, 19, 12, 16, 18, 19, 12, 17, 16, 14, 19, 22, 29, 25, 37, 36, 34, 31, 36, 24, 23, 22, 17, 17, 19, 15, 17, 14, 11, 13, 18, 19, 19, 25, 21, 23, 21, 25, 23, 29, 20, 22, 26, 21, 17, 28, 30, 23, 20, 23], "qmarks": [14.98, 23.42, 40.38], "marks": [{"at": 14.98, "kind": "Q1/Q2 break", "label": "Q1/Q2 break"}, {"at": 22.95, "kind": "bench", "label": "bench 9 min + half time"}, {"at": 40.38, "kind": "Q3/Q4 break", "label": "Q3/Q4 break"}], "peak": {"mpm": 136, "a": 26, "b": 30}, "first15": 95, "last15": 105, "minutes": 61, "avg": 101.9, "avghr": 165, "gametop": 29.5};
+// One metric at a time (Colin, 13 Sep 2026: "having work rate, distance run etc is too
+// confusing. i need to hv a drop down"). Each entry: the per-minute series, its unit, an
+// optional rolling-5 line, an optional dashed reference, and whether it draws as bars or
+// as a line (heart rate is a level, not an amount, so it is a line).
+const tlMean = arr => { const v = arr.filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+const tlRoll = (arr, w) => arr.map((_, i) => i < w - 1 || arr.slice(i - w + 1, i + 1).some(v => v == null) ? null
+  : Math.round(arr.slice(i - w + 1, i + 1).reduce((a, b) => a + b, 0) / w));
+const METRICS = {
+  mpm: {label: 'work rate', unit: 'm/min', arr: TL.mpm, roll: TL.roll5, ref: TL.avg, refLabel: 'game average', peak: TL.peak, col: '#e8842a'},
+  hsr: {label: 'fast running', unit: 'm/min', arr: TL.hsr, roll: TL.hroll5, ref: tlMean(TL.hsr), refLabel: 'game average', col: '#4fb3a0'},
+  hr:  {label: 'heart rate', unit: 'bpm', arr: TL.hr, line: true, ref: TL.avghr || null, refLabel: 'game average', col: '#d9534f', floor: true},
+  top: {label: 'top speed in the minute', unit: 'km/h', arr: TL.top, ref: TL.gametop, refLabel: 'game top speed', col: '#c9a4ff'},
+  spr: {label: 'sprint efforts started', unit: '', arr: TL.spr, col: '#f0c419', integer: true},
+};
+const CUMS = {
+  mpm: {label: 'distance', unit: 'm', arr: TL.dm, col: '#e8842a'},
+  hsr: {label: 'fast-running metres', unit: 'm', arr: TL.hm, col: '#4fb3a0'},
+  spr: {label: 'sprint efforts', unit: '', arr: TL.spr, col: '#f0c419', integer: true},
+};
 function tlFrame(cv, hFull, hPhone){
   const cssW = cv.getBoundingClientRect().width || cv.width;
   cv.width = 1200; cv.height = cssW < 600 ? hPhone : hFull;
   return {c: cv.getContext('2d'), W: cv.width, H: cv.height, k: cv.width / cssW};
 }
-const tlFont = (px, k) => Math.round(px*k) + 'px "Segoe UI",system-ui,sans-serif';
+const tlFont = (px, k, bold) => (bold ? '600 ' : '') + Math.round(px*k) + 'px "Segoe UI",system-ui,sans-serif';
 function tlLine(c, arr, xf, yf, col, w){
   c.strokeStyle = col; c.lineWidth = w; c.lineJoin = 'round'; c.beginPath(); let on = false;
   arr.forEach((v, i) => { if (v == null){ on = false; return; }
     on ? c.lineTo(xf(i), yf(v)) : c.moveTo(xf(i), yf(v)); on = true; });
   c.stroke();
 }
-function tlQuarterMarks(c, n, padL, pw, padT, ph, k){
-  c.save(); c.strokeStyle = 'rgba(167,180,192,.45)'; c.setLineDash([3*k, 4*k]); c.lineWidth = k;
-  c.font = tlFont(12, k); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = css('--ink-3');
-  TL.qmarks.forEach((m, i) => { const xx = padL + (m / n) * pw;
-    c.beginPath(); c.moveTo(xx, padT); c.lineTo(xx, padT + ph); c.stroke(); c.fillText('Q' + (i + 2), xx + 4*k, padT); });
-  c.restore();
-}
-function drawTimeline(cv){
-  const n = TL.mpm.length; if (!n) return;
-  const {c, W, H, k} = tlFrame(cv, 520, 760);
-  c.clearRect(0, 0, W, H);
-  const padL = 44*k, padR = 14*k, padT = 16*k, padB = 34*k, pw = W - padL - padR, ph = H - padT - padB;
-  const ymax = Math.max(TL.avg, ...TL.mpm) * 1.1, bw = pw / n;
-  const x = i => padL + (i / n) * pw, y = v => padT + ph - (v / ymax) * ph;
-  c.font = tlFont(12, k); c.fillStyle = css('--ink-3'); c.textAlign = 'right'; c.textBaseline = 'middle';
-  c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = k;
-  const step = ymax > 160 ? 50 : 25;
-  for (let v = 0; v <= ymax; v += step){ c.beginPath(); c.moveTo(padL, y(v)); c.lineTo(W - padR, y(v)); c.stroke(); c.fillText(v, padL - 6*k, y(v)); }
-  if (TL.peak){ c.fillStyle = 'rgba(232,132,42,.16)'; c.fillRect(x(TL.peak.a - 1), padT, bw*5, ph); }
-  tlQuarterMarks(c, n, padL, pw, padT, ph, k);
-  c.fillStyle = '#3a4a5c';
-  TL.mpm.forEach((v, i) => c.fillRect(x(i) + bw*0.08, y(v), bw*0.84, padT + ph - y(v)));
-  c.strokeStyle = '#a7b4c0'; c.setLineDash([6*k, 5*k]); c.lineWidth = 1.2*k;
-  c.beginPath(); c.moveTo(padL, y(TL.avg)); c.lineTo(W - padR, y(TL.avg)); c.stroke(); c.setLineDash([]);
-  const xc = i => x(i) + bw/2;
-  tlLine(c, TL.hroll5, xc, y, '#4fb3a0', 2*k);
-  tlLine(c, TL.roll5, xc, y, '#e8842a', 2.6*k);
-  // The average's VALUE lives in the legend (same row as its swatch), and the peak label
-  // sits on the second text row so it never collides with a quarter marker — both
-  // collided on a 390px screen when drawn beside the line (pilot render, 13 Sep 2026).
-  if (TL.peak){ c.fillStyle = '#e8842a'; c.font = tlFont(12, k); c.textAlign = 'center'; c.textBaseline = 'top';
-    c.fillText('busiest 5 min: ' + TL.peak.mpm + ' m/min', Math.min(W - padR - 70*k, Math.max(padL + 70*k, x(TL.peak.a - 1) + bw*2.5)), padT + 16*k); }
-  c.fillStyle = css('--ink-3'); c.font = tlFont(12, k); c.textAlign = 'center'; c.textBaseline = 'top';
-  for (let m = 10; m <= n; m += 10) c.fillText(m, xc(m - 1), padT + ph + 6*k);
+// Quarter names sit centred over their own stretch of the axis; every break, half time
+// and bench spell gets its own dotted line + label on the row beneath. The on-pitch axis
+// squeezes a break to zero width, which is exactly why it needs a marker.
+function tlAxes(c, n, g, k){
+  const {padL, pw, padT, ph} = g, xq = m => padL + (m / n) * pw;
+  const edges = [0, ...TL.qmarks, n];
+  c.font = tlFont(12, k, true); c.fillStyle = css('--ink-2'); c.textAlign = 'center'; c.textBaseline = 'top';
+  for (let i = 0; i + 1 < edges.length; i++) if (edges[i+1] - edges[i] > 2) c.fillText('Q' + (i + 1), xq((edges[i] + edges[i+1]) / 2), padT + 2*k);
+  c.font = tlFont(11, k); c.textBaseline = 'top';
+  // consecutive marker labels alternate between two rows so neighbours never overlap
+  // (a bench spell straight after a break is common; on a phone every label collided)
+  TL.marks.forEach((m, i) => {
+    const xx = xq(m.at), half = m.kind === 'half time';
+    c.save(); c.strokeStyle = half ? 'rgba(232,132,42,.7)' : 'rgba(167,180,192,.55)'; c.setLineDash(half ? [8*k, 4*k] : [3*k, 4*k]); c.lineWidth = half ? 1.6*k : k;
+    c.beginPath(); c.moveTo(xx, padT); c.lineTo(xx, padT + ph); c.stroke(); c.restore();
+    c.fillStyle = half ? '#e8842a' : css('--ink-3');
+    const right = xx > padL + pw * 0.8; c.textAlign = right ? 'right' : 'left';
+    c.fillText(m.label, xx + (right ? -4 : 4)*k, padT + (18 + 14 * (i % 2))*k);
+  });
+  c.fillStyle = css('--ink-3'); c.font = tlFont(12, k); c.textAlign = 'center';
+  for (let m = 10; m <= n; m += 10) c.fillText(m, padL + ((m - 0.5) / n) * pw, padT + ph + 6*k);
   c.textAlign = 'left'; c.fillText('on-pitch minute', padL, padT + ph + 20*k);
 }
-function drawHR(cv){
-  const hr = TL.hr, n = hr.length, vals = hr.filter(v => v != null);
-  if (vals.length < 5){ cv.hidden = true; cv.nextElementSibling.hidden = true; return; }
-  const {c, W, H, k} = tlFrame(cv, 260, 380);
-  c.clearRect(0, 0, W, H);
-  const padL = 44*k, padR = 14*k, padT = 16*k, padB = 12*k, pw = W - padL - padR, ph = H - padT - padB;
-  const lo = Math.floor((Math.min(...vals) - 5) / 10) * 10, hi = Math.ceil((Math.max(...vals) + 5) / 10) * 10, bw = pw / n;
-  const x = i => padL + (i / n) * pw + bw/2, y = v => padT + ph - ((v - lo) / (hi - lo)) * ph;
+function tlGrid(c, g, lo, hi, step, k, fmt){
   c.font = tlFont(12, k); c.fillStyle = css('--ink-3'); c.textAlign = 'right'; c.textBaseline = 'middle';
   c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = k;
-  for (let v = lo; v <= hi; v += 20){ c.beginPath(); c.moveTo(padL, y(v)); c.lineTo(W - padR, y(v)); c.stroke(); c.fillText(v, padL - 6*k, y(v)); }
-  tlQuarterMarks(c, n, padL, pw, padT, ph, k);
-  tlLine(c, hr, x, y, '#d9534f', 1.8*k);
+  for (let v = lo; v <= hi + 1e-9; v += step){ const yy = g.y(v); c.beginPath(); c.moveTo(g.padL, yy); c.lineTo(g.padL + g.pw, yy); c.stroke(); c.fillText(fmt ? fmt(v) : v, g.padL - 6*k, yy); }
 }
-function paintTimeline(){ drawTimeline(document.getElementById('tl')); drawHR(document.getElementById('tlhr')); }
+const niceStep = range => { const raw = range / 5, p = Math.pow(10, Math.floor(Math.log10(raw))); return [1, 2, 2.5, 5, 10].map(m => m * p).find(s => s >= raw) || p * 10; };
+function tlTip(c, g, k, xx, lines){
+  c.font = tlFont(12, k); const pad = 8*k, lh = 17*k;
+  const w = Math.max(...lines.map(t => c.measureText(t).width)) + 2*pad, h = lines.length * lh + pad;
+  let bx = xx + 10*k; if (bx + w > g.padL + g.pw) bx = xx - 10*k - w;
+  const by = g.padT + 52*k;   // below the quarter row and both marker rows
+  c.fillStyle = 'rgba(16,22,29,.94)'; c.strokeStyle = 'rgba(167,180,192,.5)'; c.lineWidth = k;
+  c.beginPath(); c.roundRect ? c.roundRect(bx, by, w, h, 6*k) : c.rect(bx, by, w, h); c.fill(); c.stroke();
+  c.textAlign = 'left'; c.textBaseline = 'top';
+  lines.forEach((t, i) => { c.fillStyle = i ? css('--ink-2') : css('--ink'); c.font = tlFont(12, k, !i); c.fillText(t, bx + pad, by + pad/2 + i*lh); });
+}
+let tlHover = null, tlcHover = null;
+function drawTimeline(cv){
+  const M = METRICS[document.getElementById('tlsel').value], n = TL.mpm.length; if (!n) return;
+  const {c, W, H, k} = tlFrame(cv, 520, 760); c.clearRect(0, 0, W, H);
+  const g = {padL: 48*k, padR: 14*k, padT: 16*k, padB: 34*k}; g.pw = W - g.padL - g.padR; g.ph = H - g.padT - g.padB;
+  const vals = M.arr.filter(v => v != null); if (!vals.length){ return; }
+  let lo = 0, hi = Math.max(M.ref || 0, ...vals) * 1.12 || 1;
+  if (M.floor){ lo = Math.floor((Math.min(...vals) - 5) / 10) * 10; hi = Math.ceil((Math.max(...vals) + 5) / 10) * 10; }
+  const step = M.integer ? Math.max(1, Math.ceil((hi - lo) / 5)) : niceStep(hi - lo);
+  if (M.integer) hi = Math.max(hi, Math.ceil(hi));
+  const bw = g.pw / n, x = i => g.padL + (i / n) * g.pw, xc = i => x(i) + bw/2;
+  g.y = v => g.padT + g.ph - ((v - lo) / (hi - lo)) * g.ph;
+  tlGrid(c, g, lo, hi, step, k);
+  if (M.peak){ c.fillStyle = 'rgba(232,132,42,.16)'; c.fillRect(x(M.peak.a - 1), g.padT, bw*5, g.ph); }
+  tlAxes(c, n, g, k);
+  if (M.line){ tlLine(c, M.arr, xc, g.y, M.col, 2*k); }
+  else {
+    c.fillStyle = M.roll ? '#3a4a5c' : M.col;
+    M.arr.forEach((v, i) => { if (v != null && v > lo) c.fillRect(x(i) + bw*0.08, g.y(v), bw*0.84, g.padT + g.ph - g.y(v)); });
+  }
+  if (M.ref != null){ c.strokeStyle = '#a7b4c0'; c.setLineDash([6*k, 5*k]); c.lineWidth = 1.2*k;
+    c.beginPath(); c.moveTo(g.padL, g.y(M.ref)); c.lineTo(g.padL + g.pw, g.y(M.ref)); c.stroke(); c.setLineDash([]); }
+  if (M.roll) tlLine(c, M.roll, xc, g.y, M.col, 2.6*k);
+  if (tlHover != null && tlHover < n && M.arr[tlHover] != null){
+    const i = tlHover; c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(x(i), g.padT, bw, g.ph);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(xc(i), g.y(M.arr[i]), 4*k, 0, 7); c.fill();
+    const lines = ['Minute ' + (i + 1) + ' on pitch: ' + M.arr[i] + (M.unit ? ' ' + M.unit : '')];
+    if (M.roll && M.roll[i] != null) lines.push('rolling 5-min: ' + M.roll[i] + ' ' + M.unit);
+    if (M.ref != null) lines.push(M.refLabel + ': ' + M.ref + (M.unit ? ' ' + M.unit : ''));
+    tlTip(c, g, k, xc(i), lines);
+  }
+  const L = [`<span style="--c:${M.col}">${M.roll ? M.label + ', rolling 5 min' : M.label}${M.unit ? ' (' + M.unit + ')' : ''}</span>`];
+  if (M.roll) L.push('<span style="--c:#3a4a5c">each single minute</span>');
+  if (M.ref != null) L.push(`<span style="--c:#a7b4c0">${M.refLabel} ${M.ref}${M.unit ? ' ' + M.unit : ''}</span>`);
+  if (M.peak) L.push(`<span style="--c:rgba(232,132,42,.4)">busiest 5 min: ${M.peak.mpm} m/min, minutes ${M.peak.a}&ndash;${M.peak.b}</span>`);
+  L.push('<span style="--c:#e8842a">half time</span><span style="--c:#6b7a88">breaks / bench</span>');
+  document.getElementById('tllegend').innerHTML = L.join('');
+}
+function drawCum(cv){
+  const C = CUMS[document.getElementById('tlcum').value], n = TL.mpm.length; if (!n) return;
+  const {c, W, H, k} = tlFrame(cv, 400, 760); c.clearRect(0, 0, W, H);
+  const g = {padL: 56*k, padR: 14*k, padT: 16*k, padB: 34*k}; g.pw = W - g.padL - g.padR; g.ph = H - g.padT - g.padB;
+  const cum = []; let s = 0; C.arr.forEach(v => { s += v || 0; cum.push(s); });
+  const total = cum[n - 1] || 1, hi = total * 1.06, step = C.integer ? Math.max(1, Math.ceil(total / 5)) : niceStep(hi);
+  const x = i => g.padL + ((i + 1) / n) * g.pw;       // the total AFTER minute i sits at the minute's right edge
+  g.y = v => g.padT + g.ph - (v / hi) * g.ph;
+  tlGrid(c, g, 0, hi, step, k, v => v >= 1000 ? (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : v);
+  tlAxes(c, n, g, k);
+  // steady-pace reference: what the total would read if every on-pitch minute matched the average
+  c.strokeStyle = '#a7b4c0'; c.setLineDash([6*k, 5*k]); c.lineWidth = 1.2*k;
+  c.beginPath(); c.moveTo(g.padL, g.y(0)); c.lineTo(g.padL + g.pw, g.y(total)); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.moveTo(g.padL, g.y(0)); cum.forEach((v, i) => c.lineTo(x(i), g.y(v))); c.lineTo(x(n - 1), g.y(0)); c.closePath();
+  c.fillStyle = 'rgba(255,255,255,.05)'; c.fill();
+  c.strokeStyle = C.col; c.lineWidth = 2.6*k; c.lineJoin = 'round'; c.beginPath(); c.moveTo(g.padL, g.y(0)); cum.forEach((v, i) => c.lineTo(x(i), g.y(v))); c.stroke();
+  if (tlcHover != null && tlcHover < n){
+    const i = tlcHover, steady = total * (i + 1) / n;
+    c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(x(i) - g.pw / n, g.padT, g.pw / n, g.ph);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x(i), g.y(cum[i]), 4*k, 0, 7); c.fill();
+    const u = C.unit ? ' ' + C.unit : '';
+    tlTip(c, g, k, x(i), ['After minute ' + (i + 1) + ': ' + cum[i].toLocaleString('en-GB') + u,
+      'this minute: ' + (C.arr[i] == null ? '—' : C.arr[i]) + u,
+      'steady pace would be ' + Math.round(steady).toLocaleString('en-GB') + u]);
+  }
+  document.getElementById('tlclegend').innerHTML =
+    `<span style="--c:${C.col}">${C.label} so far${C.unit ? ' (' + C.unit + ')' : ''} &mdash; ${total.toLocaleString('en-GB')} by the end</span>` +
+    '<span style="--c:#a7b4c0">steady pace (every minute at your average)</span><span style="--c:#e8842a">half time</span><span style="--c:#6b7a88">breaks / bench</span>';
+}
+// Hover / tap: which on-pitch minute is under the pointer. Touch uses a tap (touchstart),
+// never touchmove, so the page still scrolls with a finger on the chart.
+function tlBind(cv, setter, paint, padLcss){
+  const idx = ev => { const r = cv.getBoundingClientRect(), p = ev.touches ? ev.touches[0] : ev;
+    const k = cv.width / r.width, xx = (p.clientX - r.left) * k, padL = padLcss*k, pw = cv.width - padL - 14*k;
+    const i = Math.floor((xx - padL) / pw * TL.mpm.length); return i >= 0 && i < TL.mpm.length ? i : null; };
+  cv.addEventListener('mousemove', ev => { setter(idx(ev)); paint(); });
+  cv.addEventListener('mouseleave', () => { setter(null); paint(); });
+  cv.addEventListener('touchstart', ev => { setter(idx(ev)); paint(); }, {passive: true});
+}
+const tlCv = document.getElementById('tl'), tlcCv = document.getElementById('tlc');
+function paintTimeline(){ drawTimeline(tlCv); drawCum(tlcCv); }
+tlBind(tlCv, i => { tlHover = i; }, () => drawTimeline(tlCv), 48);
+tlBind(tlcCv, i => { tlcHover = i; }, () => drawCum(tlcCv), 56);
+document.getElementById('tlsel').addEventListener('change', () => drawTimeline(tlCv));
+document.getElementById('tlcum').addEventListener('change', () => drawCum(tlcCv));
 window.__redraw.push(paintTimeline);
 paintTimeline();
 
