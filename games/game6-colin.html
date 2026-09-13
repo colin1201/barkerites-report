@@ -252,14 +252,12 @@
   </div>
 
   <div class="board">
-    <div class="h2row"><h2>How the game went</h2><span class="h2sub">minute by minute, on-pitch minutes only</span></div>
+    <div class="h2row"><h2>How the game went</h2><span class="h2sub">how it changed as the game went on</span></div>
     <div class="headline">Your busiest five minutes were on-pitch minutes <b>26&ndash;30</b> at <b>136 m/min</b>, 33% above your game average of 101.9. Your last 15 on-pitch minutes ran at <b>105 m/min</b> against 95 in your first 15 &mdash; 11% up.</div>
     <div class="picks one"><label><span>Show</span><select id="tlsel">
       <option value="mpm">Work rate (metres per minute)</option>
       <option value="hsr">Fast running (metres per minute at 15+ km/h)</option>
       <option value="hr">Heart rate (bpm)</option>
-      <option value="top">Top speed each minute (km/h)</option>
-      <option value="spr">Sprint efforts each minute</option>
     </select></label></div>
     <canvas id="tl" class="hover" width="1200" height="520"></canvas>
     <div class="legend" id="tllegend"></div>
@@ -271,7 +269,7 @@
     </select></label></div>
     <canvas id="tlc" class="hover" width="1200" height="400"></canvas>
     <div class="legend" id="tlclegend"></div>
-    <div class="qnote">Pick one measure at a time from the drop-down; hover or tap a minute to read its exact number. Bars are single on-pitch minutes, the bold line is the same measure averaged over the previous five, the shaded block is your busiest five. Halftime, bench, quarter breaks and stops of a minute or more are cut out, so minute 30 is your 30th minute of play &mdash; the dotted markers show where each break fell. A late drop can be pacing or a quiet spell in the game as much as tired legs &mdash; the chart knows when, you know why.</div>
+    <div class="qnote">Pick one measure from the drop-down; hover or tap any minute for its number. The line is that measure averaged over the previous five on-pitch minutes, so it shows the trend rather than every twitch; the shaded block is your busiest five. Halftime, bench, quarter breaks and stops of a minute or more are cut out, so minute 30 is your 30th minute of play &mdash; the dotted markers show where each break fell. A late drop can be pacing or a quiet spell in the game as much as tired legs &mdash; the chart knows when, you know why.</div>
   </div>
 
   <details class="coach">
@@ -670,12 +668,15 @@ const TL = {"mpm": [110, 101, 137, 141, 105, 95, 26, 92, 117, 63, 39, 79, 110, 8
 const tlMean = arr => { const v = arr.filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
 const tlRoll = (arr, w) => arr.map((_, i) => i < w - 1 || arr.slice(i - w + 1, i + 1).some(v => v == null) ? null
   : Math.round(arr.slice(i - w + 1, i + 1).reduce((a, b) => a + b, 0) / w));
+// ONE line per measure, nothing layered on it (Colin, 13 Sep 2026, on the bars-plus-line
+// version: "having the bar and the charts is quite confusing... one look at the charts
+// and it should tell the story quickly"). Work rate and fast running draw their rolling
+// 5-minute line; the single-minute value is only in the tooltip. Heart rate is already a
+// level, so it draws as its 1-minute line.
 const METRICS = {
-  mpm: {label: 'work rate', unit: 'm/min', arr: TL.mpm, roll: TL.roll5, ref: TL.avg, refLabel: 'game average', peak: TL.peak, col: '#e8842a'},
-  hsr: {label: 'fast running', unit: 'm/min', arr: TL.hsr, roll: TL.hroll5, ref: tlMean(TL.hsr), refLabel: 'game average', col: '#4fb3a0'},
-  hr:  {label: 'heart rate', unit: 'bpm', arr: TL.hr, line: true, ref: TL.avghr || null, refLabel: 'game average', col: '#d9534f', floor: true},
-  top: {label: 'top speed in the minute', unit: 'km/h', arr: TL.top, ref: TL.gametop, refLabel: 'game top speed', col: '#c9a4ff'},
-  spr: {label: 'sprint efforts started', unit: '', arr: TL.spr, col: '#f0c419', integer: true},
+  mpm: {label: 'work rate', unit: 'm/min', arr: TL.mpm, roll: TL.roll5, ref: TL.avg, refLabel: 'your average', peak: TL.peak, col: '#e8842a'},
+  hsr: {label: 'fast running', unit: 'm/min', arr: TL.hsr, roll: TL.hroll5, ref: tlMean(TL.hsr), refLabel: 'your average', col: '#4fb3a0'},
+  hr:  {label: 'heart rate', unit: 'bpm', arr: TL.hr, ref: TL.avghr || null, refLabel: 'your average', col: '#d9534f', floor: true},
 };
 const CUMS = {
   mpm: {label: 'distance', unit: 'm', arr: TL.dm, col: '#e8842a'},
@@ -700,6 +701,8 @@ function tlLine(c, arr, xf, yf, col, w){
 function tlAxes(c, n, g, k){
   const {padL, pw, padT, ph} = g, xq = m => padL + (m / n) * pw;
   const edges = [0, ...TL.qmarks, n];
+  // alternate quarters get a faint band, so the four quarters read as four blocks at a glance
+  for (let i = 0; i + 1 < edges.length; i++) if (i % 2){ c.fillStyle = 'rgba(255,255,255,.035)'; c.fillRect(xq(edges[i]), padT, xq(edges[i+1]) - xq(edges[i]), ph); }
   c.font = tlFont(12, k, true); c.fillStyle = css('--ink-2'); c.textAlign = 'center'; c.textBaseline = 'top';
   for (let i = 0; i + 1 < edges.length; i++) if (edges[i+1] - edges[i] > 2) c.fillText('Q' + (i + 1), xq((edges[i] + edges[i+1]) / 2), padT + 2*k);
   c.font = tlFont(11, k); c.textBaseline = 'top';
@@ -733,40 +736,51 @@ function tlTip(c, g, k, xx, lines){
   c.textAlign = 'left'; c.textBaseline = 'top';
   lines.forEach((t, i) => { c.fillStyle = i ? css('--ink-2') : css('--ink'); c.font = tlFont(12, k, !i); c.fillText(t, bx + pad, by + pad/2 + i*lh); });
 }
+// A small label with its own dark backing, so words written ON the chart stay readable
+// where they cross the line ("your average 102 m/min", "6,180 m by the end").
+function tlPill(c, k, xx, yy, text, col, align){
+  c.font = tlFont(11, k, true); const w = c.measureText(text).width + 10*k, h = 16*k;
+  const bx = align === 'right' ? xx - w : xx;
+  c.fillStyle = 'rgba(16,22,29,.85)'; c.beginPath(); c.roundRect ? c.roundRect(bx, yy - h, w, h, 4*k) : c.rect(bx, yy - h, w, h); c.fill();
+  c.fillStyle = col; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(text, bx + 5*k, yy - h/2);
+}
 let tlHover = null, tlcHover = null;
 function drawTimeline(cv){
   const M = METRICS[document.getElementById('tlsel').value], n = TL.mpm.length; if (!n) return;
   const {c, W, H, k} = tlFrame(cv, 520, 760); c.clearRect(0, 0, W, H);
   const g = {padL: 48*k, padR: 14*k, padT: 16*k, padB: 34*k}; g.pw = W - g.padL - g.padR; g.ph = H - g.padT - g.padB;
-  const vals = M.arr.filter(v => v != null); if (!vals.length){ return; }
-  let lo = 0, hi = Math.max(M.ref || 0, ...vals) * 1.12 || 1;
-  if (M.floor){ lo = Math.floor((Math.min(...vals) - 5) / 10) * 10; hi = Math.ceil((Math.max(...vals) + 5) / 10) * 10; }
-  const step = M.integer ? Math.max(1, Math.ceil((hi - lo) / 5)) : niceStep(hi - lo);
-  if (M.integer) hi = Math.max(hi, Math.ceil(hi));
+  const shown = M.roll || M.arr, vals = shown.filter(v => v != null); if (!vals.length){ return; }
+  // The axis starts a little under the lowest point rather than at zero: a trend line
+  // pinned to a zero axis sits in the top half of the box and its movement flattens out.
+  let hi = Math.max(M.ref || 0, ...vals) * 1.12 || 1, lo = Math.min(M.ref || hi, ...vals);
+  lo = Math.max(0, lo - (hi - lo) * 0.25);
+  let step = niceStep(hi - lo); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  if (M.floor){ lo = Math.floor((Math.min(...vals) - 5) / 10) * 10; hi = Math.ceil((Math.max(...vals) + 5) / 10) * 10; step = niceStep(hi - lo); }
   const bw = g.pw / n, x = i => g.padL + (i / n) * g.pw, xc = i => x(i) + bw/2;
   g.y = v => g.padT + g.ph - ((v - lo) / (hi - lo)) * g.ph;
   tlGrid(c, g, lo, hi, step, k);
-  if (M.peak){ c.fillStyle = 'rgba(232,132,42,.16)'; c.fillRect(x(M.peak.a - 1), g.padT, bw*5, g.ph); }
+  if (M.peak){ c.fillStyle = 'rgba(232,132,42,.16)'; c.fillRect(x(M.peak.a - 1), g.padT, bw*5, g.ph);
+    c.fillStyle = '#e8842a'; c.font = tlFont(11, k, true); c.textAlign = 'center'; c.textBaseline = 'bottom';
+    c.fillText('busiest 5 min', x(M.peak.a - 1) + bw*2.5, g.padT + g.ph - 6*k); }
   tlAxes(c, n, g, k);
-  if (M.line){ tlLine(c, M.arr, xc, g.y, M.col, 2*k); }
-  else {
-    c.fillStyle = M.roll ? '#3a4a5c' : M.col;
-    M.arr.forEach((v, i) => { if (v != null && v > lo) c.fillRect(x(i) + bw*0.08, g.y(v), bw*0.84, g.padT + g.ph - g.y(v)); });
+  if (M.ref != null){
+    c.strokeStyle = '#a7b4c0'; c.setLineDash([6*k, 5*k]); c.lineWidth = 1.2*k;
+    c.beginPath(); c.moveTo(g.padL, g.y(M.ref)); c.lineTo(g.padL + g.pw, g.y(M.ref)); c.stroke(); c.setLineDash([]);
+    // left end: the rolling line has no points in minutes 1-4, so nothing is under the label there
+    tlPill(c, k, g.padL + 4*k, g.y(M.ref) - 4*k, M.refLabel + ' ' + M.ref + (M.unit ? ' ' + M.unit : ''), '#a7b4c0', 'left');
   }
-  if (M.ref != null){ c.strokeStyle = '#a7b4c0'; c.setLineDash([6*k, 5*k]); c.lineWidth = 1.2*k;
-    c.beginPath(); c.moveTo(g.padL, g.y(M.ref)); c.lineTo(g.padL + g.pw, g.y(M.ref)); c.stroke(); c.setLineDash([]); }
-  if (M.roll) tlLine(c, M.roll, xc, g.y, M.col, 2.6*k);
-  if (tlHover != null && tlHover < n && M.arr[tlHover] != null){
-    const i = tlHover; c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(x(i), g.padT, bw, g.ph);
-    c.fillStyle = '#fff'; c.beginPath(); c.arc(xc(i), g.y(M.arr[i]), 4*k, 0, 7); c.fill();
-    const lines = ['Minute ' + (i + 1) + ' on pitch: ' + M.arr[i] + (M.unit ? ' ' + M.unit : '')];
-    if (M.roll && M.roll[i] != null) lines.push('rolling 5-min: ' + M.roll[i] + ' ' + M.unit);
-    if (M.ref != null) lines.push(M.refLabel + ': ' + M.ref + (M.unit ? ' ' + M.unit : ''));
+  tlLine(c, shown, xc, g.y, M.col, 3*k);
+  if (tlHover != null && tlHover < n && shown[tlHover] != null){
+    const i = tlHover; c.fillStyle = 'rgba(255,255,255,.10)'; c.fillRect(x(i), g.padT, bw, g.ph);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(xc(i), g.y(shown[i]), 4.5*k, 0, 7); c.fill();
+    const u = M.unit ? ' ' + M.unit : '';
+    const lines = M.roll ? ['Minute ' + (i + 1) + ' on pitch: ' + shown[i] + u + ' (5-min average)', 'that minute alone: ' + (M.arr[i] == null ? '—' : M.arr[i] + u)]
+                         : ['Minute ' + (i + 1) + ' on pitch: ' + shown[i] + u];
+    if (M.ref != null) lines.push(M.refLabel + ': ' + M.ref + u);
     tlTip(c, g, k, xc(i), lines);
   }
-  const L = [`<span style="--c:${M.col}">${M.roll ? M.label + ', rolling 5 min' : M.label}${M.unit ? ' (' + M.unit + ')' : ''}</span>`];
-  if (M.roll) L.push('<span style="--c:#3a4a5c">each single minute</span>');
-  if (M.ref != null) L.push(`<span style="--c:#a7b4c0">${M.refLabel} ${M.ref}${M.unit ? ' ' + M.unit : ''}</span>`);
+  const L = [`<span style="--c:${M.col}">${M.label}${M.roll ? ', averaged over the previous 5 minutes' : ''}${M.unit ? ' (' + M.unit + ')' : ''}</span>`];
+  if (M.ref != null) L.push(`<span style="--c:#a7b4c0">${M.refLabel} for the game</span>`);
   if (M.peak) L.push(`<span style="--c:rgba(232,132,42,.4)">busiest 5 min: ${M.peak.mpm} m/min, minutes ${M.peak.a}&ndash;${M.peak.b}</span>`);
   L.push('<span style="--c:#e8842a">half time</span><span style="--c:#6b7a88">breaks / bench</span>');
   document.getElementById('tllegend').innerHTML = L.join('');
@@ -781,24 +795,21 @@ function drawCum(cv){
   g.y = v => g.padT + g.ph - (v / hi) * g.ph;
   tlGrid(c, g, 0, hi, step, k, v => v >= 1000 ? (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : v);
   tlAxes(c, n, g, k);
-  // steady-pace reference: what the total would read if every on-pitch minute matched the average
-  c.strokeStyle = '#a7b4c0'; c.setLineDash([6*k, 5*k]); c.lineWidth = 1.2*k;
-  c.beginPath(); c.moveTo(g.padL, g.y(0)); c.lineTo(g.padL + g.pw, g.y(total)); c.stroke(); c.setLineDash([]);
   c.beginPath(); c.moveTo(g.padL, g.y(0)); cum.forEach((v, i) => c.lineTo(x(i), g.y(v))); c.lineTo(x(n - 1), g.y(0)); c.closePath();
   c.fillStyle = 'rgba(255,255,255,.05)'; c.fill();
-  c.strokeStyle = C.col; c.lineWidth = 2.6*k; c.lineJoin = 'round'; c.beginPath(); c.moveTo(g.padL, g.y(0)); cum.forEach((v, i) => c.lineTo(x(i), g.y(v))); c.stroke();
+  c.strokeStyle = C.col; c.lineWidth = 3*k; c.lineJoin = 'round'; c.beginPath(); c.moveTo(g.padL, g.y(0)); cum.forEach((v, i) => c.lineTo(x(i), g.y(v))); c.stroke();
+  const u = C.unit ? ' ' + C.unit : '';
+  tlPill(c, k, x(n - 1) - 2*k, g.y(total) - 6*k, total.toLocaleString('en-GB') + u + ' by the end', C.col, 'right');
   if (tlcHover != null && tlcHover < n){
-    const i = tlcHover, steady = total * (i + 1) / n;
-    c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(x(i) - g.pw / n, g.padT, g.pw / n, g.ph);
-    c.fillStyle = '#fff'; c.beginPath(); c.arc(x(i), g.y(cum[i]), 4*k, 0, 7); c.fill();
-    const u = C.unit ? ' ' + C.unit : '';
+    const i = tlcHover;
+    c.fillStyle = 'rgba(255,255,255,.10)'; c.fillRect(x(i) - g.pw / n, g.padT, g.pw / n, g.ph);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x(i), g.y(cum[i]), 4.5*k, 0, 7); c.fill();
     tlTip(c, g, k, x(i), ['After minute ' + (i + 1) + ': ' + cum[i].toLocaleString('en-GB') + u,
-      'this minute: ' + (C.arr[i] == null ? '—' : C.arr[i]) + u,
-      'steady pace would be ' + Math.round(steady).toLocaleString('en-GB') + u]);
+      'that minute alone: ' + (C.arr[i] == null ? '—' : C.arr[i]) + u]);
   }
   document.getElementById('tlclegend').innerHTML =
-    `<span style="--c:${C.col}">${C.label} so far${C.unit ? ' (' + C.unit + ')' : ''} &mdash; ${total.toLocaleString('en-GB')} by the end</span>` +
-    '<span style="--c:#a7b4c0">steady pace (every minute at your average)</span><span style="--c:#e8842a">half time</span><span style="--c:#6b7a88">breaks / bench</span>';
+    `<span style="--c:${C.col}">${C.label} so far${C.unit ? ' (' + C.unit + ')' : ''}</span>` +
+    '<span style="--c:#e8842a">half time</span><span style="--c:#6b7a88">breaks / bench</span>';
 }
 // Hover / tap: which on-pitch minute is under the pointer. Touch uses a tap (touchstart),
 // never touchmove, so the page still scrolls with a finger on the chart.
