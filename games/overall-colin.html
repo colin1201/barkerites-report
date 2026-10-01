@@ -62,6 +62,17 @@
   .tog{ display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); cursor:pointer;
     user-select:none; margin-left:auto; }
   .tog input{ accent-color:var(--accent); width:17px; height:17px; margin:0; }
+  /* "game so far" slider, top-left of the movement map (1 Oct 2026) */
+  .slwrap{ display:flex; align-items:center; gap:10px; flex:1 1 220px; max-width:420px; min-width:0; }
+  .slwrap input{ flex:1; min-width:0; accent-color:var(--accent); margin:0; cursor:pointer; }
+  .sllbl{ font-size:13px; color:var(--ink-2); white-space:nowrap; min-width:118px; font-variant-numeric:tabular-nums; }
+  .sllbl b{ color:var(--ink); font-weight:650; }
+  .slctl{ clear:both; }   /* the h2's floated att/mid/def line must not sit on top of the slider */
+  @media (max-width:620px){
+    .slwrap{ flex:1 1 100%; max-width:none; }
+    .slwrap input{ height:28px; }   /* a bigger thumb target for a finger */
+    .sllbl{ min-width:0; }
+  }
   /* scorecards: one stat each — value, plain-words label, comparison line, colour band */
   /* fixed 3-up / 2-up so six cards always fill their rows (auto-fit gave 5+1 on desktop) */
   .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
