@@ -121,7 +121,7 @@
 
     <div class="board">
       <h2>By quarter (split around halftime)</h2>
-      <div class="tscroll"><table><thead><tr><th></th><th>On pitch</th><th>Distance</th><th>Fast run</th><th>Sprints</th><th>Top speed</th><th>Avg HR</th></tr></thead><tbody id="qrows"></tbody></table></div>
+      <div class="tscroll"><table><thead><tr><th></th><th>On pitch</th><th>Distance</th><th>Work rate</th><th>Fast run</th><th>Sprints</th><th>Top speed</th><th>Avg HR</th></tr></thead><tbody id="qrows"></tbody></table></div>
       <div class="qnote fade" id="fade"></div>
       <div class="qnote">On pitch = minutes excluding auto-detected halftime/bench/card time, standing-still blocks 60s+, and recording gaps. Fast run = metres covered above 15 km/h — the number to watch for late-game fade. Sprints = bursts &ge; 20 km/h (GPS glitches filtered).</div>
     </div>
@@ -627,8 +627,8 @@ function render(){
     r.quarters[q].onPitch < 0.5 ? `Q${q+1} · off pitch` : `Q${q+1} · ${r.quarters[q].dist}m`;
   $('qrows').innerHTML = r.quarters.map((q,i) =>
     q.onPitch < 0.5
-      ? `<tr><td>Q${i+1}</td><td colspan="6" style="color:var(--ink-3)">off the pitch this quarter (bench / subbed off)</td></tr>`
-      : `<tr><td>Q${i+1}</td><td>${Math.round(q.onPitch)} min</td><td>${q.dist}m</td><td>${q.hsr}m</td><td>${q.sprints}</td><td>${q.top} km/h</td><td>${q.hr||'—'}</td></tr>`).join('');
+      ? `<tr><td>Q${i+1}</td><td colspan="7" style="color:var(--ink-3)">off the pitch this quarter (bench / subbed off)</td></tr>`
+      : `<tr><td>Q${i+1}</td><td>${Math.round(q.onPitch)} min</td><td>${q.dist}m</td><td>${q.onPitch >= 1 ? Math.round(q.dist/q.onPitch) + ' m/min' : '—'}</td><td>${q.hsr}m</td><td>${q.sprints}</td><td>${q.top} km/h</td><td>${q.hr||'—'}</td></tr>`).join('');
   // late-game fade: Q4 vs Q1, normalized per on-pitch minute so bench/breaks don't fake a fade
   const q1 = r.quarters[0], q4 = r.quarters[3];
   const pctf = v => { const p = Math.abs(Math.round(v*100)); return p===0 ? 'level' : (v>0?'+':'−') + p + '%'; };
