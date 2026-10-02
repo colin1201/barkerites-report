@@ -2,6 +2,8 @@
 
 Self-serve match report tool for Colin's hockey teammates. They export their game activity as GPX (Garmin Connect web / Strava), drop it on the page, and get a personal match report — heat map, quarter heat maps, quarter table, HR zones, sprints. **Everything runs client-side in their browser; no file is ever uploaded or stored.** Colin manages nothing.
 
+- **How a teammate gets their file to us (reported 2 Oct 2026):** KS said the share/gear button had disappeared from the Garmin Connect PHONE app. The website worked: connect.garmin.com → the activity → gear ⚙ (or "…") top-right → Export to GPX. Give that route first. **Check the file's date and distance against the game before building** — KS's first send that day was a re-download of his G5 file (same bytes as the copy in `test-data/teammates/`), not the G7 asked for.
+
 - **Live:** https://colin1201.github.io/barkerites-report/
 - **Repo:** https://github.com/colin1201/barkerites-report (public — required for GitHub Pages on free plan; pure static, no secrets)
 
