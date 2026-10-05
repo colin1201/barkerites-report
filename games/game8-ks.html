@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- REBUILD: py game_report.py --gpx "../barkerites-report/test-data/teammates/activity_24601578558.gpx" --clip-start "0.02" --clip-end "87.14" --halftime "38.2-44.1" --breaks "17.4-20.4,62.4-65.0" --venue "sengkang-p1" --flip-lateral --position "right back" (engine build 2026-08-25, Tier-1 metrics) -->
+<title>Game 8 vs OVA</title>
+<style>
+  :root{ --ground:#10161d; --card:#171f28; --ink:#e8edf2; --ink-2:#a7b4c0; --ink-3:#6b7a88;
+    --pitch:#173d5a; --pitch-edge:#122f46; --line:rgba(255,255,255,.42);
+    --accent:#e8842a; --tile-border:#242f3a; }
+  body{ background:var(--ground); color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif; margin:0; padding:24px 16px 40px; }
+  .wrap{ max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+  a.back{ color:var(--ink-3); font-size:13px; text-decoration:none; }
+  .eyebrow{ font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  h1{ font-size:24px; margin:2px 0 0; font-weight:650; }
+  .meta{ color:var(--ink-2); font-size:14px; margin-top:4px; }
+  .board{ background:var(--card); border:1px solid var(--tile-border); border-radius:10px; padding:16px; }
+  h2{ font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); margin:0 0 10px; font-weight:600; }
+  canvas{ width:100%; height:auto; display:block; border-radius:6px; }
+  .dir{ display:flex; justify-content:space-between; font-size:12px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-3); margin-top:8px; }
+  /* colour legend for the multi-hue ('jet') heat palette */
+  .legend{ display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:8px; font-size:12px; color:var(--ink-2); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend span::before{ content:""; width:12px; height:12px; border-radius:3px; background:var(--c); display:inline-block; }
+  .tiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+  .tile{ background:var(--card); border:1px solid var(--tile-border); border-radius:10px; padding:12px 14px; }
+  .tile .lbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .tile .val{ font-size:24px; font-weight:650; margin-top:3px; font-variant-numeric:tabular-nums; }
+  .tile .sub{ font-size:12px; color:var(--ink-2); margin-top:2px; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; }
+  th{ text-align:left; color:var(--ink-3); font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    padding:6px 8px; border-bottom:1px solid var(--tile-border); }
+  td{ padding:7px 8px; border-bottom:1px solid var(--tile-border); }
+  tr:last-child td{ border-bottom:none; }
+  .tscroll{ overflow-x:auto; }
+  .tscroll table{ min-width:470px; }
+  .qnote{ font-size:12.5px; color:var(--ink-3); margin-top:8px; line-height:1.5; }
+  .qnote.fade{ font-size:13.5px; color:var(--ink); }
+  .zbar{ display:flex; height:16px; border-radius:8px; overflow:hidden; gap:2px; margin-top:6px; }
+  .zbar div{ background:var(--accent); min-width:2px; }
+  .zl{ display:flex; gap:14px; font-size:12px; color:var(--ink-2); margin-top:8px; flex-wrap:wrap;
+    font-variant-numeric:tabular-nums; }
+  .notes{ font-size:14px; color:var(--ink-2); line-height:1.6; white-space:pre-line; }
+  .foot{ font-size:12px; color:var(--ink-3); line-height:1.5; max-width:70ch; }
+  /* clear:both — the map-heading's float:right caption used to swallow this
+     grid's width on phones (per-game maps rendered 63px wide, 6 Sep 2026 audit) */
+  .qgrid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; clear:both; }
+  @media (max-width:560px){ .qgrid{ grid-template-columns:1fr; } }
+  .qcap{ font-size:12px; color:var(--ink-2); margin-top:5px; text-align:center;
+    font-variant-numeric:tabular-nums; }
+  /* ---- redesign, 6 Sep 2026 (season page first; game pages inherit on rebuild) ---- */
+  /* heading + right-hand caption as flex, so the caption can never eat the row below */
+  .h2row{ display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px 12px; }
+  .h2row .h2sub{ font-weight:500; text-transform:none; letter-spacing:0; color:var(--ink-2); font-size:12.5px; }
+  .controls{ display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; margin:2px 0 12px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{ border:1px solid var(--tile-border); background:rgba(255,255,255,.03); color:var(--ink-2);
+    border-radius:20px; padding:5px 12px; font-size:13px; cursor:pointer; user-select:none; line-height:1.2; }
+  .chip:hover{ border-color:var(--ink-3); }
+  .chip.on{ background:var(--accent); color:#12181f; border-color:var(--accent); font-weight:650; }
+  .tog{ display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); cursor:pointer;
+    user-select:none; margin-left:auto; }
+  .tog input{ accent-color:var(--accent); width:17px; height:17px; margin:0; }
+  /* "game so far" slider, top-left of the movement map (1 Oct 2026) */
+  .slwrap{ display:flex; align-items:center; gap:10px; flex:1 1 220px; max-width:420px; min-width:0; }
+  .slwrap input{ flex:1; min-width:0; accent-color:var(--accent); margin:0; cursor:pointer; }
+  .sllbl{ font-size:13px; color:var(--ink-2); white-space:nowrap; min-width:118px; font-variant-numeric:tabular-nums; }
+  .sllbl b{ color:var(--ink); font-weight:650; }
+  .slctl{ clear:both; }   /* the h2's floated att/mid/def line must not sit on top of the slider */
+  @media (max-width:620px){
+    .slwrap{ flex:1 1 100%; max-width:none; }
+    .slwrap input{ height:28px; }   /* a bigger thumb target for a finger */
+    .sllbl{ min-width:0; }
+  }
+  /* scorecards: one stat each — value, plain-words label, comparison line, colour band */
+  /* fixed 3-up / 2-up so six cards always fill their rows (auto-fit gave 5+1 on desktop) */
+  .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  @media (max-width:600px){ .cards{ grid-template-columns:repeat(2,1fr); } }
+  .card{ background:var(--card); border:1px solid var(--tile-border); border-radius:12px; padding:13px 14px 12px;
+    border-top:3px solid var(--tile-border); }
+  .card.up{ border-top-color:#48bb78; } .card.down{ border-top-color:var(--accent); } .card.flat{ border-top-color:#5b6b7a; }
+  .card .cl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .card .cv{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .card .cv .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:3px; }
+  .card .cs{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
+  /* header scorecards on the game pages reuse the tile's lbl/val/sub inner
+     structure (the season builder reads those by label), styled as cards */
+  .card .lbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .card .val{ font-size:27px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .card .val .unit{ font-size:13px; font-weight:500; color:var(--ink-2); margin-left:2px; }
+  .card .sub{ font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.4; }
+  /* the scorecards now sit INSIDE the key-match-stats board, under the speed bars
+     and their glossary line, so they need separating space above rather than below */
+  .cards.hero{ margin:18px 0 2px; }
+  .card .cs b{ color:var(--ink); font-weight:650; }
+  .card.up .cs b.d{ color:#7fd6a0; } .card.down .cs b.d{ color:#f0a25e; }
+  /* tables become one card per row on a phone — no sideways scrolling */
+  @media (max-width:600px){
+    .tscroll table.cardify{ min-width:0; }
+    table.cardify, table.cardify tbody, table.cardify tr, table.cardify td{ display:block; }
+    table.cardify thead, table.cardify tr.thead{ display:none; }
+    table.cardify tr{ border:1px solid var(--tile-border); border-radius:10px; padding:8px 11px 6px; margin-bottom:9px;
+      background:rgba(255,255,255,.02); }
+    table.cardify td{ display:flex; justify-content:space-between; gap:12px; padding:5px 0;
+      border-bottom:1px dashed var(--tile-border); font-size:14px; }
+    table.cardify td:last-child{ border-bottom:none; }
+    table.cardify td::before{ content:attr(data-label); color:var(--ink-3); font-size:12px;
+      text-transform:uppercase; letter-spacing:.08em; flex:0 0 auto; }
+    table.cardify td.rowhead{ display:block; font-weight:650; font-size:15px; border-bottom:1px solid var(--tile-border);
+      padding-bottom:7px; margin-bottom:3px; }
+    table.cardify td.rowhead::before{ content:none; }
+    table.cardify tr.total td.rowhead{ color:var(--accent); }
+  }
+  /* share card: the on-page preview IS the canvas the button saves */
+  .share{ display:grid; grid-template-columns:minmax(220px,330px) 1fr; gap:20px; align-items:start; }
+  @media (max-width:640px){ .share{ grid-template-columns:1fr; } .share .preview{ max-width:330px; margin:0 auto; } }
+  .share canvas{ width:100%; height:auto; border-radius:16px; border:1px solid var(--tile-border); display:block; }
+  .share .how{ font-size:14px; color:var(--ink-2); line-height:1.6; }
+  .share .how b{ color:var(--ink); }
+  .picks{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+  @media (max-width:640px){ .picks{ grid-template-columns:1fr; } }
+  .picks.one{ grid-template-columns:minmax(0,340px); margin:6px 0 10px; }
+  canvas.hover{ cursor:crosshair; touch-action:pan-y; }
+  .picks label{ display:flex; flex-direction:column; gap:5px; font-size:12px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+  .picks select{ background:var(--card); color:var(--ink); border:1px solid var(--tile-border); border-radius:8px;
+    padding:9px 10px; font-size:14px; font-family:inherit; }
+  .btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+  .btn{ background:var(--accent); color:#12181f; border:0; border-radius:10px; padding:11px 16px; font-size:14px;
+    font-weight:650; cursor:pointer; }
+  .btn.ghost{ background:transparent; color:var(--ink); border:1px solid var(--tile-border); }
+  .btn:active{ transform:translateY(1px); }
+  .fmt{ font-size:12px; color:var(--ink-3); margin-top:8px; }
+  /* two share cards in one board: a rule between them so the second reads as a second
+     offer, not as more controls for the first */
+  .sharelbl{ font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px; }
+  .share2{ margin-top:22px; padding-top:22px; border-top:1px solid var(--tile-border); }
+
+  /* Key match stats — the Sofascore "Run tab" panel (Colin, 6 Sep 2026: the three
+     headline numbers, then every speed band as metres AND share of the distance).
+     GAME PAGES ONLY, and it sits between the movement map and the quarter maps.
+     Bars are proportional to share, so the eye reads the split before the digits. */
+  .kstop{ display:flex; flex-wrap:wrap; gap:10px 34px; margin-bottom:18px; }
+  .kstop div{ display:flex; align-items:baseline; gap:6px; }
+  .kstop .kv{ font-size:30px; font-weight:800; letter-spacing:-.02em; color:var(--ink); }
+  .kstop .ku{ font-size:14px; font-weight:600; color:var(--ink-2); }
+  .kstop .kl{ font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); margin-left:2px; }
+  .kband{ margin-bottom:11px; }
+  .kbrow{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:5px; }
+  .kbl{ font-size:13.5px; color:var(--ink); }
+  .kbl em{ font-style:normal; color:var(--ink-3); font-size:12px; margin-left:5px; }
+  .kbv{ font-size:13.5px; color:var(--ink-2); white-space:nowrap; }
+  .kbv b{ color:var(--ink); margin-left:6px; }
+  .kbar{ height:8px; border-radius:5px; background:rgba(255,255,255,.06); overflow:hidden; }
+  .kbar i{ display:block; height:100%; border-radius:5px; }
+  @media (max-width:420px){
+    .kstop{ gap:10px 22px; } .kstop .kv{ font-size:26px; }
+    .kbl{ font-size:13px; } .kbl em{ display:block; margin:1px 0 0; } .kbv{ font-size:13px; }
+  }
+  /* Tier-1 pro metrics */
+  .headline{ font-size:15px; line-height:1.5; color:var(--ink); font-weight:600;
+    margin:-2px 0 12px; }
+  .tiles-in{ margin-bottom:10px; }
+  .tiles-in .tile{ background:rgba(255,255,255,.03); }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:620px){ .split{ grid-template-columns:1fr; } }
+  .sublbl{ font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:600; margin-bottom:8px; }
+  .kv{ display:flex; flex-direction:column; gap:7px; font-size:14px;
+    font-variant-numeric:tabular-nums; }
+  .kv .r{ display:flex; justify-content:space-between; gap:14px;
+    border-bottom:1px solid var(--tile-border); padding-bottom:6px; }
+  .kv .r:last-child{ border-bottom:none; }
+  .kv .k{ color:var(--ink-2); }
+  .kv .v{ font-weight:650; text-align:right; }
+  .na{ color:var(--ink-3); font-weight:500; font-style:italic; }
+  .flag{ display:inline-block; padding:1px 8px; border-radius:20px; font-size:12px;
+    font-weight:650; letter-spacing:.02em; }
+  .flag.safe{ background:rgba(72,187,120,.16); color:#7fd6a0; }
+  .flag.spike{ background:rgba(232,132,42,.18); color:#f0a25e; }
+  .flag.low{ background:rgba(120,160,200,.16); color:#9dbede; }
+  .tile .val .unit{ font-size:13px; font-weight:500; }
+  .board.doing{ border-color:rgba(232,132,42,.32); background:linear-gradient(180deg,rgba(232,132,42,.055),transparent 70%),var(--card); }
+  .takeaway{ display:flex; gap:13px; padding:13px 0; border-bottom:1px solid var(--tile-border); }
+  .takeaway:last-child{ border-bottom:none; padding-bottom:2px; }
+  .takeaway:first-of-type{ padding-top:2px; }
+  .tnum{ flex:0 0 25px; height:25px; border-radius:50%; background:var(--accent); color:#12181f;
+    font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .tbody{ flex:1; min-width:0; }
+  .tbody .lead{ font-size:15px; font-weight:650; line-height:1.45; }
+  .tbody .why{ font-size:13.5px; color:var(--ink-2); line-height:1.55; margin-top:5px; }
+  details.coach{ border:1px dashed var(--tile-border); border-radius:10px; padding:0 14px; }
+  details.coach > summary{ cursor:pointer; list-style:none; padding:13px 0; font-size:13px;
+    color:var(--ink-3); line-height:1.5; }
+  details.coach > summary::-webkit-details-marker{ display:none; }
+  details.coach > summary::before{ content:"▸"; color:var(--accent); margin-right:8px; display:inline-block; }
+  details.coach[open] > summary::before{ transform:rotate(90deg); }
+  details.coach > summary::after{ content:""; }
+  details.coach[open]{ padding-bottom:14px; }
+  details.coach .board{ margin-bottom:12px; }
+  details.coach .board:last-of-type{ margin-bottom:0; }
+  .ctag{ display:inline-block; background:rgba(232,132,42,.16); color:var(--accent); font-weight:650;
+    padding:1px 8px; border-radius:20px; margin-right:7px; font-size:12px; }
+  .ratewarn{ background:rgba(232,132,42,.10); border:1px solid rgba(232,132,42,.42);
+    border-radius:10px; padding:13px 15px; font-size:13.5px; line-height:1.55; color:var(--ink); }
+  .ratewarn b{ color:var(--accent); }
+</style></head><body>
+<div class="wrap">
+  <a class="back" href="../ks.html">&larr; all KS match reports</a>
+  <header>
+    <div class="eyebrow">Barkerites · MHL 5 · Game 8</div>
+    <h1>vs OVA</h1>
+    <div class="meta">Sun 4 Oct 2026, 1800 · right back · 3.4 km · 75 min on the pitch</div>
+  </header>
+
+  <div class="ratewarn"><b>Read these numbers as a floor, not a measurement.</b> This watch stored a position every 3 seconds and the exported file carries no distance of its own, so the distance is worked out from the dots &mdash; and every turn between them is lost. Testing a known full-rate game thinned to this same rate: distance and work rate came out <b>20% low</b>, sprinting metres <b>64% low</b>, and repeat-sprint clusters went to <b>zero</b>. The real figures are higher, by an amount nobody can recover from this file. <b>Do not compare them with a report recorded every second</b> &mdash; the gap would be the watch, not the player. Switching that watch to 1-second recording fixes future games.</div>
+
+  <!-- Scorecards (Colin, 6 Sep 2026: "for the individual games, use the scorecard
+       format"). Same six stats, same order, same .lbl/.val/.sub inner structure the
+       season builder and verify_reports.py read by LABEL - only the shell changed. -->
+  <!-- Scorecards are the FIRST thing on an individual match report, above the heat map.
+       Briefly moved under the speed bars on 6 Sep 2026 and moved straight back — Colin:
+       "i want this scorecards at the top. it should be the first thing." On the SEASON
+       page they sit after the heat maps instead; that difference is deliberate. -->
+  <div class="cards hero">
+    <div class="card"><div class="lbl">Own half</div><div class="val">98 <span class="unit">%</span></div><div class="sub">of time on the pitch</div></div>
+    <div class="card"><div class="lbl">Distance</div><div class="val">3.4 <span class="unit">km</span></div><div class="sub">75 min on the pitch</div></div>
+    <div class="card"><div class="lbl">Top speed</div><div class="val">22.8 <span class="unit">km/h</span></div><div class="sub">fastest burst of the game</div></div>
+    <div class="card"><div class="lbl">Sprint efforts</div><div class="val">1</div><div class="sub">bursts of 20 km/h or more</div></div>
+    <div class="card"><div class="lbl">Work rate</div><div class="val">45 <span class="unit">m/min</span></div><div class="sub">metres per minute on the pitch</div></div>
+    <div class="card"><div class="lbl">Avg HR</div><div class="val">128 <span class="unit">bpm</span></div><div class="sub">no max HR on file for this player</div></div>
+  </div>
+
+  <div class="board">
+    <h2>Movement heat map <span id="thirds" style="float:right;font-weight:500;text-transform:none;letter-spacing:0">att 0% · mid 17% · def 83%</span></h2>
+    <div class="controls slctl"><div class="slwrap"><input type="range" id="gsf" min="0" max="0" value="0" step="1" aria-label="Game so far"><span id="gsflbl" class="sllbl">Full time</span></div><label class="tog"><input type="checkbox" id="zones"> Show % of time in each zone</label></div>
+    <canvas id="pitch" width="1200" height="722"></canvas>
+    <div class="dir"><span>&#9664; Own goal</span><span>Direction of attack &#9654;</span></div>
+  </div>
+
+  <div class="board">
+    <h2>Distance by speed <span id="kbwhen" style="float:right;font-weight:500;text-transform:none;letter-spacing:0"></span></h2>
+    <div class="kband" data-band="walk"><div class="kbrow"><span class="kbl">Walking<em>under 6 km/h</em></span><span class="kbv">2,689 m<b>79%</b></span></div><div class="kbar"><i style="width:79.1%;background:#3b5566"></i></div></div><div class="kband" data-band="jog"><div class="kbrow"><span class="kbl">Jogging<em>6&ndash;11 km/h</em></span><span class="kbv">545 m<b>16%</b></span></div><div class="kbar"><i style="width:16.0%;background:#2f8f9d"></i></div></div><div class="kband" data-band="run"><div class="kbrow"><span class="kbl">Running<em>11&ndash;15 km/h</em></span><span class="kbv">114 m<b>3%</b></span></div><div class="kbar"><i style="width:3.4%;background:#4faa5a"></i></div></div><div class="kband" data-band="fast"><div class="kbrow"><span class="kbl">Fast running<em>15&ndash;20 km/h</em></span><span class="kbv">47 m<b>1%</b></span></div><div class="kbar"><i style="width:1.4%;background:#e0a63a"></i></div></div><div class="kband" data-band="sprint"><div class="kbrow"><span class="kbl">Sprinting<em>20 km/h and up</em></span><span class="kbv">5 m<b>0%</b></span></div><div class="kbar"><i style="width:0.1%;background:#e8842a"></i></div></div>
+    <div class="qnote">Every metre you covered on the pitch, split by how fast you were moving &mdash; so the five bars add up to your whole distance. The bottom two are the ones that cost you. <b>On this file the bottom two bars are a floor, not a measurement</b> &mdash; a position every 3 seconds loses the turns between the dots, so the fast-running and sprinting metres are understated. See the note at the top.</div>
+  </div>
+
+  <div class="board">
+    <h2>Heat map by quarter <span style="float:right;font-weight:500;text-transform:none;letter-spacing:0">same brightness scale across all four</span></h2>
+    <div class="qgrid">
+      <div><canvas class="qmap" data-q="0" width="600" height="361"></canvas><div class="qcap">Q1 · 899m</div></div>
+      <div><canvas class="qmap" data-q="1" width="600" height="361"></canvas><div class="qcap">Q2 · 841m</div></div>
+      <div><canvas class="qmap" data-q="2" width="600" height="361"></canvas><div class="qcap">Q3 · 823m</div></div>
+      <div><canvas class="qmap" data-q="3" width="600" height="361"></canvas><div class="qcap">Q4 · 838m</div></div>
+    </div>
+  </div>
+
+  <div class="board">
+    <h2>By quarter (split around halftime)</h2>
+    <div class="tscroll"><table><tr><th></th><th>On pitch</th><th>Distance</th><th>Work rate</th><th>Fast run</th><th>Sprints</th><th>Top speed</th><th>Avg HR</th></tr><tr><td>Q1</td><td>17 min</td><td>899m</td><td>52 m/min</td><td>12m</td><td>0</td><td>19.1 km/h</td><td>124</td></tr><tr><td>Q2</td><td>18 min</td><td>841m</td><td>47 m/min</td><td>0m</td><td>0</td><td>14.3 km/h</td><td>131</td></tr><tr><td>Q3</td><td>18 min</td><td>823m</td><td>45 m/min</td><td>24m</td><td>1</td><td>22.8 km/h</td><td>128</td></tr><tr><td>Q4</td><td>22 min</td><td>838m</td><td>38 m/min</td><td>16m</td><td>0</td><td>18.2 km/h</td><td>129</td></tr></table></div>
+    <div class="qnote fade">Late-game read — Q4 vs Q1, per minute on pitch: total distance −26%, fast running +5% (Q1 17 min vs Q4 22 min on pitch).</div>
+    <div class="qnote">On pitch = wall-clock minutes excluding halftime, bench and still time 60s+ &mdash; a 15-min quarter runs ~18-19 real minutes because the game clock stops and the watch doesn't. Fast run = metres covered above 15 km/h &mdash; the number to watch for late-game fade. Sprints = bursts &ge; 20 km/h.</div>
+  </div>
+
+  <div class="board">
+    <div class="h2row"><h2>How the game went</h2><span class="h2sub">how it changed as the game went on</span></div>
+    <div class="headline">Your busiest five minutes were <b>Q1, minutes 7&ndash;11</b> at <b>60 m/min</b>, 33% above your game average of 45. Your last 15 minutes on the pitch ran at <b>37 m/min</b> against 53 in your first 15 &mdash; 30% down.</div>
+    <div class="picks one"><label><span>Show</span><select id="tlsel">
+      <option value="mpm">Work rate (metres per minute)</option>
+      <option value="hsr">Fast running (metres per minute at 15+ km/h)</option>
+      <option value="hr">Heart rate (bpm)</option>
+    </select></label></div>
+    <canvas id="tl" class="hover" width="1200" height="520"></canvas>
+    <div class="legend" id="tllegend"></div>
+    <div class="h2row" style="margin-top:18px"><h2>Adding up over the game</h2><span class="h2sub">running total across the match</span></div>
+    <div class="picks one"><label><span>Show</span><select id="tlcum">
+      <option value="mpm">Distance (metres)</option>
+      <option value="hsr">Fast-running metres (15+ km/h)</option>
+      <option value="spr">Sprint efforts</option>
+    </select></label></div>
+    <canvas id="tlc" class="hover" width="1200" height="400"></canvas>
+    <div class="legend" id="tlclegend"></div>
+    <div class="qnote">Pick one measure from the drop-down; hover or tap any minute for its number. The four quarters are drawn the same width whatever they ran to on the clock, with the minutes of each quarter along the bottom; the quarter breaks and halftime sit on the dividers, and a grey band means you were not playing (bench or a stoppage). The line is that measure averaged over the previous five minutes you were on, so it shows the trend rather than every twitch; the orange block is your busiest five. A late drop can be pacing or a quiet spell in the game as much as tired legs &mdash; the chart knows when, you know why.</div>
+  </div>
+
+  <details class="coach">
+  <summary><span class="ctag">Coach's data</span> the load numbers I use to build your week &mdash; nothing here needs a decision from you</summary>
+
+  <div class="board">
+    <h2>Physical output</h2>
+    <div class="headline">You covered <b>45 metres per minute</b> on the pitch.</div>
+    <div class="tiles tiles-in"><div class="tile"><div class="lbl">Sprint rate</div><div class="val">0.1</div><div class="sub">sprint efforts per 10 min on pitch</div></div><div class="tile"><div class="lbl">Near top speed</div><div class="val"><span class="na">not measurable</span></div><div class="sub">no flat-out reference on file for this player</div></div><div class="tile"><div class="lbl">Accelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">3s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div><div class="tile"><div class="lbl">Decelerations</div><div class="val"><span class="na">not measurable</span></div><div class="sub">3s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated</div></div><div class="tile"><div class="lbl">Busiest 5 min</div><div class="val">60 <span class='unit'>m/min</span></div><div class="sub">Q1, minutes 7&ndash;11; game average 45</div></div></div>
+    <div class="qnote"><b>The acceleration counts are deliberately blank for this game, not zero.</b> The watch stored 3s sampling of an exported file with no distance channel — distance, work rate, speed bands and sprint counts are all understated, and at that spacing a real hard burst is averaged away before it reaches the file &mdash; the same 17 minutes measured every second showed 43 accelerations and, sampled every 2 seconds, showed 6. A number here would describe the watch's recording setting, not the game. Everything else on this page is unaffected.</div>
+  </div>
+
+  <div class="board">
+    <h2>Speed bands by quarter</h2>
+    <div class="headline"><b>52 of your 3,400 metres</b> (2%) were run above 15 km/h &mdash; the part of the distance that actually costs you.</div>
+    <div class="tscroll"><table>
+      <tr><th>Speed band</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Whole game</th><th>Share</th></tr>
+      <tr><td>Walking (under 6 km/h)</td><td>695m</td><td>645m</td><td>659m</td><td>690m</td><td>2,689m</td><td>79%</td></tr><tr><td>Jogging (6&ndash;11 km/h)</td><td>139m</td><td>179m</td><td>115m</td><td>112m</td><td>545m</td><td>16%</td></tr><tr><td>Running (11&ndash;15 km/h)</td><td>52m</td><td>18m</td><td>25m</td><td>19m</td><td>114m</td><td>3%</td></tr><tr style="font-weight:650"><td>Fast running (15&ndash;20 km/h)</td><td>12m</td><td>0m</td><td>19m</td><td>16m</td><td>47m</td><td>1%</td></tr><tr style="font-weight:650"><td>Sprinting (20 km/h and up)</td><td>0m</td><td>0m</td><td>5m</td><td>0m</td><td>5m</td><td>0%</td></tr>
+    </table></div>
+    <div class="qnote">Every figure is metres covered while travelling in that speed range, so the five rows add up to the game's total distance. Walking and jogging are the bulk of any hockey game &mdash; the two bottom rows are the ones that cost you.</div>
+  </div>
+
+  <div class="board">
+    <h2>Repeat sprints &amp; training load</h2>
+    <div class="headline">Your 1 sprint were spread out &mdash; none came within a minute of another.</div>
+    <div class="split">
+      <div>
+        <div class="sublbl">Repeat-sprint profile</div>
+        <div class="kv"><div class="r"><span class="k">Sprint efforts</span><span class="v">1</span></div><div class="r"><span class="k">Back-to-back clusters</span><span class="v">0</span></div><div class="r"><span class="k">Sprints inside a cluster</span><span class="v">0</span></div><div class="r"><span class="k">Longest cluster</span><span class="v">&mdash;</span></div><div class="r"><span class="k">Typical recovery (median)</span><span class="v">&mdash;</span></div><div class="r"><span class="k">Tightest turnaround</span><span class="v">&mdash;</span></div></div>
+        <div class="qnote">A <b>cluster</b> is two or more sprints with less than 60 seconds of recovery between them &mdash; the pattern that empties the legs fastest. Recovery time spent on the bench or at a break is not counted as recovery between sprints.</div>
+      </div>
+      <div>
+        <div class="sublbl">Training load, the 7 days up to this game</div>
+        <div class="kv"><div class="r"><span class="k">Training load</span><span class="v"><span class="na">not requested</span></span></div></div>
+        <div class="qnote">Load here is total training minutes, compared with the average week over the previous four weeks. Under 0.8 = detraining, 0.8&ndash;1.3 = safe, above 1.3 = injury risk.</div>
+      </div>
+    </div>
+  </div>
+
+  </details>
+
+  <div class="board">
+    <h2>Heart-rate zones (minutes)</h2>
+    <div class="zbar"><div style="flex:1;opacity:0.18"></div><div style="flex:42;opacity:0.35"></div><div style="flex:33;opacity:0.55"></div><div style="flex:0.01;opacity:0.78"></div><div style="flex:0.01;opacity:1"></div></div>
+    <div class="zl"><span>Z1 1m</span><span>Z2 42m</span><span>Z3 33m</span><span>Z4 0m</span><span>Z5 0m</span></div>
+  </div>
+
+  <div class="board doing">
+    <h2>What to do with this</h2>
+    <div class="takeaway"><div class="tnum">1</div><div class="tbody"><div class="lead">You covered 45 m/min on the pitch.</div><div class="why">1 sprints in 76 minutes. No measured norm for &ldquo;right back&rdquo; yet &mdash; a couple more games in this role and there will be one to judge it against.</div></div></div><div class="takeaway"><div class="tnum">2</div><div class="tbody"><div class="lead">Top speed <b>22.8 km/h</b> &mdash; no flat-out reference on file for this player.</div><div class="why">The warm-up read on these pages compares a game's top speed with the player's own measured maximum. None has been measured for this player, so the speed is reported as-is rather than as a share of someone else's best. A track max, once measured, goes in as <code>--track-max</code>.</div></div></div><div class="takeaway"><div class="tnum">3</div><div class="tbody"><div class="lead">Your sprints were spread out, not bunched.</div><div class="why">All 1 sat more than a minute apart, typically &mdash;. That is the pattern of picking your moments rather than chasing &mdash; the legs stay available for the last quarter.</div></div></div>
+  </div>
+
+  <div class="board">
+    <div class="h2row"><h2>Share it</h2><span class="h2sub">two cards &mdash; your numbers, and the map</span></div>
+    <div class="share">
+      <div class="preview"><canvas id="share" width="1080" height="1920"></canvas></div>
+      <div>
+        <div class="sharelbl">Card 1 &middot; your three numbers</div>
+        <div class="how">Pick the <b>three numbers</b> you want on the card &mdash; the first is the big one.</div>
+        <div class="picks">
+          <label><span>1st (big)</span><select id="s1"></select></label>
+          <label><span>2nd</span><select id="s2"></select></label>
+          <label><span>3rd</span><select id="s3"></select></label>
+        </div>
+        <div class="btns"><button class="btn" id="dl">Download as image</button></div>
+        <div class="fmt">Saves a 1080 &times; 1920 image &mdash; sized for a phone story, and it posts fine anywhere else. On a phone the button opens the share sheet directly. A plain screenshot of the card also works.</div>
+      </div>
+    </div>
+    <div class="share share2">
+      <div class="preview"><canvas id="share2" width="1080" height="1920"></canvas></div>
+      <div>
+        <div class="sharelbl">Card 2 &middot; the heat map, upright</div>
+        <div class="how">Just the pitch, turned upright so it fills a phone screen, with the <b>share of time in each zone</b> printed on it. No stats &mdash; it reads on its own.</div>
+        <div class="btns"><button class="btn ghost" id="dl2">Download heat map</button></div>
+        <div class="fmt">Same 1080 &times; 1920 size as card 1. The zone percentages are the share of your time on the pitch, so the twelve of them add up to 100%.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="board">
+    <h2>Game notes</h2>
+    <div class="notes">Report on Colin&#x27;s clock (KS&#x27;s first GPS fix ~1s before push-back). 3s smart-recording GPX, so distance, work rate, sprints and clusters are UNDERSTATED - do not compare these with Colin&#x27;s 1 Hz page. Played the whole game, no sub spells; the only stops are the three breaks. Season final.</div>
+  </div>
+
+  <p class="foot">Heat map: moving time only, both halves rotated onto one attacking direction, wrist GPS at 3s sampling of an exported file with no distance channel — shapes honest, edges approximate. Orientation assumes more time spent defending than attacking (dense end = own goal). HR from wrist optical: treat in-game values as a trend, not gospel. Pitch frame: surveyed Sengkang Hockey Stadium Pitch 1 corners. halftime 38-44 min + quarter breaks excluded from maps and stats.</p>
+</div>
+<script>
+const DATA = {"grid": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 1, 4, 2, 0, 0, 1, 2, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 3, 1, 3, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 1, 0, 3, 3, 1, 4, 2, 4, 4, 3, 2, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 3, 1, 4, 5, 5, 8, 5, 3, 2, 2, 1, 0, 3, 0, 3, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 4, 4, 10, 6, 3, 7, 6, 2, 2, 3, 0, 1, 2, 7, 4, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 2, 4, 5, 1, 2, 4, 3, 2, 5, 3, 3, 1, 8, 3, 2, 0, 3], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 6, 2, 1, 1, 2, 3, 4, 3, 4, 4, 6, 2, 5, 9, 5, 3, 2, 7, 1, 2, 4], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 0, 2, 5, 3, 5, 2, 6, 5, 3, 6, 3, 6, 5, 3, 5, 2, 5, 1, 2, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 3, 3, 2, 2, 2, 3, 5, 4, 7, 3, 5, 4, 5, 3, 5, 9, 10, 10, 7, 3, 4, 3, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 3, 3, 1, 3, 3, 3, 2, 2, 4, 4, 7, 4, 2, 11, 14, 10, 12, 8, 6, 9, 7, 3, 2, 2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 4, 4, 2, 2, 0, 5, 2, 7, 1, 4, 2, 4, 3, 11, 10, 6, 10, 6, 3, 5, 8, 6, 4], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0, 0, 1, 4, 3, 1, 3, 4, 1, 1, 0, 1, 0, 4, 13, 10, 6, 15, 8, 4, 5, 7, 6, 5, 7], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 5, 1, 1, 0, 1, 2, 2, 8, 7, 12, 11, 11, 5, 3, 9, 2, 4, 5], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 5, 2, 1, 2, 3, 3, 2, 2, 8, 9, 13, 5, 5, 6, 16, 9, 8, 8, 12, 6, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1, 2, 2, 0, 0, 1, 1, 11, 6, 8, 2, 7, 6, 6, 13, 3, 20, 15, 5, 5], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 2, 1, 1, 3, 6, 3, 1, 4, 8, 5, 8, 10, 2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 2, 0, 0, 3, 2, 3, 1, 3, 2, 0, 4, 4], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 1, 0, 0, 1, 0, 0, 0, 2, 2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 0, 0, 2, 2, 1, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 0, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], "nx": 46, "ny": 28, "total": 1309, "qgrids": [[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1, 3, 1, 1, 1, 0, 2, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 3, 2, 1, 1, 0, 1, 2, 1, 0, 2, 0, 3, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 1, 2, 3, 1, 0, 0, 1, 1, 2, 0, 0, 1, 5, 3, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 0, 0, 2, 0, 0, 3, 0, 1, 0, 2, 0, 2, 0, 2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 1, 0, 2, 1, 0, 3, 3, 0, 4, 5, 2, 1, 2, 3, 0, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 3, 2, 3, 2, 2, 2, 2, 4, 1, 1, 2, 0, 1, 1, 2, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 4, 3, 3, 1, 1, 0, 2, 0, 2, 4, 1, 0, 3, 1, 2, 3, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 2, 2, 0, 4, 0, 0, 2, 3, 1, 0, 1, 2, 1, 2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 3, 0, 0, 1, 0, 0, 2, 3, 1, 4, 1, 1, 1, 0, 2, 2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 2, 1, 0, 0, 1, 0, 1, 6, 3, 0, 3, 2, 0, 1, 1, 0, 0, 2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 2, 2, 2, 1, 0, 1, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 2, 5, 1, 1, 1, 5, 2, 1, 0, 3, 5, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 2, 0, 1, 0, 1, 2, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 5, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 3, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 5, 4, 1, 1, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 1, 1, 0, 4, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 2, 1, 0, 0, 0, 1, 2, 0, 2, 0, 2, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 2, 0, 0, 0, 0, 0, 3, 0, 1, 1, 2, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 1, 3, 2, 1, 3, 2, 2, 1, 3, 7, 3, 1, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 1, 1, 3, 4, 3, 2, 2, 3, 7, 4, 7, 1, 2, 3, 3, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 3, 0, 1, 0, 3, 1, 6, 5, 1, 2, 2, 0, 1, 3, 4, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 1, 5, 1, 1, 3, 3, 5, 3, 3], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 3, 2, 4, 2, 4, 3, 1, 3, 1, 3, 5], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 1, 1, 1, 0, 3, 3, 2, 3, 7, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 0, 0, 0, 0, 0, 6, 1, 6, 7, 2, 2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 3, 2, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 5, 4, 2, 1, 0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 7, 3, 1, 1, 2, 0, 0, 0, 0, 0, 0, 2, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 2, 3, 1, 0, 1, 0, 0, 2, 2, 1, 1, 2, 2, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 1, 2, 2, 0, 3, 0, 3, 1, 0, 0, 3, 0, 0, 2, 1, 1, 3], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 2, 1, 3, 1, 0, 0, 2, 1, 1, 2, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 3, 1, 1, 1, 0, 1, 1, 3, 2, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 1, 1, 1, 0, 1, 0, 0, 2, 0, 0, 2, 4, 0, 3, 3, 0, 1, 3, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 1, 0, 1, 1, 1, 1, 3, 1, 0, 2, 1, 2, 0, 0, 1, 0, 1, 3, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 0, 1, 4, 2, 0, 0, 0, 2, 0, 1, 2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 3, 0, 1, 0, 1, 0, 1, 2, 1, 2, 4, 3, 1, 1, 4, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1, 0, 2, 1, 1, 0, 1, 1, 2, 2, 2, 1, 4, 6, 2, 1, 3, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 2, 0, 0, 0, 1, 5, 4, 4, 1, 7, 3, 3, 5, 2, 9, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 2, 0, 1, 3, 3, 2, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 2, 1, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 3, 3, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 4, 1, 1, 1, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 3, 0, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 3, 6, 0, 1, 3, 5, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 2, 0, 4, 4, 2, 2, 2, 2, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 4, 3, 1, 5, 5, 3, 1, 1, 1, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 3, 4, 3, 2, 0, 1, 1, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 1, 0, 2, 1, 1, 1, 6, 2, 5, 1, 2, 1, 2, 2, 4, 2, 1, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 2, 1, 0, 1, 3, 1, 0, 4, 6, 2, 2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 2, 1, 1, 2, 2, 0, 1, 1, 3, 0, 3, 3, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 2, 0, 0, 1, 0, 3, 1, 2, 1, 0, 4, 3], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 1, 0, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 0, 0, 2, 2, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 0, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]], "slider": {"labels": ["Q1 \u00b7 minute 1", "Q1 \u00b7 minute 2", "Q1 \u00b7 minute 3", "Q1 \u00b7 minute 4", "Q1 \u00b7 minute 5", "Q1 \u00b7 minute 6", "Q1 \u00b7 minute 7", "Q1 \u00b7 minute 8", "Q1 \u00b7 minute 9", "Q1 \u00b7 minute 10", "Q1 \u00b7 minute 11", "Q1 \u00b7 minute 12", "Q1 \u00b7 minute 13", "Q1 \u00b7 minute 14", "Q1 \u00b7 minute 15", "Q1 \u00b7 minute 16", "Q1 \u00b7 minute 17", "Q1 \u00b7 minute 18", "Q2 \u00b7 minute 1", "Q2 \u00b7 minute 2", "Q2 \u00b7 minute 3", "Q2 \u00b7 minute 4", "Q2 \u00b7 minute 5", "Q2 \u00b7 minute 6", "Q2 \u00b7 minute 7", "Q2 \u00b7 minute 8", "Q2 \u00b7 minute 9", "Q2 \u00b7 minute 10", "Q2 \u00b7 minute 11", "Q2 \u00b7 minute 12", "Q2 \u00b7 minute 13", "Q2 \u00b7 minute 14", "Q2 \u00b7 minute 15", "Q2 \u00b7 minute 16", "Q2 \u00b7 minute 17", "Q2 \u00b7 minute 18", "Q3 \u00b7 minute 1", "Q3 \u00b7 minute 2", "Q3 \u00b7 minute 3", "Q3 \u00b7 minute 4", "Q3 \u00b7 minute 5", "Q3 \u00b7 minute 6", "Q3 \u00b7 minute 7", "Q3 \u00b7 minute 8", "Q3 \u00b7 minute 9", "Q3 \u00b7 minute 10", "Q3 \u00b7 minute 11", "Q3 \u00b7 minute 12", "Q3 \u00b7 minute 13", "Q3 \u00b7 minute 14", "Q3 \u00b7 minute 15", "Q3 \u00b7 minute 16", "Q3 \u00b7 minute 17", "Q3 \u00b7 minute 18", "Q3 \u00b7 minute 19", "Q4 \u00b7 minute 1", "Q4 \u00b7 minute 2", "Q4 \u00b7 minute 3", "Q4 \u00b7 minute 4", "Q4 \u00b7 minute 5", "Q4 \u00b7 minute 6", "Q4 \u00b7 minute 7", "Q4 \u00b7 minute 8", "Q4 \u00b7 minute 9", "Q4 \u00b7 minute 10", "Q4 \u00b7 minute 11", "Q4 \u00b7 minute 12", "Q4 \u00b7 minute 13", "Q4 \u00b7 minute 14", "Q4 \u00b7 minute 15", "Q4 \u00b7 minute 16", "Q4 \u00b7 minute 17", "Q4 \u00b7 minute 18", "Q4 \u00b7 minute 19", "Q4 \u00b7 minute 20", "Q4 \u00b7 minute 21", "Q4 \u00b7 minute 22"], "cells": [[[215, 1], [216, 2], [217, 1], [260, 1], [264, 1], [307, 1], [310, 1], [353, 1], [354, 1], [355, 1], [356, 1], [402, 1], [449, 2], [496, 2], [541, 4]], [[131, 2], [132, 1], [177, 1], [179, 1], [223, 1], [226, 1], [227, 2], [314, 1], [318, 1], [357, 1], [358, 1], [359, 1], [361, 1], [364, 1], [410, 2], [411, 3], [412, 1], [457, 2]], [[31, 1], [123, 1], [125, 1], [218, 1], [261, 1], [305, 1], [313, 1], [350, 1], [440, 1], [484, 1], [523, 1], [571, 1], [574, 1]], [[349, 1], [392, 1], [394, 1], [396, 4], [397, 2], [398, 2], [434, 1], [436, 1], [478, 1], [488, 1], [523, 1], [534, 1], [580, 1], [581, 1], [628, 1], [629, 1]], [[313, 1], [358, 1], [408, 1], [449, 1], [456, 1], [458, 1], [459, 1], [499, 2], [502, 1], [504, 2], [505, 1], [541, 1], [551, 1], [591, 1], [632, 1], [638, 1], [639, 1], [677, 1]], [[544, 2], [545, 2], [638, 1], [684, 1], [731, 2], [734, 1], [777, 1], [778, 1]], [[360, 1], [406, 1], [453, 1], [454, 1], [501, 1], [548, 1], [689, 1], [734, 1], [873, 1]], [[175, 1], [176, 2], [222, 1], [223, 1], [269, 1], [311, 1], [313, 1], [314, 2], [315, 1], [349, 1], [351, 1], [352, 1], [353, 1], [355, 1], [357, 1], [358, 1], [404, 1], [405, 2], [452, 1], [498, 1]], [[31, 1], [35, 1], [123, 1], [129, 1], [170, 2], [171, 1], [172, 1], [217, 1], [221, 1], [267, 1], [311, 1], [400, 1], [440, 1], [485, 1], [489, 1], [490, 1], [531, 1], [533, 1], [534, 1], [535, 1]], [[171, 1], [217, 1], [311, 1], [316, 1], [361, 1], [404, 1], [453, 1], [499, 2], [547, 1], [592, 1], [594, 1], [641, 2], [642, 5], [686, 1], [687, 1], [688, 1]], [[264, 1], [310, 2], [317, 2], [356, 1], [358, 1], [363, 1], [402, 1], [405, 1], [408, 2], [449, 1], [452, 1], [453, 1], [542, 1], [589, 1], [682, 1]], [[348, 1], [349, 1], [350, 1], [397, 1], [398, 1], [446, 1], [538, 1], [633, 1]], [[82, 1], [83, 1], [84, 1], [124, 2], [126, 2], [127, 1], [128, 1], [169, 1], [261, 1], [301, 2], [302, 1], [307, 1], [350, 1], [351, 1], [352, 1], [353, 1]], [[39, 1], [83, 1], [126, 1], [166, 1], [167, 1], [170, 1], [173, 1], [212, 1], [214, 3], [258, 1], [259, 1], [260, 1], [308, 1], [351, 1], [399, 1], [444, 1], [490, 2]], [[86, 1], [132, 1], [179, 1], [271, 1], [275, 2], [318, 1], [320, 1], [321, 1], [365, 2], [366, 1], [367, 1], [459, 1], [505, 1], [551, 1], [596, 1], [641, 1], [682, 1], [687, 1], [730, 1], [732, 1], [734, 3]], [[181, 3], [182, 1], [183, 1], [227, 3], [228, 3], [273, 2], [318, 1], [409, 1], [500, 1], [541, 1], [587, 1], [589, 1], [591, 1], [633, 3], [634, 1], [635, 1], [679, 2]], [[267, 2], [271, 1], [313, 1], [314, 2], [315, 1], [405, 1], [497, 3], [542, 2], [544, 1], [588, 1], [590, 2], [633, 1], [636, 1], [637, 5]], [[354, 1], [446, 1], [447, 2], [493, 1], [540, 1], [585, 1], [632, 1]], [[402, 1], [494, 1], [503, 1], [587, 1], [594, 1], [595, 1], [596, 1], [634, 1], [641, 2], [687, 2], [688, 2], [728, 1], [730, 1], [732, 1], [733, 1]], [[218, 1], [219, 1], [220, 1], [221, 1], [263, 1], [268, 1], [308, 1], [316, 1], [353, 1], [362, 1], [363, 1], [398, 1], [444, 1], [445, 1], [455, 1], [494, 1], [497, 1], [542, 1], [544, 1]], [[541, 2], [542, 1], [549, 2], [587, 2], [588, 1], [589, 2], [590, 1], [593, 1], [594, 1], [637, 2], [684, 6]], [[550, 2], [588, 1], [589, 1], [596, 2], [632, 1], [637, 1], [639, 1], [640, 1], [641, 3], [686, 3], [687, 4], [733, 2]], [[219, 1], [265, 1], [359, 1], [451, 1], [452, 2], [496, 3], [541, 1], [586, 1], [631, 1], [632, 2], [677, 4], [678, 2]], [[219, 3], [264, 1], [308, 1], [353, 1], [398, 2], [400, 1], [401, 1], [403, 1], [404, 1], [405, 1], [406, 1], [407, 1], [456, 1], [457, 1], [504, 1], [505, 1]], [[406, 3], [407, 1], [409, 1], [454, 1], [549, 1], [551, 2], [597, 4], [641, 1], [643, 1], [689, 1], [734, 1], [735, 1], [781, 1], [826, 1], [827, 1]], [[222, 1], [223, 1], [225, 1], [266, 1], [271, 1], [272, 1], [318, 2], [359, 1], [363, 1], [402, 1], [403, 1], [405, 1], [450, 1], [455, 1], [494, 1], [542, 1], [548, 1], [590, 1], [591, 1], [638, 1]], [[301, 1], [304, 1], [346, 1], [349, 1], [395, 2], [442, 1], [444, 1], [447, 1], [449, 1], [497, 1], [544, 1], [592, 1], [639, 1]], [[394, 1], [397, 1], [446, 1], [448, 1], [450, 2], [452, 2], [453, 1], [496, 1], [497, 1], [500, 2], [547, 1], [640, 1], [734, 1]], [[450, 1], [451, 2], [452, 1], [497, 1], [498, 1], [499, 1], [543, 1], [544, 1], [545, 1], [547, 1], [589, 1], [591, 1], [592, 2], [633, 1], [635, 1], [641, 1], [689, 1]], [[43, 1], [85, 1], [86, 1], [91, 1], [126, 1], [129, 2], [130, 1], [171, 1], [263, 1], [309, 1], [401, 1], [445, 2], [446, 1], [447, 1], [492, 1], [585, 1]], [[121, 1], [123, 1], [124, 1], [167, 2], [168, 1], [169, 3], [172, 1], [174, 1], [213, 1], [214, 1], [215, 1], [216, 1], [220, 3], [306, 1], [399, 1], [445, 1], [446, 1], [448, 1]], [[455, 1], [456, 2], [496, 1], [502, 1], [504, 3], [546, 1], [547, 1], [548, 2], [549, 2], [550, 1], [591, 1], [594, 1], [638, 2], [640, 1], [685, 1], [686, 3], [687, 1]], [[269, 1], [271, 3], [313, 1], [314, 2], [316, 1], [359, 1], [361, 1], [405, 1], [406, 1], [407, 1], [408, 1], [452, 1], [499, 1], [503, 1], [544, 2], [591, 1], [597, 1]], [[406, 2], [449, 1], [450, 1], [451, 1], [452, 1], [454, 1], [495, 1], [496, 1], [497, 1], [503, 1], [551, 1]], [[351, 1], [396, 1], [399, 1], [401, 1], [441, 1], [449, 1], [450, 2], [488, 1], [490, 3]], [[344, 1], [434, 1], [441, 1], [443, 1], [444, 1], [480, 1], [485, 1], [486, 1], [526, 1], [529, 1], [573, 1]], [[172, 3], [173, 1], [216, 3], [217, 1], [218, 1], [219, 1], [220, 1], [261, 2], [262, 1], [264, 1], [307, 1], [309, 2], [354, 1], [400, 1], [493, 1]], [[216, 1], [260, 1], [261, 1], [305, 1], [349, 1], [393, 1], [438, 1], [484, 1], [492, 1], [495, 1], [497, 1], [530, 1], [544, 1], [577, 1], [580, 1], [591, 1], [623, 1], [624, 1], [637, 1], [683, 1]], [[639, 1], [640, 2], [682, 2], [683, 1], [684, 1], [685, 1], [686, 4]], [[39, 3], [84, 1], [90, 1], [128, 1], [129, 1], [173, 1], [174, 1], [179, 1], [361, 1], [544, 1], [637, 1], [683, 1], [684, 1]], [[83, 1], [84, 1], [128, 1], [130, 2], [171, 2], [172, 2], [173, 1], [174, 1], [175, 1], [215, 1], [258, 1], [301, 1], [302, 1], [348, 1]], [[254, 1], [259, 1], [260, 1], [301, 1], [306, 1], [307, 1], [346, 1], [354, 1], [393, 1], [400, 1], [440, 1], [446, 2], [488, 1], [489, 1], [490, 1], [492, 2], [540, 1], [636, 1], [684, 1]], [[632, 1], [634, 1], [637, 1], [679, 2], [685, 1], [686, 3], [732, 1], [733, 2]], [[542, 1], [543, 1], [587, 1], [590, 2], [591, 2], [593, 1], [594, 1], [637, 1], [638, 2], [641, 1], [686, 2], [731, 3], [732, 2]], [[543, 2], [548, 1], [589, 1], [590, 1], [592, 1], [594, 3], [636, 2], [637, 1], [640, 1], [728, 1], [774, 1]], [[315, 1], [360, 1], [362, 1], [450, 1], [453, 1], [540, 1], [580, 1], [584, 1], [590, 1], [626, 1], [627, 1], [628, 1], [681, 1], [727, 1], [773, 2], [774, 1], [819, 1]], [[227, 2], [228, 1], [267, 2], [268, 1], [269, 1], [270, 1], [271, 2], [272, 2], [275, 1], [311, 3], [312, 1], [315, 1], [318, 2], [319, 1], [320, 1], [321, 3], [357, 1], [403, 1], [491, 1]], [[355, 1], [356, 1], [398, 1], [400, 1], [439, 1], [441, 1], [443, 1], [483, 1], [484, 1], [530, 2], [531, 2], [532, 1], [533, 1], [579, 1], [622, 1], [623, 1], [626, 1], [667, 1], [671, 2], [672, 2]], [[436, 2], [483, 2], [484, 1], [486, 1], [530, 1], [533, 1], [576, 1], [580, 1], [582, 1], [622, 1], [630, 1], [633, 1], [667, 1], [677, 1]], [[401, 1], [402, 1], [450, 2], [543, 1], [589, 1], [633, 1], [634, 1], [636, 1], [680, 1], [681, 6], [682, 1], [727, 2], [728, 1]], [[215, 1], [216, 2], [217, 2], [306, 1], [309, 1], [353, 1], [356, 1], [363, 2], [407, 2], [408, 1], [410, 1], [449, 1], [452, 2], [453, 1], [456, 1], [496, 1], [497, 1]], [[360, 1], [405, 1], [406, 1], [407, 1], [456, 2], [495, 1], [502, 1], [503, 2], [586, 1], [631, 1], [676, 1], [677, 4]], [[635, 1], [637, 1], [678, 2], [679, 2], [684, 2], [726, 1], [727, 1], [730, 1]], [[170, 2], [173, 1], [216, 1], [220, 1], [268, 1], [315, 1], [356, 1], [408, 1], [449, 1], [455, 1], [503, 1], [550, 1], [551, 2], [587, 1], [588, 1], [632, 1], [678, 2]], [[450, 1], [452, 1], [453, 1], [500, 1], [548, 1]], [[450, 3], [494, 1], [496, 2], [499, 1], [500, 1], [502, 2], [503, 1], [540, 1], [541, 3], [542, 3], [543, 1], [549, 1], [587, 2], [595, 1], [641, 1], [687, 1], [734, 1], [735, 1]], [[826, 1], [827, 1], [869, 1], [870, 1], [914, 3], [915, 1]], [[407, 2], [409, 1], [410, 1], [413, 1], [454, 2], [455, 2], [458, 1], [499, 1], [501, 1], [544, 2], [545, 1], [589, 2], [590, 1], [593, 1], [639, 1], [731, 1], [777, 1]], [[545, 1], [550, 1], [683, 1], [689, 1], [729, 1], [775, 1], [776, 1], [778, 1], [780, 1], [781, 1]], [[265, 2], [310, 1], [312, 1], [314, 1], [356, 1], [361, 1], [449, 1], [453, 1], [541, 1], [545, 1], [546, 2], [547, 1], [588, 2], [589, 1], [591, 1]], [[299, 1], [301, 1], [303, 1], [351, 1], [354, 1], [390, 2], [437, 2], [449, 1]], [[345, 1], [388, 1], [389, 1], [391, 1], [392, 1], [434, 2], [437, 1], [439, 2], [481, 1], [482, 1], [483, 1]], [[69, 1], [70, 1], [71, 1], [117, 1], [162, 1], [163, 1], [206, 1], [207, 1], [250, 2], [296, 1], [343, 1], [390, 1], [391, 2]], [[22, 3], [68, 1], [69, 1], [115, 3], [254, 1], [395, 1], [536, 1], [589, 1], [591, 1], [631, 1], [633, 1], [634, 1], [638, 1], [639, 1], [686, 1]], [[590, 1], [636, 1], [637, 1], [638, 1], [639, 2], [683, 1], [686, 1], [687, 1], [688, 1], [730, 1], [731, 1], [733, 1]], [[640, 2], [686, 1], [687, 2], [733, 1], [734, 2], [781, 2]], [[725, 1], [726, 1], [727, 1], [775, 1], [822, 1], [869, 1], [870, 1], [871, 1], [916, 2], [918, 1], [919, 1]], [[544, 1], [545, 1], [590, 1], [631, 4], [632, 1], [633, 2], [635, 2], [637, 1], [684, 1], [727, 1], [731, 1], [775, 1], [777, 1]], [[358, 2], [359, 1], [404, 2], [405, 1], [406, 1], [451, 6], [498, 4]], [[38, 1], [40, 2], [44, 2], [86, 1], [88, 1], [226, 1], [407, 1], [408, 1], [455, 1], [499, 2], [500, 1], [501, 1], [544, 1], [545, 1]], [[83, 1], [127, 1], [128, 1], [172, 1], [219, 1], [266, 1], [314, 1], [407, 1], [454, 1], [455, 2], [548, 1], [594, 1], [642, 1], [687, 1], [688, 1], [733, 1], [780, 3]], [[488, 1], [534, 1], [580, 1], [629, 1], [677, 1], [679, 1], [680, 1], [682, 1], [683, 1], [686, 1], [687, 1]], [[442, 1], [488, 1], [534, 1], [627, 1], [675, 1], [723, 1], [768, 2], [769, 1], [770, 2], [817, 1], [818, 1], [865, 2]], [[726, 1], [773, 1], [818, 2], [866, 4]], [[623, 1], [625, 1], [627, 1], [628, 1], [630, 1], [631, 1], [632, 1], [633, 1]], [[503, 1], [505, 1], [544, 1], [546, 1], [588, 1], [623, 2], [624, 1], [633, 1], [670, 1], [679, 1], [716, 1], [717, 1], [718, 1], [723, 1], [724, 1], [766, 1]], [[689, 1]]], "thirds": [[0, 0, 21], [0, 0, 24], [0, 7, 6], [0, 20, 1], [0, 0, 20], [0, 0, 11], [0, 0, 9], [0, 3, 20], [0, 8, 13], [0, 0, 22], [0, 0, 18], [0, 5, 3], [0, 6, 13], [0, 12, 8], [0, 0, 25], [0, 0, 27], [0, 0, 24], [0, 0, 8], [0, 0, 18], [0, 2, 17], [0, 0, 21], [0, 0, 22], [0, 0, 20], [0, 0, 19], [0, 0, 21], [0, 0, 21], [0, 7, 7], [0, 2, 14], [0, 0, 19], [0, 0, 18], [0, 6, 17], [0, 0, 25], [0, 0, 21], [0, 0, 12], [0, 5, 7], [0, 11, 0], [0, 0, 21], [0, 11, 9], [0, 0, 12], [0, 0, 15], [0, 4, 13], [0, 10, 11], [0, 0, 12], [0, 0, 20], [0, 0, 15], [0, 3, 15], [0, 0, 28], [0, 20, 4], [0, 13, 3], [0, 0, 20], [0, 1, 21], [0, 0, 17], [0, 0, 11], [0, 0, 20], [0, 0, 5], [0, 0, 27], [0, 0, 8], [0, 0, 22], [0, 0, 10], [0, 0, 18], [0, 8, 2], [0, 13, 0], [0, 15, 0], [0, 10, 9], [0, 0, 13], [0, 0, 10], [0, 0, 12], [0, 0, 18], [0, 0, 17], [0, 0, 17], [0, 0, 20], [0, 3, 8], [0, 4, 11], [0, 0, 8], [0, 3, 5], [0, 7, 10], [0, 0, 1]], "bands": [[33.8, 5.3, 0.0, 0.0, 0.0], [44.6, 7.5, 0.0, 0.0, 0.0], [55.7, 4.9, 0.0, 0.0, 0.0], [49.0, 0.0, 0.0, 0.0, 0.0], [46.5, 4.7, 15.9, 0.0, 0.0], [30.4, 1.7, 0.0, 0.0, 0.0], [39.0, 22.7, 0.0, 0.0, 0.0], [46.8, 12.4, 2.1, 0.0, 0.0], [42.5, 22.4, 9.4, 0.0, 0.0], [33.6, 6.4, 10.5, 5.1, 0.0], [40.2, 9.6, 0.0, 0.0, 0.0], [24.9, 0.0, 0.0, 0.0, 0.0], [32.8, 9.3, 4.1, 0.0, 0.0], [35.4, 7.6, 10.0, 6.8, 0.0], [42.0, 14.7, 0.0, 0.0, 0.0], [41.0, 8.6, 0.0, 0.0, 0.0], [44.3, 1.6, 0.0, 0.0, 0.0], [12.9, 0.0, 0.0, 0.0, 0.0], [33.2, 19.6, 0.0, 0.0, 0.0], [50.8, 2.4, 0.0, 0.0, 0.0], [29.8, 0.0, 0.0, 0.0, 0.0], [39.8, 0.3, 0.0, 0.0, 0.0], [28.9, 3.3, 0.0, 0.0, 0.0], [45.0, 9.7, 4.6, 0.0, 0.0], [43.8, 1.9, 5.0, 0.0, 0.0], [49.6, 1.5, 0.0, 0.0, 0.0], [31.1, 15.7, 0.0, 0.0, 0.0], [30.2, 22.6, 0.0, 0.0, 0.0], [38.8, 12.9, 0.0, 0.0, 0.0], [32.7, 42.8, 2.9, 0.0, 0.0], [38.2, 8.7, 0.0, 0.0, 0.0], [32.6, 18.3, 0.0, 0.0, 0.0], [35.5, 12.5, 5.1, 0.0, 0.0], [29.2, 0.0, 0.0, 0.0, 0.0], [26.2, 3.0, 0.0, 0.0, 0.0], [30.0, 3.5, 0.0, 0.0, 0.0], [27.8, 9.3, 0.0, 0.0, 0.0], [56.0, 6.3, 0.0, 0.0, 0.0], [17.0, 0.0, 0.0, 0.0, 0.0], [38.5, 25.5, 8.3, 0.0, 0.0], [41.0, 3.1, 0.0, 0.0, 0.0], [41.1, 6.2, 13.9, 6.0, 0.0], [25.6, 3.8, 0.0, 0.0, 0.0], [27.5, 0.0, 0.0, 0.0, 0.0], [29.7, 0.0, 0.0, 0.0, 0.0], [59.6, 0.0, 1.2, 0.0, 0.0], [27.3, 14.0, 0.0, 12.6, 5.0], [48.3, 0.0, 0.0, 0.0, 0.0], [36.7, 5.4, 0.0, 0.0, 0.0], [32.6, 4.3, 0.0, 0.0, 0.0], [35.8, 9.1, 0.0, 0.0, 0.0], [33.5, 2.3, 0.0, 0.0, 0.0], [25.1, 4.0, 0.0, 0.0, 0.0], [45.6, 19.7, 2.0, 0.0, 0.0], [10.1, 2.4, 0.0, 0.0, 0.0], [39.6, 6.4, 2.9, 0.0, 0.0], [30.6, 0.7, 0.0, 0.0, 0.0], [36.5, 16.3, 0.0, 0.0, 0.0], [43.8, 1.5, 0.0, 0.0, 0.0], [42.7, 7.9, 0.0, 0.0, 0.0], [35.1, 0.0, 0.0, 0.0, 0.0], [26.6, 0.0, 0.0, 0.0, 0.0], [29.7, 0.0, 0.0, 0.0, 0.0], [33.9, 16.4, 1.4, 6.3, 0.0], [29.8, 2.3, 0.0, 0.0, 0.0], [15.6, 1.8, 0.0, 0.0, 0.0], [28.3, 3.7, 0.0, 0.0, 0.0], [35.0, 10.6, 0.0, 0.0, 0.0], [19.3, 0.0, 0.0, 0.0, 0.0], [41.3, 18.0, 0.0, 0.0, 0.0], [33.2, 15.1, 0.0, 0.0, 0.0], [35.7, 2.4, 0.0, 0.0, 0.0], [34.7, 5.9, 5.5, 0.0, 0.0], [18.2, 0.0, 0.0, 0.0, 0.0], [22.5, 0.0, 0.0, 0.0, 0.0], [31.1, 3.7, 9.1, 9.6, 0.0], [23.0, 0.0, 0.0, 0.0, 0.0]]}};
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+function gridMax(grid){ let m=0; for(const row of grid) for(const v of row) m=Math.max(m,v); return m; }
+// 12 zones = the four 23m quarters of the pitch x three lanes, in DISPLAY
+// orientation (own goal on the left, as drawn). Share of the grid's total, so on
+// a per-minute-normalised grid it is share of TIME. 46 columns / 4 = 11.5, so the
+// straddling column is split half-half; 28 rows -> lanes of 9/10/9.
+function zoneShares(grid, NX, NY){
+  const z = [[0,0,0,0],[0,0,0,0],[0,0,0,0]]; let tot = 0;
+  for(let j=0;j<NY;j++){
+    const lane = j < 9 ? 0 : (j < 19 ? 1 : 2);
+    for(let i=0;i<NX;i++){
+      const v = grid[NY-1-j][NX-1-i]; if(!v) continue;   // same 180° rotation as the heat (see drawMap)
+      tot += v;
+      const x0 = i/(NX/4), x1 = (i+1)/(NX/4);       // in zone-column units
+      const c0 = Math.floor(x0), c1 = Math.min(3, Math.floor(x1 - 1e-9));
+      if (c0 === c1) z[lane][c0] += v;
+      else { const f = (c1 - x0); z[lane][c0] += v*f; z[lane][c1] += v*(1-f); }
+    }
+  }
+  return { tot, pct: z.map(r => r.map(v => tot ? v/tot*100 : 0)) };
+}
+// Redraw everything registered here on resize, so line widths track the CSS size.
+window.__redraw = window.__redraw || [];
+let __rt; window.addEventListener('resize', () => { clearTimeout(__rt); __rt = setTimeout(() => window.__redraw.forEach(f => f()), 120); });
+// PORTRAIT on phones (6 Sep 2026). A landscape pitch on a 390px screen is about 207px
+// tall; turned upright it is ~573px — roughly three times the area, which is the whole
+// point. The pitch is drawn LANDSCAPE into an offscreen canvas and the finished bitmap
+// is turned a quarter turn, so every bit of geometry stays exactly as verified; only the
+// zone-share labels are drawn afterwards, upright, so they do not end up on their side.
+// Attack points UP the screen and own goal sits at the BOTTOM. The flank convention is
+// preserved: landscape bottom lane (the player's right when attacking rightward) maps to
+// the right-hand side of the portrait pitch.
+// PILOT, 6 Sep 2026: portrait is switched on per page by --portrait-maps, and only
+// game 6 vs Lodras has it, so Colin can compare it against the landscape pages before
+// it goes everywhere ("in case i prefer the landscape version"). false is the
+// literal true/false the builder writes in.
+const PORTRAIT_MAPS = false;
+const PORTRAIT_MAX_W = 620;
+const isPortrait = () => PORTRAIT_MAPS && window.matchMedia(`(max-width:${PORTRAIT_MAX_W}px)`).matches;
+
+function drawMap(cv, grid, mx, opts){
+  opts = opts || {};
+  if (opts.portrait){
+    const PW = cv.width, PH = cv.height;
+    const off = document.createElement('canvas');
+    off.width = PH; off.height = PW;                       // landscape twin
+    drawMap(off, grid, mx, Object.assign({}, opts, {
+      portrait: false, zoneLabels: false,
+      // the offscreen is not in the DOM, so it cannot measure itself: hand it the CSS
+      // length its WIDTH will occupy once rotated, which is the visible canvas's HEIGHT
+      cssW: cv.getBoundingClientRect().height || PH}));
+    const c = cv.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, PW, PH);
+    c.save(); c.translate(0, PH); c.rotate(-Math.PI/2); c.drawImage(off, 0, 0); c.restore();
+    if (opts.zones){
+      const kk = PH / (cv.getBoundingClientRect().height || PH);
+      const M = Math.round(PH*0.022);
+      // landscape (x,y) -> portrait (y, PH - x), the same map the rotation applies
+      drawZoneLabels(c, zoneShares(grid, DATA.nx, DATA.ny),
+                     {M: M, fw: PH-2*M, fh: PW-2*M}, kk, (x, y) => [y, PH - x]);
+    }
+    return;
+  }
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, NX = DATA.nx, NY = DATA.ny;
+  // bitmap px per CSS px — pitch lines are set in CSS px so a 150px-wide map
+  // still shows its 23m lines (they were 0.1px on the old 63px thumbnails)
+  const cssW = opts.cssW || cv.getBoundingClientRect().width || W, k = W / cssW;
+  const M = Math.round(W*0.022);
+  const fw = W-2*M, fh = H-2*M;
+  ctx.fillStyle = css('--pitch-edge'); ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = css('--pitch'); ctx.fillRect(M,M,fw,fh);
+  const g = document.createElement('canvas'); g.width = NX; g.height = NY;
+  const gx = g.getContext('2d'); const im = gx.createImageData(NX,NY);
+  for(let j=0;j<NY;j++) for(let i=0;i<NX;i++){
+    // 180° ROTATION of the stored grid, not a one-axis flip. The stored frame has the
+    // own goal at high x; to draw it on the LEFT we reverse x — but reversing ONE axis
+    // is a reflection, and until 6 Sep 2026 that is what this did: every map was a
+    // MIRROR image of the pitch (a right mid drew in the top lane, the east bench at the
+    // bottom; a true top-down view with own goal-north on the left puts east at the TOP).
+    // Colin caught it on G6: "its still showing me on the left". Reversing BOTH axes
+    // keeps handedness, so a player's right is the bottom lane when attacking rightward.
+    const v = grid[NY-1-j][NX-1-i]/mx;
+    const k = (j*NX+i)*4;
+    im.data[k]=255; im.data[k+1]=255; im.data[k+2]=255; im.data[k+3]=Math.round(255*Math.pow(Math.min(1,v),0.62));
+  }
+  gx.putImageData(im,0,0);
+  const up = document.createElement('canvas'); up.width = fw; up.height = fh;
+  const ux = up.getContext('2d'); ux.imageSmoothingEnabled = true; ux.imageSmoothingQuality = 'high';
+  ux.drawImage(g,0,0,fw,fh);
+  const pix = ux.getImageData(0,0,fw,fh);
+  // Two palettes. 'orange' = the original single hue (density -> alpha).
+  // 'jet' = the football-broadcast convention Colin asked to see (6 Sep 2026):
+  // blue (least time) -> green -> yellow -> orange -> red (most time), with the
+  // faintest cells fading out so the pitch stays readable. Stops in [0,1] of
+  // the normalised density; linear blend between neighbouring stops.
+  const JET = [[0.00,[ 40,110,220]],[0.25,[ 40,190,120]],[0.50,[235,215, 60]],[0.72,[240,140, 40]],[1.00,[225, 45, 35]]];
+  const jet = a => { let i=1; while(i<JET.length-1 && JET[i][0]<a) i++;
+    const [a0,c0]=JET[i-1],[a1,c1]=JET[i], f=Math.max(0,Math.min(1,(a-a0)/(a1-a0)));
+    return c0.map((v,k)=>Math.round(v+(c1[k]-v)*f)); };
+  for(let p=0;p<pix.data.length;p+=4){
+    const a = pix.data[p+3]/255;
+    if ((opts.palette || 'jet') === 'jet'){   // jet is the DEFAULT since 6 Sep 2026 (Colin approved it on the season map); pass palette:'orange' to opt out
+      const [r,g,b] = jet(a);
+      pix.data[p]=r; pix.data[p+1]=g; pix.data[p+2]=b;
+      pix.data[p+3] = Math.round(255*Math.min(0.94, a < 0.04 ? a*8 : 0.32 + a*0.68));
+    } else {
+      pix.data[p]   = Math.round(255 - 23*a);
+      pix.data[p+1] = Math.round(214 - 100*a);
+      pix.data[p+2] = Math.round(120 - 90*a);
+      pix.data[p+3] = Math.round(255*Math.min(0.92, a*1.15));
+    }
+  }
+  ux.putImageData(pix,0,0);
+  ctx.drawImage(up,M,M);
+  const sx = fw/91.4, sy = fh/55;
+  ctx.strokeStyle = css('--line'); ctx.lineWidth = Math.max(1, 1.2*k);
+  ctx.strokeRect(M,M,fw,fh);
+  [45.7,22.9,91.4-22.9].forEach(xm => { ctx.beginPath(); ctx.moveTo(M+xm*sx,M); ctx.lineTo(M+xm*sx,M+fh); ctx.stroke(); });
+  ctx.beginPath(); ctx.arc(M, M+fh/2, 14.63*sx, -Math.PI/2, Math.PI/2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(M+fw, M+fh/2, 14.63*sx, Math.PI/2, 3*Math.PI/2); ctx.stroke();
+  ctx.lineWidth = Math.max(3, 3*k); const gw = 3.66*sy;
+  ctx.beginPath(); ctx.moveTo(M-2,M+fh/2-gw/2); ctx.lineTo(M-2,M+fh/2+gw/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(M+fw+2,M+fh/2-gw/2); ctx.lineTo(M+fw+2,M+fh/2+gw/2); ctx.stroke();
+  // Optional zone-share overlay (the tick box). Empty zones stay BLANK, not "0%".
+  if (opts.zones){
+    const zs = zoneShares(grid, NX, NY);
+    const zw = fw/4, zh = fh/3;
+    ctx.save();
+    ctx.setLineDash([4*k, 5*k]); ctx.lineWidth = Math.max(1, 1*k); ctx.strokeStyle = 'rgba(255,255,255,.30)';
+    for(let c=1;c<4;c++){ if(c===2) continue; ctx.beginPath(); ctx.moveTo(M+c*zw,M); ctx.lineTo(M+c*zw,M+fh); ctx.stroke(); }
+    for(let l=1;l<3;l++){ ctx.beginPath(); ctx.moveTo(M,M+l*zh); ctx.lineTo(M+fw,M+l*zh); ctx.stroke(); }
+    ctx.setLineDash([]);
+    ctx.restore();
+    // Labels are skipped when this is the offscreen twin of a portrait map — the caller
+    // draws them upright afterwards, otherwise the rotation would tip them on their side.
+    if (opts.zoneLabels !== false) drawZoneLabels(ctx, zs, {M: M, fw: fw, fh: fh}, k, null);
+  }
+}
+
+// The zone-share "%" pills. Split out of drawMap so a portrait map can draw its pitch
+// rotated and its text upright. `map` converts a landscape point to wherever it has
+// ended up on the visible canvas; null means the two frames are the same.
+function drawZoneLabels(ctx, zs, geom, k, map){
+  const M = geom.M, fw = geom.fw, fh = geom.fh, zw = fw/4, zh = fh/3;
+  const fs = Math.max(11*k, fw*0.034);
+  ctx.save();
+  ctx.font = `700 ${fs}px "Segoe UI",system-ui,sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for(let l=0;l<3;l++) for(let c=0;c<4;c++){
+    const p = zs.pct[l][c]; if (p < 0.5) continue;
+    const label = Math.round(p) + '%';
+    let cx = M + c*zw + zw/2, cy = M + l*zh + zh/2;
+    if (map){ const q = map(cx, cy); cx = q[0]; cy = q[1]; }
+    const tw = ctx.measureText(label).width, pw = tw + fs*0.9, ph = fs*1.5, r = fs*0.35;
+    ctx.fillStyle = 'rgba(16,22,29,.72)';
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx-pw/2, cy-ph/2, pw, ph, r) : ctx.rect(cx-pw/2, cy-ph/2, pw, ph); ctx.fill();
+    ctx.fillStyle = p >= 15 ? '#ffd9b8' : '#e8edf2';
+    ctx.fillText(label, cx, cy + fs*0.04);
+  }
+  ctx.restore();
+}
+// ---------------------------------------------------------------- share card
+// ONE implementation, used by the season page AND every game page. It knows
+// nothing about seasons or games: the caller hands it three text lines and three
+// stats, so the two cards cannot drift apart in layout, safe zones or type sizes
+// the way two copies would. It lives ABOVE the drawMap() call because
+// overall_report.py extracts everything up to that line as its shared script.
+// Instagram's own UI covers the top 250px and bottom 340px of a 1080x1920 story,
+// so nothing is drawn outside that band.
+function drawShare(cv, o){
+  const W = 1080, H = o.H || 1920; cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  const story = H > 1400;                       // 9:16 vs 4:5
+  const top = story ? 250 : 60, bottom = story ? H - 340 : H - 60;
+  x.fillStyle = '#10161d'; x.fillRect(0,0,W,H);
+  const ACC = '#e8842a', INK = '#e8edf2', INK2 = '#a7b4c0', INK3 = '#6b7a88';
+  const F = w => `${w} "Segoe UI",system-ui,-apple-system,sans-serif`;
+  x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+  let y = top + 60;
+  x.fillStyle = ACC;  x.font = F('600 34px'); x.fillText(o.eyebrow, 70, y);
+  y += 74; x.fillStyle = INK;  x.font = F('700 66px'); x.fillText(o.title, 70, y);
+  y += 48; x.fillStyle = INK2; x.font = F('400 36px'); x.fillText(o.subtitle, 70, y);
+  // hero: the FIRST chosen stat
+  y += story ? 250 : 190;
+  const heroPx = o.hero.num.length > 4 ? (story ? 190 : 150) : (story ? 250 : 190);
+  x.fillStyle = ACC; x.font = F('800 ' + heroPx + 'px'); x.fillText(o.hero.num, 60, y);
+  const hw = x.measureText(o.hero.num).width;
+  x.fillStyle = INK;  x.font = F('600 48px'); x.fillText(o.hero.unit, 60 + hw + 24, y - 10);
+  x.fillStyle = INK2; x.font = F('400 34px'); x.fillText(o.hero.small, 66, y + 46);
+  // heat map, drawn by the same renderer (and default jet ramp) as the page
+  y += story ? 60 : 40;
+  const mw = W - 120, mh = Math.round(mw * 0.6);
+  const off = document.createElement('canvas'); off.width = 1200; off.height = 722;
+  drawMap(off, o.grid, gridMax(o.grid), {zones: !!o.zones, k: 3});
+  x.save(); x.beginPath(); x.roundRect ? x.roundRect(60, y, mw, mh, 22) : x.rect(60, y, mw, mh); x.clip();
+  x.drawImage(off, 60, y, mw, mh); x.restore();
+  x.fillStyle = INK3; x.font = F('500 26px'); x.fillText('◀ own goal', 66, y + mh + 36);
+  x.textAlign = 'right'; x.fillText('attack ▶', 60 + mw - 6, y + mh + 36); x.textAlign = 'left';
+  // two supporting stats, centred in whatever room is left between map and footer
+  const statsH = 140, footerH = 60;
+  y = y + mh + 40 + Math.max(0, (bottom - footerH - (y + mh + 40) - statsH) / 2);
+  const stat = (x0, big, small) => {
+    x.fillStyle = INK;  x.font = F('800 84px'); x.fillText(big, x0, y + 84);
+    x.fillStyle = INK2; x.font = F('500 34px'); x.fillText(small, x0, y + 130);
+  };
+  stat(70,       o.support[0].big, o.support[0].small);
+  stat(W/2 + 40, o.support[1].big, o.support[1].small);
+  x.fillStyle = INK3; x.font = F('500 28px');
+  x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 12);
+}
+// SECOND SHARE CARD (Colin, 6 Sep 2026): "a portrait version of just the heat map, with
+// the percentage of time in each zone". No stats, no bars — the pitch turned upright and
+// filling the safe zone, with the 12 zone shares on it. The upright renderer stays alive
+// only for this; every ON-PAGE map is landscape, decided the same day.
+function drawShareMap(cv, o){
+  const W = 1080, H = o.H || 1920; cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  const top = 250, bottom = H - 340;              // Instagram's own UI bands
+  x.fillStyle = '#10161d'; x.fillRect(0, 0, W, H);
+  const ACC = '#e8842a', INK = '#e8edf2', INK2 = '#a7b4c0', INK3 = '#6b7a88';
+  const F = w => `${w} "Segoe UI",system-ui,-apple-system,sans-serif`;
+  x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+  let y = top + 60;
+  x.fillStyle = ACC;  x.font = F('600 34px'); x.fillText(o.eyebrow, 70, y);
+  y += 74; x.fillStyle = INK;  x.font = F('700 66px'); x.fillText(o.title, 70, y);
+  y += 48; x.fillStyle = INK2; x.font = F('400 36px'); x.fillText(o.subtitle, 70, y);
+  // What the numbers mean goes ABOVE the pitch, in the header block. Putting it at the
+  // foot alongside the direction label made the two overlap — the labels below the map
+  // are for direction only, and each sits on the side of the pitch it describes.
+  y += 40;
+  x.fillStyle = INK3; x.font = F('500 26px');
+  x.fillText('% = share of time on the pitch spent in that zone', 70, y);
+  y += 36;
+  x.textAlign = 'center'; x.fillText('▲ attacking this way', W/2, y); x.textAlign = 'left';
+  // the pitch, as large as what is left of the safe zone allows, keeping its 722:1200 shape
+  y += 18;
+  const belowH = 88, availH = bottom - belowH - y, availW = W - 120;
+  let mh = availH, mw = Math.round(mh * 722 / 1200);
+  if (mw > availW){ mw = availW; mh = Math.round(mw * 1200 / 722); }
+  const mx0 = Math.round((W - mw) / 2);
+  const off = document.createElement('canvas');
+  off.width = 722; off.height = 1200;
+  drawMap(off, o.grid, gridMax(o.grid), {portrait: true, zones: true});
+  x.save(); x.beginPath();
+  x.roundRect ? x.roundRect(mx0, y, mw, mh, 22) : x.rect(mx0, y, mw, mh);
+  x.clip(); x.drawImage(off, mx0, y, mw, mh); x.restore();
+  x.fillStyle = INK3; x.font = F('500 26px');
+  x.textAlign = 'center'; x.fillText('own goal ▼', W/2, y + mh + 34); x.textAlign = 'left';
+  x.font = F('500 28px');
+  x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 6);
+}
+// Save a card. On a phone this opens the share sheet; elsewhere it downloads.
+// buildOpts(H) returns the object the renderer takes, so the saved PNG comes from the
+// SAME code as the on-page preview and cannot disagree with it. `draw` picks which card.
+function sharePNG(buildOpts, name, title, H, draw){
+  const cv = document.createElement('canvas');
+  (draw || drawShare)(cv, buildOpts(H || 1920));
+  cv.toBlob(async b => {
+    const file = new File([b], name, {type:'image/png'});
+    if (navigator.canShare && navigator.canShare({files:[file]})) {
+      try { await navigator.share({files:[file], title}); return; } catch(e) {}
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }, 'image/png');
+}
+// ===== END OF SHARED SCRIPT =====
+// overall_report.py extracts everything ABOVE this line and reuses it verbatim, so the
+// two page types share one drawMap, one drawShare and one set of constants. Everything
+// BELOW is game-page-only. This is an explicit sentinel on purpose: it used to cut on
+// the text of the first drawMap() call, which silently stopped matching the moment that
+// call was refactored (6 Sep 2026) and took the season build down with it.
+
+// The MAIN map turns portrait on a phone; the quarter maps stay landscape. Portrait
+// costs vertical space, and four upright quarter pitches stacked one per row would add
+// well over two screens of scrolling for maps whose job is a quick shape comparison —
+// they are already full width. The big map is where the extra area actually pays.
+let zonesOn = false;
+let mainGrid = DATA.grid;   // the "game so far" slider swaps this for a partial grid
+function paintMaps(){
+  const main = document.getElementById('pitch');
+  main.width = 1200; main.height = 722;
+  drawMap(main, mainGrid, gridMax(mainGrid), {zones: zonesOn});
+  if (DATA.qgrids){
+    const qmax = Math.max(...DATA.qgrids.map(gridMax));
+    document.querySelectorAll('.qmap').forEach(cv => drawMap(cv, DATA.qgrids[+cv.dataset.q], qmax));
+  }
+}
+window.__redraw.push(paintMaps);
+paintMaps();
+// The zone tick box, same control the season page has had (Colin, 6 Sep 2026: "i want to
+// add the show % of time in each zone for each indv match"). Four 23m quarters x three
+// lanes = 12 zones, share of TIME on the pitch; an empty zone stays blank, never "0%".
+document.getElementById('zones').addEventListener('change', e => {
+  zonesOn = e.target.checked; paintMaps(); renderShare();
+});
+
+// "Game so far" slider (1 Oct 2026). One step per match-clock minute; the last step is
+// FULL TIME and puts back the figures the builder wrote into the page, untouched, so the
+// default view cannot drift from the rest of the page. Any earlier step adds up minutes
+// 0..k from DATA.slider and redraws the big map, the att/mid/def line and the five
+// distance-by-speed bars. Quarter maps, scorecards and the share card stay full-game.
+(function(){
+  const S = DATA.slider, el = document.getElementById('gsf');
+  const wrap = el && el.closest('.slwrap');
+  if (!S || !S.labels || S.labels.length < 2){ if (wrap) wrap.style.display = 'none'; return; }
+  const N = S.labels.length, lbl = document.getElementById('gsflbl');
+  const thEl = document.getElementById('thirds'), whenEl = document.getElementById('kbwhen');
+  const thFull = thEl.innerHTML;
+  const BANDS = ['walk','jog','run','fast','sprint'];
+  const rows = BANDS.map(b => document.querySelector(`.kband[data-band="${b}"]`));
+  const full = rows.map(r => r && {v: r.querySelector('.kbv').innerHTML, w: r.querySelector('.kbar i').style.width});
+  el.max = N - 1; el.value = N - 1;
+  const fmt = n => Math.round(n).toLocaleString('en-US');
+  let raf = 0;
+  function apply(){
+    raf = 0;
+    const k = +el.value;
+    if (k >= N - 1){
+      mainGrid = DATA.grid; thEl.innerHTML = thFull; whenEl.textContent = '';
+      lbl.innerHTML = '<b>Full time</b>';
+      rows.forEach((r, i) => { if (!r) return; r.querySelector('.kbv').innerHTML = full[i].v; r.querySelector('.kbar i').style.width = full[i].w; });
+      paintMaps(); return;
+    }
+    const NX = DATA.nx, NY = DATA.ny;
+    const g = Array.from({length: NY}, () => new Array(NX).fill(0));
+    const th = [0, 0, 0], bd = [0, 0, 0, 0, 0];
+    for (let m = 0; m <= k; m++){
+      for (const [c, n] of S.cells[m]) g[Math.floor(c / NX)][c % NX] += n;
+      for (let i = 0; i < 3; i++) th[i] += S.thirds[m][i];
+      for (let i = 0; i < 5; i++) bd[i] += S.bands[m][i];
+    }
+    mainGrid = g;
+    const tt = th[0] + th[1] + th[2];
+    thEl.innerHTML = tt ? `att ${Math.round(th[0]/tt*100)}% · mid ${Math.round(th[1]/tt*100)}% · def ${Math.round(th[2]/tt*100)}%` : 'not on the pitch yet';
+    const dt = bd.reduce((a, b) => a + b, 0);
+    rows.forEach((r, i) => {
+      if (!r) return;
+      const p = dt ? bd[i] / dt * 100 : 0;
+      r.querySelector('.kbv').innerHTML = `${fmt(bd[i])} m<b>${p.toFixed(0)}%</b>`;
+      r.querySelector('.kbar i').style.width = p.toFixed(1) + '%';
+    });
+    lbl.innerHTML = `Up to <b>${S.labels[k]}</b>`;
+    whenEl.textContent = `up to ${S.labels[k]}`;
+    paintMaps();
+  }
+  el.addEventListener('input', () => { if (!raf) raf = requestAnimationFrame(apply); });
+  apply();
+})();
+
+// ------------------------------------------------- how the game went (13 Sep 2026)
+// Rolling 5-minute work rate over ON-PITCH minutes, game-page only. Line widths and
+// type are in CSS px via k = W/cssW (drawMap's trick) so the phone gets 12px labels;
+// a narrow screen also gets a taller canvas. All figures come from TL, computed in
+// Python — the headline above the chart and the shaded peak are the same numbers.
+const TL = {"q": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3], "m": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], "on": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true], "qlens": [18, 18, 19, 22], "breaks_hr": [{"kind": "Q1/Q2 break", "mins": 3, "from": 124, "low": 114, "end": 115}, {"kind": "half time", "mins": 6, "from": 124, "low": 109, "end": 116}, {"kind": "Q3/Q4 break", "mins": 3, "from": 130, "low": 111, "end": 119}], "mpm": [40, 53, 59, 51, 64, 33, 62, 62, 73, 56, 47, 25, 49, 59, 56, 50, 44, null, 55, 54, 30, 38, 35, 58, 49, 51, 49, 51, 51, 81, 48, 50, 52, 30, 29, 49, 40, 58, 18, 73, 43, 67, 30, 27, 31, 62, 59, 48, 41, 37, 45, 34, 31, 66, null, 47, 32, 49, 47, 50, 35, 27, 30, 62, 31, 18, 29, 48, 20, 62, 45, 38, 47, 18, 24, 54, 23], "hsr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 7, 0, 0, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0], "hr": [104, 120, 124, 117, 123, 119, 115, 126, 131, 134, 127, 123, 116, 130, 132, 133, 131, 125, 120, 129, 126, 129, 130, 130, 132, 137, 132, 129, 131, 131, 134, 140, 135, 134, 129, 126, 120, 122, 123, 126, 132, 126, 131, 127, 124, 128, 135, 138, 132, 127, 130, 130, 123, 123, 131, 124, 127, 129, 132, 133, 129, 123, 123, 129, 131, 128, 125, 130, 141, 136, 136, 135, 132, 126, 127, 122, 125], "top": [7.4, 8.5, 7.5, 5.1, 14.0, 6.8, 9.8, 11.3, 13.4, 19.1, 8.9, 4.6, 12.4, 18.8, 10.5, 10.8, 6.6, null, 8.7, 6.6, 5.7, 6.5, 9.7, 12.7, 14.3, 8.8, 7.9, 9.2, 7.3, 11.1, 7.0, 8.2, 13.2, 5.3, 7.2, 6.1, 9.7, 6.6, 5.7, 14.3, 8.6, 15.0, 6.5, 5.6, 5.8, 13.4, 22.8, 5.6, 7.2, 6.2, 7.5, 8.6, 6.0, 12.8, null, 12.3, 6.8, 10.6, 8.3, 10.2, 5.7, 5.1, 4.8, 15.7, 6.3, 10.6, 8.0, 9.3, 5.6, 10.9, 9.1, 10.7, 12.6, 5.4, 4.8, 18.2, 5.5], "spr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "dm": [39, 52, 61, 49, 67, 32, 62, 61, 74, 56, 50, 25, 46, 60, 57, 50, 46, 13, 53, 53, 30, 40, 32, 59, 51, 51, 47, 53, 52, 78, 47, 51, 53, 29, 29, 33, 37, 62, 17, 72, 44, 67, 29, 27, 30, 61, 59, 48, 42, 37, 45, 36, 29, 67, 13, 49, 31, 53, 45, 51, 35, 27, 30, 58, 32, 17, 32, 46, 19, 59, 48, 38, 46, 18, 23, 54, 23], "hm": [0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0], "roll5": [null, 46, 51, 51, 53, 52, 54, 54, 59, 57, 60, 53, 50, 47, 47, 48, 52, null, null, 54, 46, 44, 42, 43, 42, 46, 48, 52, 50, 57, 56, 56, 56, 52, 42, 42, null, 49, 39, 47, 46, 52, 46, 48, 40, 43, 42, 45, 48, 49, 46, 41, 38, 43, null, null, 40, 43, 44, 45, 43, 42, 38, 41, 37, 34, 34, 38, 29, 35, 41, 43, 42, 42, 34, 36, 33], "hroll5": [null, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 1, 1, 1, null, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 0, 0, 1, 1, 1, 1, 1, 4, 4, 4, 4, 4, 0, 0, 0, null, null, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 2, 2], "rollw": [null, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, null, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, null, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], "halftime_min": 6, "peak": {"mpm": 60, "k0": 6, "k1": 10, "label": "Q1, minutes 7&ndash;11"}, "first15": 53, "last15": 37, "minutes": 75, "avg": 45.0, "avghr": 128, "gametop": 22.8};
+// One metric at a time (Colin, 13 Sep 2026: "having work rate, distance run etc is too
+// confusing. i need to hv a drop down"). Each entry: the per-minute series, its unit, an
+// optional rolling-5 line, an optional dashed reference, and whether it draws as bars or
+// as a line (heart rate is a level, not an amount, so it is a line).
+const tlMean = arr => { const v = arr.filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+const tlRoll = (arr, w) => arr.map((_, i) => i < w - 1 || arr.slice(i - w + 1, i + 1).some(v => v == null) ? null
+  : Math.round(arr.slice(i - w + 1, i + 1).reduce((a, b) => a + b, 0) / w));
+// ONE line per measure, nothing layered on it (Colin, 13 Sep 2026, on the bars-plus-line
+// version: "having the bar and the charts is quite confusing... one look at the charts
+// and it should tell the story quickly"). Work rate and fast running draw their rolling
+// 5-minute line; the single-minute value is only in the tooltip. Heart rate is already a
+// level, so it draws as its 1-minute line.
+const METRICS = {
+  mpm: {label: 'work rate', unit: 'm/min', arr: TL.mpm, roll: TL.roll5, ref: TL.avg, refLabel: 'your average', peak: TL.peak, col: '#e8842a'},
+  hsr: {label: 'fast running', unit: 'm/min', arr: TL.hsr, roll: TL.hroll5, ref: tlMean(TL.hsr), refLabel: 'your average', col: '#4fb3a0'},
+  hr:  {label: 'heart rate', unit: 'bpm', arr: TL.hr, ref: TL.avghr || null, refLabel: 'your average', col: '#d9534f', floor: true},
+};
+const CUMS = {
+  mpm: {label: 'distance', unit: 'm', arr: TL.dm, col: '#e8842a'},
+  hsr: {label: 'fast-running metres', unit: 'm', arr: TL.hm, col: '#4fb3a0'},
+  spr: {label: 'sprint efforts', unit: '', arr: TL.spr, col: '#f0c419', integer: true},
+};
+function tlFrame(cv, hFull, hPhone){
+  const cssW = cv.getBoundingClientRect().width || cv.width;
+  cv.width = 1200; cv.height = cssW < 600 ? hPhone : hFull;
+  return {c: cv.getContext('2d'), W: cv.width, H: cv.height, k: cv.width / cssW};
+}
+const tlFont = (px, k, bold) => (bold ? '600 ' : '') + Math.round(px*k) + 'px "Segoe UI",system-ui,sans-serif';
+function tlLine(c, arr, xf, yf, col, w){
+  c.strokeStyle = col; c.lineWidth = w; c.lineJoin = 'round'; c.beginPath(); let on = false;
+  arr.forEach((v, i) => { if (v == null){ on = false; return; }
+    on ? c.lineTo(xf(i), yf(v)) : c.moveTo(xf(i), yf(v)); on = true; });
+  c.stroke();
+}
+// GEOMETRY: the four quarters are EQUAL columns whatever their real length (Colin, 13 Sep
+// 2026: "the 4 columns shd be equal distance. doesnt matter if i took a break or not").
+// Inside a quarter its wall-clock minutes are spread evenly. Record k lives in quarter
+// TL.q[k] at minute TL.m[k]; `edge` 0/.5/1 = its left edge / centre / right edge.
+const tlQoff = (() => { const o = [0]; TL.qlens.forEach(l => o.push(o[o.length - 1] + l)); return o; })();
+function tlX(g, k, edge){ const q = TL.q[k]; return g.padL + (q / 4 + ((TL.m[k] + edge) / TL.qlens[q]) / 4) * g.pw; }
+function tlIdxAt(g, xx){
+  const f = (xx - g.padL) / g.pw; if (f < 0 || f >= 1) return null;
+  const q = Math.min(3, Math.floor(f * 4)), m = Math.floor((f * 4 - q) * TL.qlens[q]), k = tlQoff[q] + m;
+  return k < TL.q.length && TL.q[k] === q ? k : null;
+}
+// Quarter names over each column, alternate columns faintly shaded, half time as an orange
+// divider between Q2 and Q3, and every stretch with no play (a bench spell, a stoppage)
+// as a grey band inside its quarter — the "different colour" that says there was a break.
+function tlAxes(c, g, k){
+  const {padL, pw, padT, ph} = g, xq = q => padL + (q / 4) * pw;
+  for (let q = 0; q < 4; q++){
+    if (q % 2){ c.fillStyle = 'rgba(255,255,255,.035)'; c.fillRect(xq(q), padT, pw / 4, ph); }
+    c.font = tlFont(12, k, true); c.fillStyle = css('--ink-2'); c.textAlign = 'center'; c.textBaseline = 'top';
+    c.fillText('Q' + (q + 1), xq(q + 0.5), padT + 2*k);
+  }
+  // gap bands: runs of minutes with no play, inside one quarter
+  let k0 = null;
+  const band = (a, b) => { const x0 = tlX(g, a, 0), x1 = tlX(g, b, 1);
+    c.fillStyle = 'rgba(167,180,192,.16)'; c.fillRect(x0, padT, x1 - x0, ph);
+    if (x1 - x0 > 46*k){ c.font = tlFont(11, k); c.fillStyle = css('--ink-2'); c.textAlign = 'center'; c.textBaseline = 'bottom'; c.fillText('not playing', (x0 + x1) / 2, padT + ph - 6*k); } };
+  TL.on.forEach((v, i) => {
+    if (!v && k0 == null) k0 = i;
+    const end = v || i === TL.on.length - 1 || TL.q[i + 1] !== TL.q[i];
+    if (k0 != null && end){ band(k0, v ? i - 1 : i); k0 = null; }
+  });
+  for (let q = 1; q < 4; q++){
+    const half = q === 2, xx = xq(q);
+    c.save(); c.strokeStyle = half ? 'rgba(232,132,42,.8)' : 'rgba(167,180,192,.45)'; c.setLineDash(half ? [8*k, 4*k] : [3*k, 4*k]); c.lineWidth = half ? 2*k : k;
+    c.beginPath(); c.moveTo(xx, padT); c.lineTo(xx, padT + ph); c.stroke(); c.restore();
+    // on a phone the orange divider + legend carry "half time"; the words collided with the Q labels
+    if (half && pw / k >= 560){ c.font = tlFont(11, k, true); c.fillStyle = '#e8842a'; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText('half time' + (TL.halftime_min ? ' ' + TL.halftime_min + ' min' : ''), xx, padT + 18*k); }
+  }
+  // minute ticks inside each quarter (5, 10, 15 ...), so "minute 12 of Q3" can be read off
+  c.fillStyle = css('--ink-3'); c.font = tlFont(12, k); c.textAlign = 'center'; c.textBaseline = 'top';
+  for (let q = 0; q < 4; q++){
+    const every = (pw / 4) / TL.qlens[q] * 5 < 30*k ? 10 : 5;     // a phone column fits fewer labels
+    for (let t = every; t < TL.qlens[q]; t += every) c.fillText(t, padL + (q / 4 + (t / TL.qlens[q]) / 4) * pw, padT + ph + 6*k);
+  }
+  c.textAlign = 'left'; c.fillText('minutes into each quarter', padL, padT + ph + 20*k);
+}
+function tlGrid(c, g, lo, hi, step, k, fmt){
+  c.font = tlFont(12, k); c.fillStyle = css('--ink-3'); c.textAlign = 'right'; c.textBaseline = 'middle';
+  c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = k;
+  for (let v = lo; v <= hi + 1e-9; v += step){ const yy = g.y(v); c.beginPath(); c.moveTo(g.padL, yy); c.lineTo(g.padL + g.pw, yy); c.stroke(); c.fillText(fmt ? fmt(v) : v, g.padL - 6*k, yy); }
+}
+const niceStep = range => { const raw = range / 5, p = Math.pow(10, Math.floor(Math.log10(raw))); return [1, 2, 2.5, 5, 10].map(m => m * p).find(s => s >= raw) || p * 10; };
+function tlTip(c, g, k, xx, lines){
+  c.font = tlFont(12, k); const pad = 8*k, lh = 17*k;
+  const w = Math.max(...lines.map(t => c.measureText(t).width)) + 2*pad, h = lines.length * lh + pad;
+  let bx = xx + 10*k; if (bx + w > g.padL + g.pw) bx = xx - 10*k - w;
+  const by = g.padT + 52*k;   // below the quarter row and both marker rows
+  c.fillStyle = 'rgba(16,22,29,.94)'; c.strokeStyle = 'rgba(167,180,192,.5)'; c.lineWidth = k;
+  c.beginPath(); c.roundRect ? c.roundRect(bx, by, w, h, 6*k) : c.rect(bx, by, w, h); c.fill(); c.stroke();
+  c.textAlign = 'left'; c.textBaseline = 'top';
+  lines.forEach((t, i) => { c.fillStyle = i ? css('--ink-2') : css('--ink'); c.font = tlFont(12, k, !i); c.fillText(t, bx + pad, by + pad/2 + i*lh); });
+}
+// A small label with its own dark backing, so words written ON the chart stay readable
+// where they cross the line ("your average 102 m/min", "6,180 m by the end").
+function tlPill(c, k, xx, yy, text, col, align){
+  c.font = tlFont(11, k, true); const w = c.measureText(text).width + 10*k, h = 16*k;
+  const bx = align === 'right' ? xx - w : xx;
+  c.fillStyle = 'rgba(16,22,29,.85)'; c.beginPath(); c.roundRect ? c.roundRect(bx, yy - h, w, h, 4*k) : c.rect(bx, yy - h, w, h); c.fill();
+  c.fillStyle = col; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(text, bx + 5*k, yy - h/2);
+}
+let tlHover = null, tlcHover = null;
+function drawTimeline(cv){
+  const sel = document.getElementById('tlsel').value, M = METRICS[sel], n = TL.mpm.length; if (!n) return;
+  const {c, W, H, k} = tlFrame(cv, 520, 760); c.clearRect(0, 0, W, H);
+  const g = {padL: 62*k, padR: 14*k, padT: 16*k, padB: 34*k}; g.pw = W - g.padL - g.padR; g.ph = H - g.padT - g.padB;
+  const shown = M.roll || M.arr, vals = shown.filter(v => v != null);
+  if (!vals.length){   // e.g. a teammate file with no heart-rate channel: say so, never a blank box
+    c.font = tlFont(13, k); c.fillStyle = css('--ink-3'); c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('no ' + M.label + ' recorded in this game', W / 2, H / 2);
+    document.getElementById('tllegend').innerHTML = `<span style="--c:${M.col}">${M.label}: nothing recorded</span>`; return;
+  }
+  // The axis starts a little under the lowest point rather than at zero: a trend line
+  // pinned to a zero axis sits in the top half of the box and its movement flattens out.
+  let hi = Math.max(M.ref || 0, ...vals) * 1.12 || 1, lo = Math.min(M.ref || hi, ...vals);
+  lo = Math.max(0, lo - (hi - lo) * 0.25);
+  let step = niceStep(hi - lo); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  if (M.floor){ lo = Math.floor((Math.min(...vals) - 5) / 10) * 10; hi = Math.ceil((Math.max(...vals) + 5) / 10) * 10; step = niceStep(hi - lo); }
+  const x = i => tlX(g, i, 0), xc = i => tlX(g, i, .5), xr = i => tlX(g, i, 1);
+  g.y = v => g.padT + g.ph - ((v - lo) / (hi - lo)) * g.ph;
+  tlGrid(c, g, lo, hi, step, k);
+  if (M.peak){ const x0 = x(M.peak.k0), x1 = xr(M.peak.k1);
+    c.fillStyle = 'rgba(232,132,42,.16)'; c.fillRect(x0, g.padT, x1 - x0, g.ph);
+    // top row 3: the bottom row belongs to the "not playing" labels, which sat right next to it in G5
+    c.fillStyle = '#e8842a'; c.font = tlFont(11, k, true); c.textAlign = 'center'; c.textBaseline = 'top';
+    c.fillText('busiest 5 min', (x0 + x1) / 2, g.padT + 32*k); }
+  tlAxes(c, g, k);
+  // Heart rate only: what happened across the breaks that sit on the dividers. "176 → 131"
+  // = reading as the break started → lowest it fell to. A paused watch says so.
+  if (sel === 'hr' && TL.breaks_hr){
+    const narrow = g.pw / k < 560;      // phone: numbers only, and the middle one drops a row
+    TL.breaks_hr.forEach((bh, i) => { if (bh.nodata) return;
+      const xx = g.padL + ((i + 1) / 4) * g.pw, row = i === 1 ? 32 : 18;
+      c.font = tlFont(11, k); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = bh.paused ? css('--ink-3') : M.col;
+      const txt = bh.paused ? (narrow ? 'paused' : 'break: watch paused') : (narrow ? bh.from + '→' + bh.low : 'break: ' + bh.from + ' → ' + bh.low + ' bpm');
+      c.fillText(txt, xx, g.padT + row*k); });
+  }
+  if (M.ref != null){
+    c.strokeStyle = '#a7b4c0'; c.setLineDash([6*k, 5*k]); c.lineWidth = 1.2*k;
+    c.beginPath(); c.moveTo(g.padL, g.y(M.ref)); c.lineTo(g.padL + g.pw, g.y(M.ref)); c.stroke(); c.setLineDash([]);
+    // The average is named in the AXIS GUTTER, level with its dashed line, where the line can
+    // never cross it (two attempts at placing a pill on the chart both landed on the line).
+    // It covers whichever gridline number sits under it.
+    c.fillStyle = css('--card'); c.fillRect(0, g.y(M.ref) - 9*k, g.padL - 3*k, 18*k);
+    c.font = tlFont(11, k, true); c.fillStyle = '#a7b4c0'; c.textAlign = 'right'; c.textBaseline = 'middle';
+    c.fillText('avg ' + M.ref, g.padL - 6*k, g.y(M.ref));
+  }
+  tlLine(c, shown, xc, g.y, M.col, 3*k);
+  if (tlHover != null && tlHover < n && shown[tlHover] != null){
+    const i = tlHover; c.fillStyle = 'rgba(255,255,255,.10)'; c.fillRect(x(i), g.padT, xr(i) - x(i), g.ph);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(xc(i), g.y(shown[i]), 4.5*k, 0, 7); c.fill();
+    const u = M.unit ? ' ' + M.unit : '', where = 'Q' + (TL.q[i] + 1) + ', minute ' + (TL.m[i] + 1) + (TL.on[i] ? '' : ' (not playing)') + ': ';
+    const wl = TL.rollw ? TL.rollw[i] : 5;
+    const lines = M.roll ? [where + shown[i] + u + (wl === 5 ? ' (5-min average)' : ' (' + wl + '-min average, run just started)'), 'that minute alone: ' + (M.arr[i] == null ? '—' : M.arr[i] + u)]
+                         : [where + shown[i] + u];
+    if (M.ref != null) lines.push(M.refLabel + ': ' + M.ref + u);
+    tlTip(c, g, k, xc(i), lines);
+  }
+  const L = [`<span style="--c:${M.col}">${M.label}${M.roll ? ', averaged over the previous 5 minutes' : ''}${M.unit ? ' (' + M.unit + ')' : ''}</span>`];
+  if (M.ref != null) L.push(`<span style="--c:#a7b4c0">${M.refLabel} for the game</span>`);
+  if (sel === 'hr') L.push('<span style="--c:rgba(217,83,79,.35)">runs through bench spells too; on each divider, the reading as the break started → the lowest it fell to</span>');
+  if (M.peak) L.push(`<span style="--c:rgba(232,132,42,.4)">busiest 5 min: ${M.peak.mpm} m/min (${M.peak.label})</span>`);
+  L.push('<span style="--c:#e8842a">half time</span><span style="--c:rgba(167,180,192,.35)">not playing (bench or stoppage)</span>');
+  document.getElementById('tllegend').innerHTML = L.join('');
+}
+function drawCum(cv){
+  const C = CUMS[document.getElementById('tlcum').value], n = TL.mpm.length; if (!n) return;
+  const {c, W, H, k} = tlFrame(cv, 400, 760); c.clearRect(0, 0, W, H);
+  const g = {padL: 56*k, padR: 14*k, padT: 16*k, padB: 34*k}; g.pw = W - g.padL - g.padR; g.ph = H - g.padT - g.padB;
+  const cum = []; let s = 0; C.arr.forEach(v => { s += v || 0; cum.push(s); });
+  const total = cum[n - 1] || 1, hi = total * 1.06, step = C.integer ? Math.max(1, Math.ceil(total / 5)) : niceStep(hi);
+  const x = i => tlX(g, i, 1);       // the total AFTER minute i sits at the minute's right edge
+  g.y = v => g.padT + g.ph - (v / hi) * g.ph;
+  tlGrid(c, g, 0, hi, step, k, v => v >= 1000 ? (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : v);
+  tlAxes(c, g, k);
+  c.beginPath(); c.moveTo(g.padL, g.y(0)); cum.forEach((v, i) => c.lineTo(x(i), g.y(v))); c.lineTo(x(n - 1), g.y(0)); c.closePath();
+  c.fillStyle = 'rgba(255,255,255,.05)'; c.fill();
+  c.strokeStyle = C.col; c.lineWidth = 3*k; c.lineJoin = 'round'; c.beginPath(); c.moveTo(g.padL, g.y(0)); cum.forEach((v, i) => c.lineTo(x(i), g.y(v))); c.stroke();
+  const u = C.unit ? ' ' + C.unit : '';
+  // sits just under the line's end point, where the rising line leaves empty space (above it
+  // is the Q4 label)
+  tlPill(c, k, x(n - 1) - 2*k, g.y(total) + 26*k, total.toLocaleString('en-GB') + u + ' by the end', C.col, 'right');
+  if (tlcHover != null && tlcHover < n){
+    const i = tlcHover;
+    c.fillStyle = 'rgba(255,255,255,.10)'; c.fillRect(tlX(g, i, 0), g.padT, x(i) - tlX(g, i, 0), g.ph);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x(i), g.y(cum[i]), 4.5*k, 0, 7); c.fill();
+    tlTip(c, g, k, x(i), ['After Q' + (TL.q[i] + 1) + ' minute ' + (TL.m[i] + 1) + ': ' + cum[i].toLocaleString('en-GB') + u,
+      'that minute alone: ' + (TL.on[i] ? C.arr[i] + u : 'not playing')]);
+  }
+  document.getElementById('tlclegend').innerHTML =
+    `<span style="--c:${C.col}">${C.label} so far${C.unit ? ' (' + C.unit + ')' : ''}</span>` +
+    '<span style="--c:#e8842a">half time</span><span style="--c:rgba(167,180,192,.35)">not playing (bench or stoppage)</span>';
+}
+// Hover / tap: which on-pitch minute is under the pointer. Touch uses a tap (touchstart),
+// never touchmove, so the page still scrolls with a finger on the chart.
+function tlBind(cv, setter, paint, padLcss){
+  const idx = ev => { const r = cv.getBoundingClientRect(), p = ev.touches ? ev.touches[0] : ev;
+    const k = cv.width / r.width, padL = padLcss*k;
+    return tlIdxAt({padL, pw: cv.width - padL - 14*k}, (p.clientX - r.left) * k); };
+  cv.addEventListener('mousemove', ev => { setter(idx(ev)); paint(); });
+  cv.addEventListener('mouseleave', () => { setter(null); paint(); });
+  cv.addEventListener('touchstart', ev => { setter(idx(ev)); paint(); }, {passive: true});
+}
+const tlCv = document.getElementById('tl'), tlcCv = document.getElementById('tlc');
+function paintTimeline(){ drawTimeline(tlCv); drawCum(tlcCv); }
+tlBind(tlCv, i => { tlHover = i; }, () => drawTimeline(tlCv), 62);
+tlBind(tlcCv, i => { tlcHover = i; }, () => drawCum(tlcCv), 56);
+document.getElementById('tlsel').addEventListener('change', () => drawTimeline(tlCv));
+document.getElementById('tlcum').addEventListener('change', () => drawCum(tlcCv));
+window.__redraw.push(paintTimeline);
+paintTimeline();
+
+// ------------------------------------------------- this game's share card
+// Everything below is GAME-PAGE ONLY: it sits after the drawMap() call, which is
+// where overall_report.py stops extracting the shared script, so the season page
+// keeps its own stat set and picker wiring and only shares drawShare/sharePNG.
+const SHARE = {"subject": "KS", "eyebrow": "BARKERITES \u00b7 MHL 5 \u00b7 GAME 8", "subtitle": "vs OVA \u00b7 Sun 4 Oct 2026", "top": 22.8, "sprints": 1, "dist": 3401, "mpm": 45.0, "fast": 52, "hr": 128, "own": 98, "min": 75, "trackMax": null, "filename": "ks-game8.png"};
+const fmt = n => Math.round(n).toLocaleString('en-GB');
+// Personal best = the fastest this player has EVER been measured, track OR match.
+// A game page cannot see the other games, so the reference is the larger of the
+// recorded track max and THIS game's own top speed. That is what stops the card
+// ever reading "102% of my best" (Colin, 6 Sep 2026, after G6's 29.5 beat the
+// 28.9 track figure) — with no track max on file it simply reads personal best.
+const PB = Math.max(SHARE.trackMax || 0, SHARE.top);
+function bestTxt(){
+  // No measured maximum on file for this player (every teammate build): there is
+  // nothing to compare against, so the card states the fact and claims nothing.
+  // Without this guard PB collapses to the game's own top and EVERY card reads
+  // "personal best" — KS's 20.2 km/h game included, against a real best of 27.0.
+  if (!SHARE.trackMax) return 'fastest burst of the game';
+  if (SHARE.top >= PB - 0.05) return 'top speed · personal best';
+  return `top speed · ${Math.round(SHARE.top/PB*100)}% of ${SHARE.subject}'s best (${PB.toFixed(1)} km/h)`;
+}
+// Colin's list, in the order given. A stat whose value this file cannot
+// support is dropped from the menu entirely rather than offered as a zero.
+// (Wording note: verify_reports.py reads script text too, so avoid third-person
+// pronouns even in a comment — the page's voice check cannot tell them apart.)
+const STATS = {
+  top:     { label:'Top speed',          big:() => [SHARE.top.toFixed(1), 'km/h'],       small:bestTxt },
+  sprints: { label:'Sprints',            big:() => [fmt(SHARE.sprints), SHARE.sprints === 1 ? 'sprint' : 'sprints'],
+                                                                                          small:() => 'bursts of 20 km/h or more' },
+  dist:    { label:'Distance',           big:() => [(SHARE.dist/1000).toFixed(1), 'km'], small:() => 'covered on the pitch' },
+  mpm:     { label:'Work rate',          big:() => [SHARE.mpm.toFixed(0), 'm/min'],      small:() => 'metres per minute on the pitch' },
+  fast:    { label:'Fast running',       big:() => [fmt(SHARE.fast), 'm'],               small:() => 'fast running · above 15 km/h' },
+  hr:      { label:'Average heart rate', big:() => [Math.round(SHARE.hr), 'bpm'],        small:() => 'average heart rate on the pitch' },
+  own:     { label:'Defensive half',     big:() => [Math.round(SHARE.own), '%'],         small:() => 'of the time in the defensive half' },
+  // "Minutes on pitch" removed as a pickable stat, 6 Sep 2026 — Colin: redundant.
+};
+if (!SHARE.hr) delete STATS.hr;
+if (!SHARE.fast) delete STATS.fast;
+const picks = ['top', 'sprints', 'dist'].filter(k => STATS[k]);
+function shareOpts(H){
+  const [h1, h2, h3] = picks.map(k => STATS[k]);
+  const [hn, hu] = h1.big(), [b2, u2] = h2.big(), [b3, u3] = h3.big();
+  return { H, grid: DATA.grid, eyebrow: SHARE.eyebrow, title: SHARE.subject, subtitle: SHARE.subtitle,
+           hero: { num: hn, unit: hu, small: h1.small() },
+           support: [{ big: `${b2} ${u2}`, small: h2.small() },
+                     { big: `${b3} ${u3}`, small: h3.small() }] };
+}
+function fillPickers(){
+  ['s1','s2','s3'].forEach((id, i) => {
+    const sel = document.getElementById(id); sel.innerHTML = '';
+    Object.entries(STATS).forEach(([k, s]) => {
+      if (picks.indexOf(k) !== -1 && picks[i] !== k) return;   // no stat twice
+      const o = document.createElement('option');
+      o.value = k; o.textContent = s.label; o.selected = picks[i] === k;
+      sel.appendChild(o);
+    });
+  });
+}
+// Card 2 carries no stats, so it needs only the three text lines and the grid. Its zone
+// percentages are always shown — that is the whole point of the card — regardless of the
+// page's tick box, which only governs the on-page map.
+function shareMapOpts(H){
+  return { H, grid: DATA.grid, eyebrow: SHARE.eyebrow,
+           title: SHARE.subject, subtitle: SHARE.subtitle };
+}
+function renderShare(){
+  drawShare(document.getElementById('share'), shareOpts(1920));
+  drawShareMap(document.getElementById('share2'), shareMapOpts(1920));
+}
+['s1','s2','s3'].forEach((id, i) => document.getElementById(id).addEventListener('change', e => {
+  picks[i] = e.target.value; fillPickers(); renderShare();
+}));
+fillPickers(); renderShare();
+document.getElementById('dl').onclick =
+  () => sharePNG(shareOpts, SHARE.filename, `${SHARE.subject} — ${SHARE.eyebrow}`, 1920);
+document.getElementById('dl2').onclick =
+  () => sharePNG(shareMapOpts, SHARE.filename.replace(/\.png$/, '-heatmap.png'),
+                 `${SHARE.subject} — heat map`, 1920, drawShareMap);
+</script>
+</body></html>
