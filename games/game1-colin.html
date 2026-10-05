@@ -126,6 +126,9 @@
     text-transform:uppercase; color:var(--ink-3); font-weight:600; }
   .picks select{ background:var(--card); color:var(--ink); border:1px solid var(--tile-border); border-radius:8px;
     padding:9px 10px; font-size:14px; font-family:inherit; }
+  /* second select under each share-card metric: Top / Total / Average (5 Oct 2026) */
+  .picks label select + select{ margin-top:2px; }
+  .picks select:disabled{ opacity:.55; }
   .btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
   .btn{ background:var(--accent); color:#12181f; border:0; border-radius:10px; padding:11px 16px; font-size:14px;
     font-weight:650; cursor:pointer; }
@@ -339,11 +342,11 @@
       <div class="preview"><canvas id="share" width="1080" height="1920"></canvas></div>
       <div>
         <div class="sharelbl">Card 1 &middot; your three numbers</div>
-        <div class="how">Pick the <b>three numbers</b> you want on the card &mdash; the first is the big one.</div>
+        <div class="how">Pick the <b>three numbers</b> you want on the card &mdash; the first is the big one. Under each, choose <b>Top</b> (the best quarter), <b>Total</b> (the whole game) or <b>Average</b> (per quarter). A quarter with under 5 minutes on the pitch is left out of Top and Average.</div>
         <div class="picks">
-          <label><span>1st (big)</span><select id="s1"></select></label>
-          <label><span>2nd</span><select id="s2"></select></label>
-          <label><span>3rd</span><select id="s3"></select></label>
+          <label><span>1st (big)</span><select id="s1"></select><select id="m1" aria-label="1st number: top, total or average"></select></label>
+          <label><span>2nd</span><select id="s2"></select><select id="m2" aria-label="2nd number: top, total or average"></select></label>
+          <label><span>3rd</span><select id="s3"></select><select id="m3" aria-label="3rd number: top, total or average"></select></label>
         </div>
         <div class="btns"><button class="btn" id="dl">Download as image</button></div>
         <div class="fmt">Saves a 1080 &times; 1920 image &mdash; sized for a phone story, and it posts fine anywhere else. On a phone the button opens the share sheet directly. A plain screenshot of the card also works.</div>
@@ -956,7 +959,7 @@ paintTimeline();
 // Everything below is GAME-PAGE ONLY: it sits after the drawMap() call, which is
 // where overall_report.py stops extracting the shared script, so the season page
 // keeps its own stat set and picker wiring and only shares drawShare/sharePNG.
-const SHARE = {"subject": "Colin", "eyebrow": "BARKERITES \u00b7 MHL 5 \u00b7 GAME 1 \u00b7 Draw 1-1", "subtitle": "Last man \u00b7 vs Old Rafflesians Assoc-C \u00b7 Sun 5 Jul 2026", "top": 26.9, "sprints": 10, "dist": 3542, "mpm": 63.2, "fast": 335, "hr": 155, "own": 100, "min": 57, "trackMax": 29.5, "filename": "colin-game1.png"};
+const SHARE = {"subject": "Colin", "eyebrow": "BARKERITES \u00b7 MHL 5 \u00b7 GAME 1 \u00b7 Draw 1-1", "subtitle": "Last man \u00b7 vs Old Rafflesians Assoc-C \u00b7 Sun 5 Jul 2026", "top": 26.9, "sprints": 10, "dist": 3542, "mpm": 63.2, "fast": 335, "hr": 155, "own": 100, "min": 57, "q": [[17.9, 1200, 97, 3, 156], [1.8, 187, 55, 1, 162], [17.5, 1027, 67, 1, 150], [18.8, 1128, 116, 5, 158]], "trackMax": 29.5, "filename": "colin-game1.png"};
 const fmt = n => Math.round(n).toLocaleString('en-GB');
 // Personal best = the fastest this player has EVER been measured, track OR match.
 // A game page cannot see the other games, so the reference is the larger of the
@@ -977,37 +980,81 @@ function bestTxt(){
 // support is dropped from the menu entirely rather than offered as a zero.
 // (Wording note: verify_reports.py reads script text too, so avoid third-person
 // pronouns even in a comment — the page's voice check cannot tell them apart.)
+//
+// Since 5 Oct 2026 each number also picks HOW it is summed up inside the game
+// (Colin: Top / Total / Average, applied to match pages "by quarter"): Total = the
+// whole game, Average = per quarter, Top = the best quarter. Only quarters with 5+
+// minutes on the pitch count toward Top and Average (a 2-minute cameo would win
+// "best quarter" on rate alone, and a quarter off the pitch is not a zero). Top speed
+// offers Top only and Defensive half Total only, because their per-quarter forms
+// either repeat the game figure or mean nothing. Every mode returns
+// [big number, unit, small line].
+const MODE_LBL = { top: 'Top', total: 'Total', avg: 'Average' };
+const QS = (SHARE.q || []).map((q, i) => ({ n: i + 1, min: q[0], dist: q[1], fast: q[2], spr: q[3], hr: q[4] }))
+                          .filter(q => q.min >= 5);
+const qBest = f => QS.reduce((a, b) => f(b) > f(a) ? b : a, QS[0]);
+const qMean = f => QS.reduce((s, q) => s + f(q), 0) / QS.length;
+const qRate = q => q.dist / q.min;
+const perQ = `a quarter · ${QS.length} quarters`;
 const STATS = {
-  top:     { label:'Top speed',          big:() => [SHARE.top.toFixed(1), 'km/h'],       small:bestTxt },
-  sprints: { label:'Sprints',            big:() => [fmt(SHARE.sprints), SHARE.sprints === 1 ? 'sprint' : 'sprints'],
-                                                                                          small:() => 'bursts of 20 km/h or more' },
-  dist:    { label:'Distance',           big:() => [(SHARE.dist/1000).toFixed(1), 'km'], small:() => 'covered on the pitch' },
-  mpm:     { label:'Work rate',          big:() => [SHARE.mpm.toFixed(0), 'm/min'],      small:() => 'metres per minute on the pitch' },
-  fast:    { label:'Fast running',       big:() => [fmt(SHARE.fast), 'm'],               small:() => 'fast running · above 15 km/h' },
-  hr:      { label:'Average heart rate', big:() => [Math.round(SHARE.hr), 'bpm'],        small:() => 'average heart rate on the pitch' },
-  own:     { label:'Defensive half',     big:() => [Math.round(SHARE.own), '%'],         small:() => 'of the time in the defensive half' },
+  top:     { label:'Top speed', modes:['top'],
+             top:   () => [SHARE.top.toFixed(1), 'km/h', bestTxt()] },
+  sprints: { label:'Sprints', modes:['total', 'avg', 'top'],
+             total: () => [fmt(SHARE.sprints), SHARE.sprints === 1 ? 'sprint' : 'sprints', 'bursts of 20 km/h or more'],
+             avg:   () => [qMean(q => q.spr).toFixed(1), 'sprints', perQ],
+             top:   () => { const q = qBest(q => q.spr); return [fmt(q.spr), q.spr === 1 ? 'sprint' : 'sprints', `best quarter · Q${q.n}`]; } },
+  dist:    { label:'Distance', modes:['total', 'avg', 'top'],
+             total: () => [(SHARE.dist/1000).toFixed(1), 'km', 'covered on the pitch'],
+             // quarters in METRES: at 1.0-2.0 km a quarter, one decimal of km made the
+             // average and the best quarter print the same 1.4 (G8)
+             avg:   () => [fmt(qMean(q => q.dist)), 'm', `covered ${perQ}`],
+             top:   () => { const q = qBest(q => q.dist); return [fmt(q.dist), 'm', `best quarter · Q${q.n}`]; } },
+  // The whole-game work rate IS the average; Top is the quarter with the best rate.
+  mpm:     { label:'Work rate', modes:['avg', 'top'],
+             avg:   () => [SHARE.mpm.toFixed(0), 'm/min', 'metres per minute on the pitch'],
+             top:   () => { const q = qBest(qRate); return [qRate(q).toFixed(0), 'm/min', `best quarter · Q${q.n}`]; } },
+  fast:    { label:'Fast running', modes:['total', 'avg', 'top'],
+             total: () => [fmt(SHARE.fast), 'm', 'fast running · above 15 km/h'],
+             avg:   () => [fmt(qMean(q => q.fast)), 'm', `fast running ${perQ}`],
+             top:   () => { const q = qBest(q => q.fast); return [fmt(q.fast), 'm', `fast running · best Q${q.n}`]; } },
+  hr:      { label:'Average heart rate', modes:['avg', 'top'],
+             avg:   () => [Math.round(SHARE.hr), 'bpm', 'average heart rate on the pitch'],
+             top:   () => { const q = qBest(q => q.hr); return [Math.round(q.hr), 'bpm', `highest quarter · Q${q.n}`]; } },
+  own:     { label:'Defensive half', modes:['total'],
+             total: () => [Math.round(SHARE.own), '%', 'of the time in the defensive half'] },
   // "Minutes on pitch" removed as a pickable stat, 6 Sep 2026 — Colin: redundant.
 };
 if (!SHARE.hr) delete STATS.hr;
 if (!SHARE.fast) delete STATS.fast;
-const picks = ['top', 'sprints', 'dist'].filter(k => STATS[k]);
+// No quarter with 5+ minutes (or a page built before SHARE.q existed): only whole-game
+// figures can be honest, so the per-quarter modes are withdrawn rather than shown as 0.
+if (!QS.length){
+  ['sprints', 'dist', 'fast'].forEach(k => { if (STATS[k]) STATS[k].modes = ['total']; });
+  ['mpm', 'hr'].forEach(k => { if (STATS[k]) STATS[k].modes = ['avg']; });
+}
+const picks = [['top', 'top'], ['sprints', 'total'], ['dist', 'total']].filter(p => STATS[p[0]]);
 function shareOpts(H){
-  const [h1, h2, h3] = picks.map(k => STATS[k]);
-  const [hn, hu] = h1.big(), [b2, u2] = h2.big(), [b3, u3] = h3.big();
+  const [[hn, hu, hs], [b2, u2, s2], [b3, u3, s3]] = picks.map(([k, md]) => STATS[k][md]());
   return { H, grid: DATA.grid, eyebrow: SHARE.eyebrow, title: SHARE.subject, subtitle: SHARE.subtitle,
-           hero: { num: hn, unit: hu, small: h1.small() },
-           support: [{ big: `${b2} ${u2}`, small: h2.small() },
-                     { big: `${b3} ${u3}`, small: h3.small() }] };
+           hero: { num: hn, unit: hu, small: hs },
+           support: [{ big: `${b2} ${u2}`, small: s2 },
+                     { big: `${b3} ${u3}`, small: s3 }] };
 }
 function fillPickers(){
-  ['s1','s2','s3'].forEach((id, i) => {
-    const sel = document.getElementById(id); sel.innerHTML = '';
-    Object.entries(STATS).forEach(([k, s]) => {
-      if (picks.indexOf(k) !== -1 && picks[i] !== k) return;   // no stat twice
+  const chosen = picks.map(p => p[0]);
+  picks.forEach((p, i) => {
+    const s = STATS[p[0]];
+    if (!s.modes.includes(p[1])) p[1] = s.modes[0];
+    const sel = document.getElementById('s' + (i + 1)); sel.innerHTML = '';
+    Object.entries(STATS).forEach(([k, st]) => {
+      if (chosen.indexOf(k) !== -1 && p[0] !== k) return;   // no stat twice
       const o = document.createElement('option');
-      o.value = k; o.textContent = s.label; o.selected = picks[i] === k;
+      o.value = k; o.textContent = st.label; o.selected = p[0] === k;
       sel.appendChild(o);
     });
+    const m = document.getElementById('m' + (i + 1));
+    m.innerHTML = s.modes.map(md => `<option value="${md}"${p[1]===md?' selected':''}>${MODE_LBL[md]}</option>`).join('');
+    m.disabled = s.modes.length === 1;     // top speed / defensive half have one form only
   });
 }
 // Card 2 carries no stats, so it needs only the three text lines and the grid. Its zone
@@ -1021,9 +1068,14 @@ function renderShare(){
   drawShare(document.getElementById('share'), shareOpts(1920));
   drawShareMap(document.getElementById('share2'), shareMapOpts(1920));
 }
-['s1','s2','s3'].forEach((id, i) => document.getElementById(id).addEventListener('change', e => {
-  picks[i] = e.target.value; fillPickers(); renderShare();
-}));
+[1, 2, 3].forEach(n => {
+  document.getElementById('s' + n).addEventListener('change', e => {
+    picks[n-1][0] = e.target.value; fillPickers(); renderShare();
+  });
+  document.getElementById('m' + n).addEventListener('change', e => {
+    picks[n-1][1] = e.target.value; renderShare();
+  });
+});
 fillPickers(); renderShare();
 document.getElementById('dl').onclick =
   () => sharePNG(shareOpts, SHARE.filename, `${SHARE.subject} — ${SHARE.eyebrow}`, 1920);
