@@ -205,7 +205,12 @@
   .ratewarn{ background:rgba(232,132,42,.10); border:1px solid rgba(232,132,42,.42);
     border-radius:10px; padding:13px 15px; font-size:13.5px; line-height:1.55; color:var(--ink); }
   .ratewarn b{ color:var(--accent); }
-</style></head><body>
+
+  .sfilt{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--ink-2); }
+  .sfilt select{ background:var(--card); color:var(--ink); border:1px solid var(--tile-border); border-radius:8px;
+    padding:7px 10px; font-size:14px; font-family:inherit; max-width:100%; }
+  .picks label select + select{ margin-top:2px; }
+  .picks select:disabled{ opacity:.55; }</style></head><body>
 <div class="wrap">
   <a class="back" href="../ks.html">&larr; all match reports</a>
   <header>
@@ -273,16 +278,19 @@
   </div>
 
   <div class="board">
-    <div class="h2row"><h2>Share it</h2><span class="h2sub">two cards &mdash; the numbers, and the map</span></div>
+    <!-- The cards' OWN position filter sits in this header, beside both cards (Colin,
+         5 Oct 2026). It is deliberately separate from the chips at the top of the page:
+         reaching those meant scrolling back up. Changing it moves only the two cards. -->
+    <div class="h2row"><h2>Share it</h2><label class="sfilt">Position <select id="schip"><option value="all">All positions (8 games)</option><option value="right back">Right back (8 games)</option></select></label></div>
     <div class="share">
       <div class="preview"><canvas id="share" width="1080" height="1920"></canvas></div>
       <div>
         <div class="sharelbl">Card 1 &middot; three numbers</div>
-        <div class="how">Pick the <b>three numbers</b> you want on the card &mdash; the first is the big one. The map and the position filter above carry over.</div>
+        <div class="how">Pick the <b>three numbers</b> you want on the card &mdash; the first is the big one. Under each, choose <b>Top</b> (the best single game), <b>Total</b> (every game added up) or <b>Average</b> (per game). The position filter above sets which games count.</div>
         <div class="picks">
-          <label><span>1st (big)</span><select id="s1"></select></label>
-          <label><span>2nd</span><select id="s2"></select></label>
-          <label><span>3rd</span><select id="s3"></select></label>
+          <label><span>1st (big)</span><select id="s1"></select><select id="m1" aria-label="1st number: top, total or average"></select></label>
+          <label><span>2nd</span><select id="s2"></select><select id="m2" aria-label="2nd number: top, total or average"></select></label>
+          <label><span>3rd</span><select id="s3"></select><select id="m3" aria-label="3rd number: top, total or average"></select></label>
         </div>
         <div class="btns"><button class="btn" id="dl">Download as image</button></div>
         <div class="fmt">Saves a 1080 &times; 1920 image &mdash; sized for a phone story, and it posts fine anywhere else. On a phone the button opens the share sheet directly. A plain screenshot of the card also works.</div>
@@ -292,7 +300,7 @@
       <div class="preview"><canvas id="share2" width="1080" height="1920"></canvas></div>
       <div>
         <div class="sharelbl">Card 2 &middot; the heat map, upright</div>
-        <div class="how">Just the pitch, turned upright so it fills a phone screen, with the <b>share of time in each zone</b> printed on it. It follows the position filter too.</div>
+        <div class="how">Just the pitch, turned upright so it fills a phone screen, with the <b>share of time in each zone</b> printed on it. It follows the position filter at the top of this box too.</div>
         <div class="btns"><button class="btn ghost" id="dl2">Download heat map</button></div>
         <div class="fmt">Same 1080 &times; 1920 size as card 1. The zone percentages are the share of time on the pitch, so the twelve of them add up to 100%.</div>
       </div>
@@ -515,7 +523,7 @@ function drawShare(cv, o){
   x.fillStyle = ACC; x.font = F('800 ' + heroPx + 'px'); x.fillText(o.hero.num, 60, y);
   const hw = x.measureText(o.hero.num).width;
   x.fillStyle = INK;  x.font = F('600 48px'); x.fillText(o.hero.unit, 60 + hw + 24, y - 10);
-  x.fillStyle = INK2; x.font = F('400 34px'); x.fillText(o.hero.small, 66, y + 46);
+  x.fillStyle = INK2; fitText(x, o.hero.small, 66, y + 46, W - 140, F, '400', 34);
   // heat map, drawn by the same renderer (and default jet ramp) as the page
   y += story ? 60 : 40;
   const mw = W - 120, mh = Math.round(mw * 0.6);
@@ -530,7 +538,9 @@ function drawShare(cv, o){
   y = y + mh + 40 + Math.max(0, (bottom - footerH - (y + mh + 40) - statsH) / 2);
   const stat = (x0, big, small) => {
     x.fillStyle = INK;  x.font = F('800 84px'); x.fillText(big, x0, y + 84);
-    x.fillStyle = INK2; x.font = F('500 34px'); x.fillText(small, x0, y + 130);
+    // half the card wide, so the season page's "most in one game · G5" lines get shrunk
+    // to fit rather than running into the column beside them (5 Oct 2026)
+    x.fillStyle = INK2; fitText(x, small, x0, y + 130, W/2 - 110, F, '500', 34);
   };
   stat(70,       o.support[0].big, o.support[0].small);
   stat(W/2 + 40, o.support[1].big, o.support[1].small);
@@ -626,23 +636,71 @@ function bestTxt(top, prefix){
 // The share card's three numbers are CHOSEN, not fixed — Colin: "maybe i want
 // to show my top speed, maybe sprints, maybe heart rate". Each stat knows how
 // to render itself big (hero) and small (supporting).
+//
+// Since 5 Oct 2026 each number also picks HOW it is summed up across the games
+// (Colin: "choose top, total, or average"). Top = the best single game, Total = every
+// game added up, Average = per game. A metric offers only the modes that mean
+// something: "total top speed" or "total work rate" is nonsense, so those are not
+// in its list. Every function returns [big number, unit, small line] and takes the
+// filtered games plus their totals(). Small lines name a game by number only (G5),
+// because the supporting columns are half the card wide.
+const MODE_LBL = { top: 'Top', total: 'Total', avg: 'Average' };
+const bestG = (gs, f) => gs.reduce((a, b) => f(b) > f(a) ? b : a, gs[0]);
+const rateOf = g => g.on_pitch ? g.dist_m / g.on_pitch : 0;
 const STATS = {
-  top:     { label: 'Top speed',          big: t => [t.top.toFixed(1), 'km/h'],           small: t => bestTxt(t.top, 'top speed · ') },
-  sprints: { label: 'Sprints',            big: t => [fmt(t.sprints), 'sprints'],           small: t => `${(t.sprints/t.n).toFixed(0)} a game` },
-  dist:    { label: 'Distance covered',   big: t => [(t.dist/1000).toFixed(1), 'km'],      small: t => `covered · ${(t.dist/t.n/1000).toFixed(1)} km a game` },
-  mpm:     { label: 'Work rate',          big: t => [t.mpm.toFixed(0), 'm/min'],           small: t => 'metres per minute on the pitch' },
-  fast:    { label: 'Fast running',       big: t => [fmt(t.fast), 'm'],                    small: t => `fast running · above 15 km/h` },
-  hr:      { label: 'Average heart rate', big: t => [Math.round(t.hr), 'bpm'],             small: t => 'average heart rate on the pitch' },
-  own:     { label: 'Defensive half',     big: t => [Math.round(t.own), '%'],              small: t => 'of the time in the defensive half' },
+  top:     { label: 'Top speed', modes: ['top', 'avg'],
+             top:   (gs, t) => [t.top.toFixed(1), 'km/h', bestTxt(t.top, 'top speed · ')],
+             avg:   (gs, t) => [(gs.reduce((s, g) => s + g.top, 0) / t.n).toFixed(1), 'km/h', 'average top speed per game'] },
+  sprints: { label: 'Sprints', modes: ['total', 'avg', 'top'],
+             total: (gs, t) => [fmt(t.sprints), t.sprints === 1 ? 'sprint' : 'sprints', `${(t.sprints/t.n).toFixed(1)} a game`],
+             avg:   (gs, t) => [(t.sprints/t.n).toFixed(1), 'a game', 'sprints per game'],
+             top:   (gs, t) => { const g = bestG(gs, g => g.sprints);
+                                 return [fmt(g.sprints), g.sprints === 1 ? 'sprint' : 'sprints', `most in one game · G${g.game_no}`]; } },
+  dist:    { label: 'Distance covered', modes: ['total', 'avg', 'top'],
+             total: (gs, t) => [(t.dist/1000).toFixed(1), 'km', `covered · ${(t.dist/t.n/1000).toFixed(1)} km a game`],
+             avg:   (gs, t) => [(t.dist/t.n/1000).toFixed(1), 'km', 'covered per game'],
+             top:   (gs, t) => { const g = bestG(gs, g => g.dist_m);
+                                 return [(g.dist_m/1000).toFixed(1), 'km', `most in one game · G${g.game_no}`]; } },
+  // Average work rate is total metres ÷ total minutes, so a short game cannot outvote a
+  // full one — the same figure the scorecard and the table's total row print.
+  mpm:     { label: 'Work rate', modes: ['avg', 'top'],
+             avg:   (gs, t) => [t.mpm.toFixed(0), 'm/min', 'metres per minute on the pitch'],
+             top:   (gs, t) => { const g = bestG(gs, rateOf);
+                                 return [rateOf(g).toFixed(0), 'm/min', `best game · G${g.game_no}`]; } },
+  fast:    { label: 'Fast running', modes: ['total', 'avg', 'top'],
+             total: (gs, t) => [fmt(t.fast), 'm', 'fast running · above 15 km/h'],
+             avg:   (gs, t) => [fmt(t.fast/t.n), 'm', 'fast running a game · 15+ km/h'],
+             top:   (gs, t) => { const g = bestG(gs, g => g.fast_m);
+                                 return [fmt(g.fast_m), 'm', `fast running · best G${g.game_no}`]; } },
+  hr:      { label: 'Average heart rate', modes: ['avg', 'top'],
+             avg:   (gs, t) => [Math.round(t.hr), 'bpm', 'average heart rate on the pitch'],
+             top:   (gs, t) => { const g = bestG(gs, g => g.avg_hr);
+                                 return [Math.round(g.avg_hr), 'bpm', `highest game average · G${g.game_no}`]; } },
+  own:     { label: 'Defensive half', modes: ['avg'],
+             avg:   (gs, t) => [Math.round(t.own), '%', 'of the time in the defensive half'] },
   // "Minutes on pitch" removed as a pickable stat, 6 Sep 2026 — Colin: redundant.
 };
-const picks = ['top', 'sprints', 'dist'];        // starting choice — change any of them
+// starting choice — [metric, mode] per slot; change any of them
+const picks = [['top', 'top'], ['sprints', 'total'], ['dist', 'total']];
 function fillPickers(){
-  ['s1','s2','s3'].forEach((id, i) => {
-    const sel = document.getElementById(id);
-    sel.innerHTML = Object.entries(STATS).map(([k, s]) =>
-      `<option value="${k}"${picks[i]===k?' selected':''}${picks.includes(k)&&picks[i]!==k?' disabled':''}>${s.label}</option>`).join('');
+  const chosen = picks.map(p => p[0]);
+  picks.forEach((p, i) => {
+    const s = STATS[p[0]];
+    if (!s.modes.includes(p[1])) p[1] = s.modes[0];
+    document.getElementById('s' + (i + 1)).innerHTML = Object.entries(STATS).map(([k, st]) =>
+      `<option value="${k}"${p[0]===k?' selected':''}${chosen.includes(k)&&p[0]!==k?' disabled':''}>${st.label}</option>`).join('');
+    const m = document.getElementById('m' + (i + 1));
+    m.innerHTML = s.modes.map(md => `<option value="${md}"${p[1]===md?' selected':''}>${MODE_LBL[md]}</option>`).join('');
+    m.disabled = s.modes.length === 1;      // Defensive half has only an average
   });
+}
+// The share cards' own position filter (5 Oct 2026) — separate from the page's chips.
+let shareChip = 'all';
+function shareGames(){ return shareChip === 'all' ? GAMES : GAMES.filter(g => g.chips.includes(shareChip)); }
+function shareLabel(){ return shareChip === 'all' ? '' : ` · ${CHIP_KEYS[shareChip].toLowerCase()}`; }
+function renderShare(){
+  drawShare(document.getElementById('share'), shareOpts(1920));
+  drawShareMap(document.getElementById('share2'), shareMapOpts(1920));
 }
 
 function selected(){ return chip === 'all' ? GAMES : GAMES.filter(g => g.chips.includes(chip)); }
@@ -740,19 +798,17 @@ function render(){
   document.getElementById('game-head').innerHTML =
     `Across ${t.n} game${t.n!==1?'s':''} ${SUBJECT} averaged <b>${t.mpm.toFixed(0)} m per minute</b> on the pitch; the highest was <b>G${fastest.game_no} vs ${fastest.opponent}</b> at ${(fastest.dist_m/fastest.on_pitch).toFixed(0)} m/min.`;
 
-  drawShare(document.getElementById('share'), shareOpts(1920));
-  drawShareMap(document.getElementById('share2'), shareMapOpts(1920));
+  renderShare();
   drawQP();
 }
 
-// Card 2: the pitch alone, upright, with its zone shares. Follows the position filter
-// like everything else on this page, and always shows the percentages regardless of the
-// page's tick box — the percentages are the reason the card exists.
+// Card 2: the pitch alone, upright, with its zone shares. Follows the CARDS' position
+// filter (in the Share it header, 5 Oct 2026), and always shows the percentages
+// regardless of the page's tick box — the percentages are the reason the card exists.
 function shareMapOpts(H){
-  const gs = selected(), t = totals(gs);
-  const label = chip === 'all' ? '' : ` · ${CHIP_KEYS[chip].toLowerCase()}`;
+  const gs = shareGames(), t = totals(gs);
   return { H, grid: combine(gs), eyebrow: 'BARKERITES · MHL 5 · 2026 SEASON', title: SUBJECT,
-           subtitle: `${t.n} game${t.n!==1?'s':''}${label}` };
+           subtitle: `${t.n} game${t.n!==1?'s':''}${shareLabel()}` };
 }
 
 // The season page's content for the SHARED drawShare (defined in the extracted
@@ -760,17 +816,15 @@ function shareMapOpts(H){
 // renderer is the point: two copies of a card this fiddly drift on safe zones and
 // type sizes, and nothing would catch it.
 function shareOpts(H){
-  const gs = selected(), t = totals(gs);
-  const [h1, h2, h3] = picks.map(k => STATS[k]);
-  const [hn, hu] = h1.big(t), [b2, u2] = h2.big(t), [b3, u3] = h3.big(t);
-  const label = chip === 'all' ? '' : ` · ${CHIP_KEYS[chip].toLowerCase()}`;
+  const gs = shareGames(), t = totals(gs);
+  const [[hn, hu, hs], [b2, u2, s2], [b3, u3, s3]] = picks.map(([k, md]) => STATS[k][md](gs, t));
   return { H, grid: combine(gs), zones: zonesOn,
            eyebrow: 'BARKERITES · MHL 5 · 2026 SEASON', title: SUBJECT,
            // No minutes on the card — Colin, 6 Sep 2026: "its a redundant stat for me".
-           subtitle: `${t.n} game${t.n!==1?'s':''}${label}`,
-           hero: { num: hn, unit: hu, small: h1.small(t) },
-           support: [{ big: `${b2} ${u2}`, small: h2.small(t) },
-                     { big: `${b3} ${u3}`, small: h3.small(t) }] };
+           subtitle: `${t.n} game${t.n!==1?'s':''}${shareLabel()}`,
+           hero: { num: hn, unit: hu, small: hs },
+           support: [{ big: `${b2} ${u2}`, small: s2 },
+                     { big: `${b3} ${u3}`, small: s3 }] };
 }
 
 // drawShare + sharePNG are the SHARED implementation extracted from
@@ -782,9 +836,16 @@ document.getElementById('dl').onclick =
 document.getElementById('dl2').onclick =
   () => sharePNG(shareMapOpts, `${SUBJECT}-season-heatmap.png`, `${SUBJECT} — season heat map`,
                  1920, drawShareMap);
-['s1','s2','s3'].forEach((id, i) => document.getElementById(id).addEventListener('change', e => {
-  picks[i] = e.target.value; fillPickers(); render();
-}));
+[1, 2, 3].forEach(n => {
+  document.getElementById('s' + n).addEventListener('change', e => {
+    picks[n-1][0] = e.target.value; fillPickers(); renderShare();
+  });
+  document.getElementById('m' + n).addEventListener('change', e => {
+    picks[n-1][1] = e.target.value; renderShare();
+  });
+});
+const schip = document.getElementById('schip');
+if (schip) schip.addEventListener('change', e => { shareChip = e.target.value; renderShare(); });
 fillPickers();
 
 // ---------------------------------------------------------------- quarter profile

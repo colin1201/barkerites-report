@@ -566,7 +566,7 @@ function drawShare(cv, o){
   x.fillStyle = ACC; x.font = F('800 ' + heroPx + 'px'); x.fillText(o.hero.num, 60, y);
   const hw = x.measureText(o.hero.num).width;
   x.fillStyle = INK;  x.font = F('600 48px'); x.fillText(o.hero.unit, 60 + hw + 24, y - 10);
-  x.fillStyle = INK2; x.font = F('400 34px'); x.fillText(o.hero.small, 66, y + 46);
+  x.fillStyle = INK2; fitText(x, o.hero.small, 66, y + 46, W - 140, F, '400', 34);
   // heat map, drawn by the same renderer (and default jet ramp) as the page
   y += story ? 60 : 40;
   const mw = W - 120, mh = Math.round(mw * 0.6);
@@ -581,7 +581,9 @@ function drawShare(cv, o){
   y = y + mh + 40 + Math.max(0, (bottom - footerH - (y + mh + 40) - statsH) / 2);
   const stat = (x0, big, small) => {
     x.fillStyle = INK;  x.font = F('800 84px'); x.fillText(big, x0, y + 84);
-    x.fillStyle = INK2; x.font = F('500 34px'); x.fillText(small, x0, y + 130);
+    // half the card wide, so the season page's "most in one game · G5" lines get shrunk
+    // to fit rather than running into the column beside them (5 Oct 2026)
+    x.fillStyle = INK2; fitText(x, small, x0, y + 130, W/2 - 110, F, '500', 34);
   };
   stat(70,       o.support[0].big, o.support[0].small);
   stat(W/2 + 40, o.support[1].big, o.support[1].small);
