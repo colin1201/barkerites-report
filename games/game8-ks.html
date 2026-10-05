@@ -539,6 +539,14 @@ function drawZoneLabels(ctx, zs, geom, k, map){
 // overall_report.py extracts everything up to that line as its shared script.
 // Instagram's own UI covers the top 250px and bottom 340px of a 1080x1920 story,
 // so nothing is drawn outside that band.
+// The subtitle now leads with the position (5 Oct 2026), so a long one ("Centre back /
+// right back · vs Old Rafflesians Assoc-C · ...") can outrun the card. Shrink the type
+// until it fits rather than letting it run off the right edge.
+function fitText(x, s, x0, y, maxW, F, weight, px){
+  x.font = F(weight + ' ' + px + 'px');
+  while (px > 24 && x.measureText(s).width > maxW){ px -= 2; x.font = F(weight + ' ' + px + 'px'); }
+  x.fillText(s, x0, y);
+}
 function drawShare(cv, o){
   const W = 1080, H = o.H || 1920; cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
@@ -551,7 +559,7 @@ function drawShare(cv, o){
   let y = top + 60;
   x.fillStyle = ACC;  x.font = F('600 34px'); x.fillText(o.eyebrow, 70, y);
   y += 74; x.fillStyle = INK;  x.font = F('700 66px'); x.fillText(o.title, 70, y);
-  y += 48; x.fillStyle = INK2; x.font = F('400 36px'); x.fillText(o.subtitle, 70, y);
+  y += 48; x.fillStyle = INK2; fitText(x, o.subtitle, 70, y, W - 140, F, '400', 36);
   // hero: the FIRST chosen stat
   y += story ? 250 : 190;
   const heroPx = o.hero.num.length > 4 ? (story ? 190 : 150) : (story ? 250 : 190);
@@ -595,7 +603,7 @@ function drawShareMap(cv, o){
   let y = top + 60;
   x.fillStyle = ACC;  x.font = F('600 34px'); x.fillText(o.eyebrow, 70, y);
   y += 74; x.fillStyle = INK;  x.font = F('700 66px'); x.fillText(o.title, 70, y);
-  y += 48; x.fillStyle = INK2; x.font = F('400 36px'); x.fillText(o.subtitle, 70, y);
+  y += 48; x.fillStyle = INK2; fitText(x, o.subtitle, 70, y, W - 140, F, '400', 36);
   // What the numbers mean goes ABOVE the pitch, in the header block. Putting it at the
   // foot alongside the direction label made the two overlap — the labels below the map
   // are for direction only, and each sits on the side of the pitch it describes.
@@ -945,7 +953,7 @@ paintTimeline();
 // Everything below is GAME-PAGE ONLY: it sits after the drawMap() call, which is
 // where overall_report.py stops extracting the shared script, so the season page
 // keeps its own stat set and picker wiring and only shares drawShare/sharePNG.
-const SHARE = {"subject": "KS", "eyebrow": "BARKERITES \u00b7 MHL 5 \u00b7 GAME 8", "subtitle": "vs OVA \u00b7 Sun 4 Oct 2026", "top": 22.8, "sprints": 1, "dist": 3401, "mpm": 45.0, "fast": 52, "hr": 128, "own": 98, "min": 75, "trackMax": null, "filename": "ks-game8.png"};
+const SHARE = {"subject": "KS", "eyebrow": "BARKERITES \u00b7 MHL 5 \u00b7 GAME 8", "subtitle": "Right back \u00b7 vs OVA \u00b7 Sun 4 Oct 2026", "top": 22.8, "sprints": 1, "dist": 3401, "mpm": 45.0, "fast": 52, "hr": 128, "own": 98, "min": 75, "trackMax": null, "filename": "ks-game8.png"};
 const fmt = n => Math.round(n).toLocaleString('en-GB');
 // Personal best = the fastest this player has EVER been measured, track OR match.
 // A game page cannot see the other games, so the reference is the larger of the
