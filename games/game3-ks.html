@@ -339,7 +339,7 @@
   <div class="board">
     <div class="h2row"><h2>Share it</h2><span class="h2sub">two cards &mdash; your numbers, and the map</span></div>
     <div class="share">
-      <div class="preview"><canvas id="share" width="1080" height="1920"></canvas></div>
+      <div class="preview"><canvas id="share" width="1080" height="1350"></canvas></div>
       <div>
         <div class="sharelbl">Card 1 &middot; your three numbers</div>
         <div class="how">Pick the <b>three numbers</b> you want on the card &mdash; the first is the big one. Under each, choose <b>Top</b> (the best quarter), <b>Total</b> (the whole game) or <b>Average</b> (per quarter). A quarter with under 5 minutes on the pitch is left out of Top and Average.</div>
@@ -349,16 +349,16 @@
           <label><span>3rd</span><select id="s3"></select><select id="m3" aria-label="3rd number: top, total or average"></select></label>
         </div>
         <div class="btns"><button class="btn" id="dl">Download as image</button></div>
-        <div class="fmt">Saves a 1080 &times; 1920 image &mdash; sized for a phone story, and it posts fine anywhere else. On a phone the button opens the share sheet directly. A plain screenshot of the card also works.</div>
+        <div class="fmt">Saves a 1080 &times; 1350 image &mdash; Instagram's 4:5 feed size, so it sits in a post or carousel without being cropped. On a phone the button opens the share sheet directly. A plain screenshot of the card also works.</div>
       </div>
     </div>
     <div class="share share2">
-      <div class="preview"><canvas id="share2" width="1080" height="1920"></canvas></div>
+      <div class="preview"><canvas id="share2" width="1080" height="1350"></canvas></div>
       <div>
         <div class="sharelbl">Card 2 &middot; the heat map, upright</div>
-        <div class="how">Just the pitch, turned upright so it fills a phone screen, with the <b>share of time in each zone</b> printed on it. No stats &mdash; it reads on its own.</div>
+        <div class="how">Just the pitch, turned upright, with the <b>share of time in each zone</b> printed on it. No stats &mdash; it reads on its own.</div>
         <div class="btns"><button class="btn ghost" id="dl2">Download heat map</button></div>
-        <div class="fmt">Same 1080 &times; 1920 size as card 1. The zone percentages are the share of your time on the pitch, so the twelve of them add up to 100%.</div>
+        <div class="fmt">Same 1080 &times; 1350 size as card 1, so the two sit side by side in one carousel. The zone percentages are the share of your time on the pitch, so the twelve of them add up to 100%.</div>
       </div>
     </div>
   </div>
@@ -542,6 +542,11 @@ function drawZoneLabels(ctx, zs, geom, k, map){
 // overall_report.py extracts everything up to that line as its shared script.
 // Instagram's own UI covers the top 250px and bottom 340px of a 1080x1920 story,
 // so nothing is drawn outside that band.
+// SHARE_H = the height every card is drawn and saved at. 1350 = Instagram's 4:5 FEED
+// size (changed from 1920 on 8 Oct 2026 for carousel posts). A carousel crops every
+// slide to the first slide's shape, so a 9:16 card got cut top and bottom. Both
+// renderers still handle 1920 (story = H > 1400).
+const SHARE_H = 1350;
 // The subtitle now leads with the position (5 Oct 2026), so a long one ("Centre back /
 // right back · vs Old Rafflesians Assoc-C · ...") can outrun the card. Shrink the type
 // until it fits rather than letting it run off the right edge.
@@ -551,10 +556,10 @@ function fitText(x, s, x0, y, maxW, F, weight, px){
   x.fillText(s, x0, y);
 }
 function drawShare(cv, o){
-  const W = 1080, H = o.H || 1920; cv.width = W; cv.height = H;
+  const W = 1080, H = o.H || SHARE_H; cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
   const story = H > 1400;                       // 9:16 vs 4:5
-  const top = story ? 250 : 60, bottom = story ? H - 340 : H - 60;
+  const top = story ? 250 : 50, bottom = story ? H - 340 : H - 60;
   x.fillStyle = '#10161d'; x.fillRect(0,0,W,H);
   const ACC = '#e8842a', INK = '#e8edf2', INK2 = '#a7b4c0', INK3 = '#6b7a88';
   const F = w => `${w} "Segoe UI",system-ui,-apple-system,sans-serif`;
@@ -564,14 +569,16 @@ function drawShare(cv, o){
   y += 74; x.fillStyle = INK;  x.font = F('700 66px'); x.fillText(o.title, 70, y);
   y += 48; x.fillStyle = INK2; fitText(x, o.subtitle, 70, y, W - 140, F, '400', 36);
   // hero: the FIRST chosen stat
-  y += story ? 250 : 190;
+  y += story ? 250 : 170;
   const heroPx = o.hero.num.length > 4 ? (story ? 190 : 150) : (story ? 250 : 190);
   x.fillStyle = ACC; x.font = F('800 ' + heroPx + 'px'); x.fillText(o.hero.num, 60, y);
   const hw = x.measureText(o.hero.num).width;
   x.fillStyle = INK;  x.font = F('600 48px'); x.fillText(o.hero.unit, 60 + hw + 24, y - 10);
   x.fillStyle = INK2; fitText(x, o.hero.small, 66, y + 46, W - 140, F, '400', 34);
   // heat map, drawn by the same renderer (and default jet ramp) as the page
-  y += story ? 60 : 40;
+  // 4:5 needs 80, not 40: the hero's caption sits 46px under its baseline and a 40px gap
+  // put the map on top of it (8 Oct 2026, first render of the 4:5 card)
+  y += story ? 60 : 80;
   const mw = W - 120, mh = Math.round(mw * 0.6);
   const off = document.createElement('canvas'); off.width = 1200; off.height = 722;
   drawMap(off, o.grid, gridMax(o.grid), {zones: !!o.zones, k: 3});
@@ -598,9 +605,10 @@ function drawShare(cv, o){
 // filling the safe zone, with the 12 zone shares on it. The upright renderer stays alive
 // only for this; every ON-PAGE map is landscape, decided the same day.
 function drawShareMap(cv, o){
-  const W = 1080, H = o.H || 1920; cv.width = W; cv.height = H;
+  const W = 1080, H = o.H || SHARE_H; cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
-  const top = 250, bottom = H - 340;              // Instagram's own UI bands
+  const story = H > 1400;                         // 9:16 story vs 4:5 feed
+  const top = story ? 250 : 40, bottom = story ? H - 340 : H - 50;   // story = Instagram's own UI bands
   x.fillStyle = '#10161d'; x.fillRect(0, 0, W, H);
   const ACC = '#e8842a', INK = '#e8edf2', INK2 = '#a7b4c0', INK3 = '#6b7a88';
   const F = w => `${w} "Segoe UI",system-ui,-apple-system,sans-serif`;
@@ -639,7 +647,7 @@ function drawShareMap(cv, o){
 // SAME code as the on-page preview and cannot disagree with it. `draw` picks which card.
 function sharePNG(buildOpts, name, title, H, draw){
   const cv = document.createElement('canvas');
-  (draw || drawShare)(cv, buildOpts(H || 1920));
+  (draw || drawShare)(cv, buildOpts(H || SHARE_H));
   cv.toBlob(async b => {
     const file = new File([b], name, {type:'image/png'});
     if (navigator.canShare && navigator.canShare({files:[file]})) {
@@ -1064,8 +1072,8 @@ function shareMapOpts(H){
            title: SHARE.subject, subtitle: SHARE.subtitle };
 }
 function renderShare(){
-  drawShare(document.getElementById('share'), shareOpts(1920));
-  drawShareMap(document.getElementById('share2'), shareMapOpts(1920));
+  drawShare(document.getElementById('share'), shareOpts(SHARE_H));
+  drawShareMap(document.getElementById('share2'), shareMapOpts(SHARE_H));
 }
 [1, 2, 3].forEach(n => {
   document.getElementById('s' + n).addEventListener('change', e => {
@@ -1077,9 +1085,9 @@ function renderShare(){
 });
 fillPickers(); renderShare();
 document.getElementById('dl').onclick =
-  () => sharePNG(shareOpts, SHARE.filename, `${SHARE.subject} — ${SHARE.eyebrow}`, 1920);
+  () => sharePNG(shareOpts, SHARE.filename, `${SHARE.subject} — ${SHARE.eyebrow}`, SHARE_H);
 document.getElementById('dl2').onclick =
   () => sharePNG(shareMapOpts, SHARE.filename.replace(/\.png$/, '-heatmap.png'),
-                 `${SHARE.subject} — heat map`, 1920, drawShareMap);
+                 `${SHARE.subject} — heat map`, SHARE_H, drawShareMap);
 </script>
 </body></html>
