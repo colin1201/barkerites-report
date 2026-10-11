@@ -959,8 +959,9 @@ function shareMapOpts(H){
 function shareGamesOpts(H){
   const gs = shareGames();
   return { H, eyebrow: 'BARKERITES · MHL 5 · 2026 SEASON', title: SUBJECT,
-           subtitle: `${gs.length} game${gs.length!==1?'s':''}${shareLabel()} · each map on its own scale, red = that game's busiest spot`,
-           maps: gs.map(g => ({grid: g.grid, cap: `G${g.game_no} · ${g.opponent} · ${g.on_pitch} min`})) };
+           // Colin, 11 Oct 2026: no minutes, no "own scale" line on the card ("its obvious")
+           subtitle: `${gs.length} game${gs.length!==1?'s':''}${shareLabel()}`,
+           maps: gs.map(g => ({grid: g.grid, cap: `G${g.game_no} · ${g.opponent}`})) };
 }
 
 // The season page's content for the SHARED drawShare (defined in the extracted
