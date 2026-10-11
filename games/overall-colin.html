@@ -326,7 +326,7 @@
         <div class="sharelbl">Card 4 &middot; positions played</div>
         <div class="how">Each position's <b>share of the minutes on the pitch</b>, on a pitch drawn the same way round as the heat maps. Bigger, brighter circle = more of the season there. Counts every game, whatever the position filter says.</div>
         <div class="btns"><button class="btn ghost" id="dl4">Download positions</button></div>
-        <div class="fmt">Same shape and size as card 1. The percentages are rounded so they add up to exactly 100%.</div>
+        <div class="fmt">Same shape and size as card 1. The percentages are rounded so they add up to exactly 100%.<span id="posextra"></span></div>
       </div>
     </div>
   </div>
@@ -1037,8 +1037,8 @@ function drawSharePositions(cv, o){
     const lw = Math.max(x.measureText(label).width, 0) + 24;
     x.fillStyle = 'rgba(16,22,29,.82)';
     x.beginPath(); x.roundRect(cx - lw / 2, ly - 28, lw, 54, 10); x.fill();
-    x.fillStyle = SH.INK; x.fillText(label, cx, ly);
-    x.fillStyle = SH.INK2; x.font = F('500 20px'); x.fillText(`${Math.round(r.min)} min`, cx, ly + 21);
+    // name only — Colin, 11 Oct 2026: "dont add the timings. just keep the positions"
+    x.fillStyle = SH.INK; x.fillText(label, cx, ly + 8);
     x.textAlign = 'left';
   });
   x.fillStyle = SH.INK3; x.font = F('500 26px');
@@ -1048,13 +1048,11 @@ function drawSharePositions(cv, o){
   } else { x.textAlign = 'center'; x.fillText('▲ attacking · own goal ▼', W / 2, mapTop + mh + 32); x.textAlign = 'left'; }
 }
 function sharePosOpts(H){
-  const {rows, tot} = positionShares();
-  // an added estimate is said ON the card, not only on the page
-  const ex = GAMES.filter(g => g.extra_min);
-  const note = ex.length ? 'Includes ' + ex.map(g => `G${g.game_no}'s ${g.extra_min} unrecorded minutes`).join(', ')
-                           + ', timed from a teammate’s watch' : '';
-  return { H, rows, note, eyebrow: 'BARKERITES · MHL 5 · 2026 SEASON', title: SUBJECT,
-           subtitle: `Positions played · ${Math.round(tot)} minutes on the pitch` };
+  const {rows} = positionShares();
+  // Colin, 11 Oct 2026: subtitle is just "Positions played" — no minutes line, no note on the
+  // card. The added G7 minutes are stated in the page text beside the card instead.
+  return { H, rows, eyebrow: 'BARKERITES · MHL 5 · 2026 SEASON', title: SUBJECT,
+           subtitle: 'Positions played' };
 }
 
 // The season page's content for the SHARED drawShare (defined in the extracted
@@ -1085,6 +1083,9 @@ document.getElementById('dl2').onclick =
 document.getElementById('dl3').onclick =
   () => sharePNG(shareGamesOpts, `${SUBJECT}-heatmaps-by-game.jpg`, `${SUBJECT} — heat map by game`,
                  SHARE_H, drawShareGames);
+{ const ex = GAMES.filter(g => g.extra_min), el = document.getElementById('posextra');
+  if (el && ex.length) el.textContent = ' They include ' + ex.map(g => `G${g.game_no}'s ${g.extra_min} minutes the watch did not record`).join(', ')
+                                       + ', timed from a teammate’s watch.'; }
 document.getElementById('dl4').onclick =
   () => sharePNG(sharePosOpts, `${SUBJECT}-positions-played.jpg`, `${SUBJECT} — positions played`,
                  SHARE_H, drawSharePositions);
