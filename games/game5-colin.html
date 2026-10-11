@@ -113,8 +113,8 @@
     table.cardify tr.total td.rowhead{ color:var(--accent); }
   }
   /* share card: the on-page preview IS the canvas the button saves */
-  .share{ display:grid; grid-template-columns:minmax(220px,330px) 1fr; gap:20px; align-items:start; }
-  @media (max-width:640px){ .share{ grid-template-columns:1fr; } .share .preview{ max-width:330px; margin:0 auto; } }
+  .share{ display:grid; grid-template-columns:minmax(260px,440px) 1fr; gap:20px; align-items:start; }
+  @media (max-width:640px){ .share{ grid-template-columns:1fr; } .share .preview{ max-width:440px; width:100%; margin:0 auto; } }
   .share canvas{ width:100%; height:auto; border-radius:16px; border:1px solid var(--tile-border); display:block; }
   .share .how{ font-size:14px; color:var(--ink-2); line-height:1.6; }
   .share .how b{ color:var(--ink); }
@@ -139,6 +139,11 @@
      offer, not as more controls for the first */
   .sharelbl{ font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px; }
   .share2{ margin-top:22px; padding-top:22px; border-top:1px solid var(--tile-border); }
+  /* Share-it header controls (Shape on every page; Position too on season pages) */
+  .sctl{ display:flex; flex-wrap:wrap; gap:8px 16px; }
+  .sfilt{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--ink-2); }
+  .sfilt select{ background:var(--card); color:var(--ink); border:1px solid var(--tile-border); border-radius:8px;
+    padding:6px 8px; font-size:13px; font-family:inherit; }
 
   /* Key match stats — the Sofascore "Run tab" panel (Colin, 6 Sep 2026: the three
      headline numbers, then every speed band as metres AND share of the distance).
@@ -337,9 +342,9 @@
   </div>
 
   <div class="board">
-    <div class="h2row"><h2>Share it</h2><span class="h2sub">two cards &mdash; your numbers, and the map</span></div>
+    <div class="h2row"><h2>Share it</h2><label class="sfilt">Shape <select id="shape"><option value="land">Landscape 5:4</option><option value="port">Portrait 4:5</option></select></label></div>
     <div class="share">
-      <div class="preview"><canvas id="share" width="1080" height="1350"></canvas></div>
+      <div class="preview"><canvas id="share" width="1350" height="1080"></canvas></div>
       <div>
         <div class="sharelbl">Card 1 &middot; your three numbers</div>
         <div class="how">Pick the <b>three numbers</b> you want on the card &mdash; the first is the big one. Under each, choose <b>Top</b> (the best quarter), <b>Total</b> (the whole game) or <b>Average</b> (per quarter). A quarter with under 5 minutes on the pitch is left out of Top and Average.</div>
@@ -349,16 +354,16 @@
           <label><span>3rd</span><select id="s3"></select><select id="m3" aria-label="3rd number: top, total or average"></select></label>
         </div>
         <div class="btns"><button class="btn" id="dl">Download as image</button></div>
-        <div class="fmt">Saves a 1080 &times; 1350 image &mdash; Instagram's 4:5 feed size, so it sits in a post or carousel without being cropped. On a phone the button opens the share sheet directly. A plain screenshot of the card also works.</div>
+        <div class="fmt">Saves a JPG in the shape picked above: <b>Landscape</b> 1350 &times; 1080 (5:4) or <b>Portrait</b> 1080 &times; 1350 (4:5). A carousel crops every slide to the first slide's shape, so pick the shape of the photos you're posting with. On a phone the button opens the share sheet; on a computer it downloads.</div>
       </div>
     </div>
     <div class="share share2">
-      <div class="preview"><canvas id="share2" width="1080" height="1350"></canvas></div>
+      <div class="preview"><canvas id="share2" width="1350" height="1080"></canvas></div>
       <div>
-        <div class="sharelbl">Card 2 &middot; the heat map, upright</div>
-        <div class="how">Just the pitch, turned upright, with the <b>share of time in each zone</b> printed on it. No stats &mdash; it reads on its own.</div>
+        <div class="sharelbl">Card 2 &middot; the heat map</div>
+        <div class="how">Just the pitch, filling the card, with the <b>share of time in each zone</b> printed on it. No stats &mdash; it reads on its own.</div>
         <div class="btns"><button class="btn ghost" id="dl2">Download heat map</button></div>
-        <div class="fmt">Same 1080 &times; 1350 size as card 1, so the two sit side by side in one carousel. The zone percentages are the share of your time on the pitch, so the twelve of them add up to 100%.</div>
+        <div class="fmt">Same shape and size as card 1, so the two sit side by side in one carousel. The zone percentages are the share of your time on the pitch, so the twelve of them add up to 100%.</div>
       </div>
     </div>
   </div>
@@ -546,7 +551,19 @@ function drawZoneLabels(ctx, zs, geom, k, map){
 // size (changed from 1920 on 8 Oct 2026 for carousel posts). A carousel crops every
 // slide to the first slide's shape, so a 9:16 card got cut top and bottom. Both
 // renderers still handle 1920 (story = H > 1400).
-const SHARE_H = 1350;
+// LANDSCAPE since Sun 11 Oct 2026: Colin's carousels lead with his own photos, which are
+// 5:4 landscape, and a carousel crops every slide to the FIRST slide's shape — so the
+// cards are now 1350x1080 too. W > H routes each renderer to its landscape layout; the
+// portrait code paths are kept so a 4:5 or story card is one constant away.
+// Colin then asked for the CHOICE at download time (same day): a Shape picker in each page's
+// "Share it" header sets both constants, and every card + preview follows it, so one
+// carousel's cards always share one shape. Default stays landscape.
+let SHARE_W = 1350, SHARE_H = 1080;
+function setShareShape(v){ if (v === 'port'){ SHARE_W = 1080; SHARE_H = 1350; } else { SHARE_W = 1350; SHARE_H = 1080; } }
+function wireShapePicker(rerender){
+  const s = document.getElementById('shape');
+  if (s) s.addEventListener('change', e => { setShareShape(e.target.value); rerender(); });
+}
 // The subtitle now leads with the position (5 Oct 2026), so a long one ("Centre back /
 // right back · vs Old Rafflesians Assoc-C · ...") can outrun the card. Shrink the type
 // until it fits rather than letting it run off the right edge.
@@ -555,7 +572,106 @@ function fitText(x, s, x0, y, maxW, F, weight, px){
   while (px > 24 && x.measureText(s).width > maxW){ px -= 2; x.font = F(weight + ' ' + px + 'px'); }
   x.fillText(s, x0, y);
 }
+// The card header every layout shares: eyebrow, name, subtitle. Returns the subtitle's baseline.
+const SH = { ACC: '#e8842a', INK: '#e8edf2', INK2: '#a7b4c0', INK3: '#6b7a88', BG: '#10161d',
+             F: w => `${w} "Segoe UI",system-ui,-apple-system,sans-serif` };
+function shareHead(x, o, W, top){
+  x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+  let y = top + 60;
+  x.fillStyle = SH.ACC;  x.font = SH.F('600 34px'); x.fillText(o.eyebrow, 70, y);
+  y += 74; x.fillStyle = SH.INK;  x.font = SH.F('700 66px'); x.fillText(o.title, 70, y);
+  y += 48; x.fillStyle = SH.INK2; fitText(x, o.subtitle, 70, y, W - 140, SH.F, '400', 36);
+  return y;
+}
+// a landscape pitch (own goal left) drawn into the card at (x0,y0) w x h, rounded corners
+function sharePitch(x, grid, x0, y0, w, h, zones, r){
+  const off = document.createElement('canvas'); off.width = 1200; off.height = 722;
+  // cssW: the pitch lines are set in CSS px, so tell the offscreen how wide it will END UP,
+  // or a pitch shrunk to a third of the card loses its lines
+  drawMap(off, grid, gridMax(grid), {zones: !!zones, cssW: Math.max(w, 240) / 1.6});
+  x.save(); x.beginPath(); x.roundRect ? x.roundRect(x0, y0, w, h, r) : x.rect(x0, y0, w, h); x.clip();
+  x.drawImage(off, x0, y0, w, h); x.restore();
+}
+// CARD 1, LANDSCAPE (11 Oct 2026): header, the three numbers in one row, then the pitch
+// as wide as the rest of the card allows. No URL footer — Colin asked for it gone.
+function drawShareLand(cv, o){
+  const W = o.W || SHARE_W, H = o.H || SHARE_H; cv.width = W; cv.height = H;
+  const x = cv.getContext('2d'), F = SH.F;
+  x.fillStyle = SH.BG; x.fillRect(0, 0, W, H);
+  let y = shareHead(x, o, W, 40);
+  const rowY = y + 150;
+  const heroPx = o.hero.num.length > 4 ? 112 : 136;
+  x.fillStyle = SH.ACC; x.font = F('800 ' + heroPx + 'px'); x.fillText(o.hero.num, 64, rowY);
+  const hw = x.measureText(o.hero.num).width;
+  x.fillStyle = SH.INK; x.font = F('600 44px'); x.fillText(o.hero.unit, 64 + hw + 18, rowY - 8);
+  const heroEnd = Math.max(64 + hw + 18 + x.measureText(o.hero.unit).width, 380) + 60;
+  const colW = (W - 70 - heroEnd) / 2;
+  x.fillStyle = SH.INK2; fitText(x, o.hero.small, 68, rowY + 44, heroEnd - 100, F, '400', 30);
+  [0, 1].forEach(i => {
+    const x0 = heroEnd + i * colW;
+    // "104 sprints" at 84px is wider than its column — shrink to fit (first render, 11 Oct 2026)
+    x.fillStyle = SH.INK; fitText(x, o.support[i].big, x0, rowY, colW - 40, F, '800', 84);
+    x.fillStyle = SH.INK2; fitText(x, o.support[i].small, x0, rowY + 44, colW - 30, F, '500', 30);
+  });
+  const mapTop = rowY + 84, labH = 36;
+  let mh = H - 40 - labH - mapTop, mw = Math.round(mh * 1200 / 722);
+  if (mw > W - 120){ mw = W - 120; mh = Math.round(mw * 722 / 1200); }
+  const mx0 = Math.round((W - mw) / 2);
+  sharePitch(x, o.grid, mx0, mapTop, mw, mh, o.zones, 22);
+  x.fillStyle = SH.INK3; x.font = F('500 26px');
+  x.fillText('◀ own goal', mx0 + 6, mapTop + mh + 32);
+  x.textAlign = 'right'; x.fillText('attack ▶', mx0 + mw - 6, mapTop + mh + 32); x.textAlign = 'left';
+}
+// CARD 2, LANDSCAPE: the pitch on its side, filling the card, zone shares on it.
+function drawShareMapLand(cv, o){
+  const W = o.W || SHARE_W, H = o.H || SHARE_H; cv.width = W; cv.height = H;
+  const x = cv.getContext('2d'), F = SH.F;
+  x.fillStyle = SH.BG; x.fillRect(0, 0, W, H);
+  let y = shareHead(x, o, W, 40);
+  y += 40; x.fillStyle = SH.INK3; x.font = F('500 26px');
+  x.fillText('% = share of time on the pitch spent in that zone', 70, y);
+  const mapTop = y + 22, labH = 36;
+  let mh = H - 36 - labH - mapTop, mw = Math.round(mh * 1200 / 722);
+  if (mw > W - 100){ mw = W - 100; mh = Math.round(mw * 722 / 1200); }
+  const mx0 = Math.round((W - mw) / 2);
+  sharePitch(x, o.grid, mx0, mapTop, mw, mh, true, 22);
+  x.fillStyle = SH.INK3; x.font = F('500 26px');
+  x.fillText('◀ own goal', mx0 + 6, mapTop + mh + 32);
+  x.textAlign = 'right'; x.fillText('attacking this way ▶', mx0 + mw - 6, mapTop + mh + 32); x.textAlign = 'left';
+}
+// CARD 3 (season pages, 11 Oct 2026): every game's map in one frame. o.maps = [{grid, cap}].
+// Picks the column count that makes the pitches biggest for this many games and this card
+// shape, so 7 or 8 games land on a 3 x 3 grid in landscape. Each map on its own scale,
+// exactly like the page's "Heat map by game" board.
+function drawShareGames(cv, o){
+  const W = o.W || SHARE_W, H = o.H || SHARE_H; cv.width = W; cv.height = H;
+  const x = cv.getContext('2d'), F = SH.F;
+  x.fillStyle = SH.BG; x.fillRect(0, 0, W, H);
+  const y = shareHead(x, o, W, 30);
+  const n = o.maps.length; if (!n) return;
+  const L = 50, R = W - 50, T = y + 30, B = H - 30, g = 18, capH = 38;
+  let best = null;
+  for (let c = 1; c <= n; c++){
+    const r = Math.ceil(n / c);
+    const byW = ((R - L) - (c - 1) * g) / c;
+    const byH = (((B - T) - (r - 1) * g) / r - capH) * 1200 / 722;
+    const mw = Math.floor(Math.min(byW, byH));
+    if (!best || mw > best.mw) best = {c, r, mw};
+  }
+  const {c, r, mw} = best, mh = Math.round(mw * 722 / 1200);
+  const gridH = r * (mh + capH) + (r - 1) * g, top = T + Math.max(0, ((B - T) - gridH) / 2);
+  o.maps.forEach((m, i) => {
+    const row = Math.floor(i / c), inRow = Math.min(c, n - row * c), col = i - row * c;
+    const rowW = inRow * mw + (inRow - 1) * g, x0 = Math.round((W - rowW) / 2 + col * (mw + g));
+    const y0 = Math.round(top + row * (mh + capH + g));
+    sharePitch(x, m.grid, x0, y0, mw, mh, false, 14);
+    x.textAlign = 'center'; x.fillStyle = SH.INK2;
+    fitText(x, m.cap, x0 + mw / 2, y0 + mh + 28, mw, F, '500', 24);
+    x.textAlign = 'left';
+  });
+}
 function drawShare(cv, o){
+  if ((o.W || SHARE_W) > (o.H || SHARE_H)) return drawShareLand(cv, o);
   const W = 1080, H = o.H || SHARE_H; cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
   const story = H > 1400;                       // 9:16 vs 4:5
@@ -598,13 +714,14 @@ function drawShare(cv, o){
   stat(70,       o.support[0].big, o.support[0].small);
   stat(W/2 + 40, o.support[1].big, o.support[1].small);
   x.fillStyle = INK3; x.font = F('500 28px');
-  x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 12);
+  if (o.footer) x.fillText(o.footer, 70, bottom - 12);   // no default URL since 11 Oct 2026
 }
 // SECOND SHARE CARD (Colin, 6 Sep 2026): "a portrait version of just the heat map, with
 // the percentage of time in each zone". No stats, no bars — the pitch turned upright and
 // filling the safe zone, with the 12 zone shares on it. The upright renderer stays alive
 // only for this; every ON-PAGE map is landscape, decided the same day.
 function drawShareMap(cv, o){
+  if ((o.W || SHARE_W) > (o.H || SHARE_H)) return drawShareMapLand(cv, o);
   const W = 1080, H = o.H || SHARE_H; cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
   const story = H > 1400;                         // 9:16 story vs 4:5 feed
@@ -640,22 +757,29 @@ function drawShareMap(cv, o){
   x.fillStyle = INK3; x.font = F('500 26px');
   x.textAlign = 'center'; x.fillText('own goal ▼', W/2, y + mh + 34); x.textAlign = 'left';
   x.font = F('500 28px');
-  x.fillText(o.footer || 'colin1201.github.io/barkerites-report', 70, bottom - 6);
+  if (o.footer) x.fillText(o.footer, 70, bottom - 6);    // no default URL since 11 Oct 2026
 }
 // Save a card. On a phone this opens the share sheet; elsewhere it downloads.
 // buildOpts(H) returns the object the renderer takes, so the saved PNG comes from the
 // SAME code as the on-page preview and cannot disagree with it. `draw` picks which card.
+// Saves a JPG since 11 Oct 2026 (Colin: "i just want to download it as a jpg"), whatever
+// extension the caller's name carries. The share sheet is for PHONES only: desktop Edge and
+// Chrome on Windows also pass canShare(), so the button opened Windows' Share panel instead
+// of downloading. A coarse primary pointer (a finger) is the phone test.
 function sharePNG(buildOpts, name, title, H, draw){
   const cv = document.createElement('canvas');
   (draw || drawShare)(cv, buildOpts(H || SHARE_H));
+  name = name.replace(/\.(png|jpe?g)$/i, '') + '.jpg';
+  const phone = window.matchMedia && matchMedia('(pointer: coarse)').matches;
   cv.toBlob(async b => {
-    const file = new File([b], name, {type:'image/png'});
-    if (navigator.canShare && navigator.canShare({files:[file]})) {
+    const file = new File([b], name, {type:'image/jpeg'});
+    if (phone && navigator.canShare && navigator.canShare({files:[file]})) {
       try { await navigator.share({files:[file], title}); return; } catch(e) {}
     }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  }, 'image/png');
+  }, 'image/jpeg', 0.92);
 }
 // ===== END OF SHARED SCRIPT =====
 // overall_report.py extracts everything ABOVE this line and reuses it verbatim, so the
@@ -1083,7 +1207,7 @@ function renderShare(){
     picks[n-1][1] = e.target.value; renderShare();
   });
 });
-fillPickers(); renderShare();
+fillPickers(); renderShare(); wireShapePicker(renderShare);
 document.getElementById('dl').onclick =
   () => sharePNG(shareOpts, SHARE.filename, `${SHARE.subject} — ${SHARE.eyebrow}`, SHARE_H);
 document.getElementById('dl2').onclick =
